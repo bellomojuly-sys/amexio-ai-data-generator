@@ -14,6 +14,7 @@ class Persona(BaseModel):
     salutation: str
     date_of_birth: date | None = None
     address: str | None = None
+    organisation_id: str | None = None
 
 class Event(BaseModel):
     id: str
@@ -23,13 +24,28 @@ class Event(BaseModel):
     participant_ids: list[str]
     summary: str
 
+
+class Organisation(BaseModel):
+    id: str
+    name: str
+    type: str
+
 class CaseModel:
     def __init__(self, case_number):
         self.case_number = case_number
         self.personas = {}
         self.events = {}
+        self.organisations = {}
+
+    def add_organisation(self, **fields):
+        new_id = next_id("ORG-", 2, self.organisations)
+        self.organisations[new_id] = Organisation(id=new_id, **fields)
+        return new_id
 
     def add_persona(self, **fields):
+        org_id = fields.get("organisation_id")
+        if org_id is not None and org_id not in self.organisations:
+            raise ValueError(f"Unknown organisation: {org_id}")
         new_id = next_id("P", 3, self.personas)
         self.personas[new_id] = Persona(id=new_id, **fields)
         return new_id
@@ -40,5 +56,10 @@ class CaseModel:
                 raise ValueError(f"Unknown persona: {pid}")
         new_id = next_id("EVT-", 3, self.events)
         self.events[new_id] = Event(id=new_id, **fields)
+        return new_id
+
+    def add_organisation(self, **fields):
+        new_id = next_id("ORG-", 2, self.organisations)
+        self.organisations[new_id] = Organisation(id=new_id, **fields)
         return new_id
 

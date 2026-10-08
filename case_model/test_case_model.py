@@ -33,3 +33,17 @@ def test_unknown_persona_is_refused():
             summary="Rear-end collision at a traffic light.",
         )
     assert case.events == {}
+def test_organisation_ids_are_assigned_by_code():
+    case = CaseModel("100101")
+    employer = case.add_organisation(name="Acme Logistics B.V.", type="employer")
+    manager = case.add_persona(name="M. Bakker", role="manager", salutation="Mr", organisation_id=employer)
+    assert employer == "ORG-01"
+    assert case.personas[manager].organisation_id == "ORG-01"
+
+
+def test_unknown_organisation_is_refused():
+    case = CaseModel("100101")
+    with pytest.raises(ValueError):
+        case.add_persona(name="M. Bakker", role="manager", salutation="Mr", organisation_id="ORG-99")
+    assert case.personas == {}
+
