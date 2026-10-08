@@ -42,6 +42,24 @@ class Employment(BaseModel):
     gross_monthly_salary: float
 
 
+class DocumentMetadata(BaseModel):
+    employee_id: str
+    document_type: str
+    document_date: date
+    confidential: bool
+    tags: list[str]
+
+
+class Document(BaseModel):
+    id: str
+    type: str
+    title: str
+    event_id: str
+    participant_ids: list[str]
+    text: str | None = None
+    metadata: DocumentMetadata
+
+
 class CaseModel:
     def __init__(self, case_number):
         self.case_number = case_number
@@ -49,6 +67,7 @@ class CaseModel:
         self.events = {}
         self.organisations = {}
         self.employments = {}
+        self.documents = {}
 
     def add_organisation(self, **fields):
         new_id = next_id("ORG-", 2, self.organisations)
@@ -78,4 +97,14 @@ class CaseModel:
                 raise ValueError(f"Unknown persona: {pid}")
         new_id = next_id("EVT-", 3, self.events)
         self.events[new_id] = Event(id=new_id, **fields)
+        return new_id
+
+    def add_document(self, **fields):
+        if fields["event_id"] not in self.events:
+            raise ValueError(f"Unknown event: {fields['event_id']}")
+        for pid in fields["participant_ids"]:
+            if pid not in self.personas:
+                raise ValueError(f"Unknown persona: {pid}")
+        new_id = next_id("DOC-", 3, self.documents)
+        self.documents[new_id] = Document(id=new_id, **fields)
         return new_id

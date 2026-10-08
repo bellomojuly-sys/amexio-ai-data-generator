@@ -119,3 +119,81 @@ def test_employment_unknown_persona_is_refused():
             gross_monthly_salary=4350,
         )
     assert case.employments == {}
+
+
+def jan_de_vries_with_hiring():
+    case, employer, employee = jan_de_vries_case()
+    hiring = case.add_event(
+        type="hiring",
+        label="Employment contract signed",
+        date="2021-03-01",
+        participant_ids=[employee],
+        summary="Jan de Vries starts as Software Developer.",
+    )
+    return case, employee, hiring
+
+
+def contract_metadata():
+    return {
+        "employee_id": "100101",
+        "document_type": "Employment Contract",
+        "document_date": "2021-03-01",
+        "confidential": True,
+        "tags": ["contract", "legal"],
+    }
+
+
+def test_document_links_event_and_participants():
+    case, employee, hiring = jan_de_vries_with_hiring()
+    doc = case.add_document(
+        type="employment_contract",
+        title="Employment Contract",
+        event_id=hiring,
+        participant_ids=[employee],
+        metadata=contract_metadata(),
+    )
+    assert doc == "DOC-001"
+    assert case.documents[doc].event_id == "EVT-001"
+    assert case.documents[doc].participant_ids == ["P001"]
+    assert case.documents[doc].metadata.tags == ["contract", "legal"]
+
+
+def test_document_unknown_event_is_refused():
+    case, employee, hiring = jan_de_vries_with_hiring()
+    with pytest.raises(ValueError):
+        case.add_document(
+            type="employment_contract",
+            title="Employment Contract",
+            event_id="EVT-404",
+            participant_ids=[employee],
+            metadata=contract_metadata(),
+        )
+    assert case.documents == {}
+
+
+def test_document_unknown_participant_is_refused():
+    case, employee, hiring = jan_de_vries_with_hiring()
+    with pytest.raises(ValueError):
+        case.add_document(
+            type="employment_contract",
+            title="Employment Contract",
+            event_id=hiring,
+            participant_ids=["P404"],
+            metadata=contract_metadata(),
+        )
+    assert case.documents == {}
+
+
+def test_document_metadata_date_in_wrong_format_is_refused():
+    case, employee, hiring = jan_de_vries_with_hiring()
+    metadata = contract_metadata()
+    metadata["document_date"] = "01-03-2021"
+    with pytest.raises(ValidationError):
+        case.add_document(
+            type="employment_contract",
+            title="Employment Contract",
+            event_id=hiring,
+            participant_ids=[employee],
+            metadata=metadata,
+        )
+    assert case.documents == {}
