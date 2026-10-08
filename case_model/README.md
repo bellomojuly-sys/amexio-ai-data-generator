@@ -1,4 +1,4 @@
-Case model — module contract
+## Case model — module contract
 
 Owner: Giulia Bellomo. Status: first slice (7 October 2026).
 
