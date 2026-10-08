@@ -30,12 +30,25 @@ class Organisation(BaseModel):
     name: str
     type: str
 
+class Employment(BaseModel):
+    id: str
+    persona_id: str
+    organisation_id: str
+    position: str
+    department: str
+    start_date: date
+    contract_type: str
+    hours_per_week: int
+    gross_monthly_salary: float
+
+
 class CaseModel:
     def __init__(self, case_number):
         self.case_number = case_number
         self.personas = {}
         self.events = {}
         self.organisations = {}
+        self.employments = {}
 
     def add_organisation(self, **fields):
         new_id = next_id("ORG-", 2, self.organisations)
@@ -50,6 +63,15 @@ class CaseModel:
         self.personas[new_id] = Persona(id=new_id, **fields)
         return new_id
 
+    def add_employment(self, **fields):
+        if fields["persona_id"] not in self.personas:
+            raise ValueError(f"Unknown persona: {fields['persona_id']}")
+        if fields["organisation_id"] not in self.organisations:
+            raise ValueError(f"Unknown organisation: {fields['organisation_id']}")
+        new_id = next_id("EMP-", 3, self.employments)
+        self.employments[new_id] = Employment(id=new_id, **fields)
+        return new_id
+
     def add_event(self, **fields):
         for pid in fields["participant_ids"]:
             if pid not in self.personas:
@@ -57,9 +79,3 @@ class CaseModel:
         new_id = next_id("EVT-", 3, self.events)
         self.events[new_id] = Event(id=new_id, **fields)
         return new_id
-
-    def add_organisation(self, **fields):
-        new_id = next_id("ORG-", 2, self.organisations)
-        self.organisations[new_id] = Organisation(id=new_id, **fields)
-        return new_id
-
