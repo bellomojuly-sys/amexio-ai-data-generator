@@ -115,3 +115,29 @@ configuration and the review interface. Planned for sprint 3 onward (M04+).
 ```bash
 python3 -m pytest -v
 ```
+
+## Traceability
+
+Every closed microphase can be traced to a commit and checked from the terminal, from the repository root. Run a check with `python3 -m pytest -v -k "<selector>"`; open a commit with `git show <commit> --stat`.
+
+AX-006 → AX-014 were first built step by step (my own commits `fced31a`, `dc337b6`, `72236b6` of 8 October in the team repo [amexio-ai-data-generator](https://github.com/bellomojuly-sys/amexio-ai-data-generator); branches `sprint2-m01-remaining-entities`, `ax-010-case-container`, `sprint-2-m02-id-format-rules` here) and then consolidated into v1 in commit `729d331`.
+
+| Step | Commit (v1) | Proof | Check in the terminal |
+|---|---|---|---|
+| AX-001 → AX-003 | `6313d49` | IDs come from code; an event stores participant IDs; an unknown persona is refused | `-k "ids_are_assigned_by_code or event_references_persona or unknown_persona"` (3) |
+| AX-004 | `6313d49` | The code lives in the team repository, folder `case_model/` | `git show 6313d49 --stat` |
+| AX-005 | `81cb937` | Module contract: what comes in, what goes out, what is refused | this README |
+| AX-006 | `729d331` | A persona points at a known organisation; an unknown one fails | `-k "known_organisation or unknown_organisation"` (2) |
+| AX-007 | `729d331` | Employment links persona and organisation; a missing field fails | `-k "employment"` (2) |
+| AX-008 | `729d331` | A document with an unknown event fails; metadata has AMEXIO's five fields | `-k "unknown_event or metadata_has"` (2) |
+| AX-009 | `729d331` | A dossier needs a six-digit employee number | `-k "employee_number"` (3) |
+| AX-010 | `729d331` | A full Case validates in one call; broken links fail | `-k "full_case or missing_event or build_without_dossier"` (3) |
+| AX-011 | `729d331` | One ID pattern per type; wrong patterns fail | `-k "pattern or well_formed or five_types or example_id or next_id or non_string or unknown_type"` (22) |
+| AX-012 | `729d331` | An ID written by the caller (or an LLM) is refused | `-k "caller"` (3) |
+| AX-013 | `729d331` | "12/03/2026" fails; only ISO 8601 dates | `-k "non_iso_date"` (1) |
+| AX-014 | `729d331` | "EUR 4.350" fails; amounts are number + currency | `-k "money or amount or thousands or currency"` (5) |
+| AX-015 | `c6cfe17` | 100 dossiers, 0 duplicate IDs | `-k "uniqueness"` (1) |
+| AX-016, AX-017 | `03c2084` | Reference dossier 100101 loads; every participant exists; five documents with event and participant | `-k "test_reference_dossier"` (4) |
+| AX-018 | `12c9a2d` | Saved to four JSON files and loaded back equal | `-k "test_storage"` (4) |
+
+All 54 tests: `python3 -m pytest -v`.
