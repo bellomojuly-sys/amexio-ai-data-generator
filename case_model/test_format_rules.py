@@ -95,15 +95,15 @@ def test_money_accepts_a_plain_numeric_string():
     assert Money(amount="3240.00", currency="EUR").currency == "EUR"
 
 def test_formatted_amount_text_is_refused():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         Money(amount="€3,240.00", currency="EUR")
 
 def test_thousands_separator_is_refused():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         Money(amount="3,240.00", currency="EUR")
 
 def test_currency_must_be_an_iso_code():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         Money(amount=3240.00, currency="euro")
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         Money(amount=3240.00, currency="€")

@@ -47,7 +47,7 @@ def test_non_iso_date_is_refused():
     # AX-013
     case = _case_with_dossier()
     pid = case.add_persona(name="Sanne", role="claimant", salutation="Ms")
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         case.add_event(
             type="incident", label="Collision", date="12/03/2026",
             participant_ids=[pid], summary="Rear-end collision.",
@@ -68,6 +68,7 @@ def test_unknown_organisation_is_refused():
     case = _case_with_dossier()
     with pytest.raises(ValueError):
         case.add_persona(name="Petra", role="hr_officer", salutation="Ms", organisation_id="ORG-99")
+    assert case.personas == {}
 
 
 # AX-007 — employment links a persona to an organisation; a salary is Money.
@@ -87,7 +88,7 @@ def test_employment_missing_field_fails():
     case = _case_with_dossier()
     org = case.add_organisation(name="AMEXIO B.V.")
     jan = case.add_persona(name="Jan", role="employee", salutation="Mr")
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         case.add_employment(
             persona_id=jan, organisation_id=org, position="Dev",
             # department missing
@@ -108,12 +109,13 @@ def test_document_with_unknown_event_is_refused():
             metadata={"employee_id": "100101", "document_type": "payslip",
                       "document_date": "2021-03-31", "confidential": True, "tags": []},
         )
+    assert case.documents == {}
 
 
 # AX-009 — dossier-level facts; without an employee number it fails.
 
 def test_dossier_needs_an_employee_number():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         Dossier(folder_title="No number")
 
 def test_employee_number_must_be_six_digits():
