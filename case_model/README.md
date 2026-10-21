@@ -1,6 +1,6 @@
 # Case model — module contract (version 1)
 
-Owner: Giulia Bellomo. Status: v1 (14 October 2026).
+Owner: Giulia Bellomo. Status: v1 (16 October 2026, tag `v1`).
 
 ## What it is for
 
@@ -84,6 +84,26 @@ from case_model.reference_dossier import build_reference_case
 case = build_reference_case()
 ```
 
+**AX-019 — the reference dossier is the regression anchor.** Its full exported
+form is frozen in `reference_dossier.golden.json`, and
+`test_reference_dossier_matches_golden` checks the fixture against it on every
+run (and on every push, through CI). Change any fact in the fixture — a name, a
+date, an amount, a participant — and the test fails on purpose. When the change
+is intended, regenerate the snapshot:
+
+```bash
+python3 -m case_model.reference_dossier
+```
+
+## Generation and export read through the module (AX-020)
+
+Generation and export do not keep their own copy of a fact; they read the
+dossier through this module. A built `Case` is the read surface — `dossier`,
+`personas`, `organisations`, `employments`, `events`, `documents`, and
+`case.model_dump(mode="json")` for a plain, serialisable snapshot — and
+`storage.save_case` / `load_case` move a whole case to and from JSON. Facts
+stay here; writing document bodies is the generation module's job.
+
 ## Saving and loading
 
 A case is written as four JSON files and read back into an equal case:
@@ -116,6 +136,10 @@ configuration and the review interface. Planned for sprint 3 onward (M04+).
 python3 -m pytest -v
 ```
 
+GitHub Actions (`.github/workflows/tests.yml`) runs the whole suite on every
+push and pull request, so a change that drifts the reference dossier (AX-019) is
+caught in CI, not only locally.
+
 ## Traceability
 
 Every closed microphase can be traced to a commit and checked from the terminal, from the repository root. Run a check with `python3 -m pytest -v -k "<selector>"`; open a commit with `git show <commit> --stat`.
@@ -137,7 +161,9 @@ AX-006 → AX-014 were first built step by step (my own commits `fced31a`, `dc33
 | AX-013 | `729d331` | "12/03/2026" fails; only ISO 8601 dates | `-k "non_iso_date"` (1) |
 | AX-014 | `729d331` | "EUR 4.350" fails; amounts are number + currency | `-k "money or amount or thousands or currency"` (5) |
 | AX-015 | `c6cfe17` | 100 dossiers, 0 duplicate IDs | `-k "uniqueness"` (1) |
-| AX-016, AX-017 | `03c2084` | Reference dossier 100101 loads; every participant exists; five documents with event and participant | `-k "test_reference_dossier"` (4) |
+| AX-016, AX-017 | `03c2084` | Reference dossier 100101 loads; every participant exists; five documents with event and participant | `-k "test_reference_dossier"` (5) |
 | AX-018 | `12c9a2d` | Saved to four JSON files and loaded back equal | `-k "test_storage"` (4) |
+| AX-019 | this commit | The reference dossier is frozen as a golden snapshot; a deliberate break fails, and CI runs it on every push | `-k "matches_golden"` (1) |
+| AX-020 | tag `v1` | Case model v1 is tagged for integration; generation and export read the dossier through the module | `git show v1 --stat` |
 
-All 54 tests: `python3 -m pytest -v`.
+All 55 tests: `python3 -m pytest -v`.

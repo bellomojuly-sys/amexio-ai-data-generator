@@ -1,6 +1,9 @@
-"""AX-016, AX-017 — the HR reference dossier 100101 loads and is coherent."""
+"""AX-016, AX-017 — the HR reference dossier 100101 loads and is coherent.
+AX-019 — and its exported form is frozen, so a deliberate break fails."""
 
-from case_model.reference_dossier import build_reference_case
+import json
+
+from case_model.reference_dossier import GOLDEN_PATH, build_reference_case
 
 
 def test_reference_dossier_loads_without_error():
@@ -34,3 +37,13 @@ def test_metadata_has_the_five_fields():
     assert meta.document_date is not None
     assert isinstance(meta.confidential, bool)
     assert isinstance(meta.tags, list)
+
+def test_reference_dossier_matches_golden():
+    # AX-019 — the fixture is the regression anchor. Its full exported form is
+    # frozen in reference_dossier.golden.json, so changing any fact above (a
+    # name, a date, an amount, a participant) makes this fail on purpose.
+    # Regenerate the snapshot only when the change is intended:
+    #     python3 -m case_model.reference_dossier
+    exported = build_reference_case().model_dump(mode="json")
+    golden = json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))
+    assert exported == golden

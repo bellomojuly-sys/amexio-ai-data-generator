@@ -9,6 +9,9 @@ job, not the case model's; it reads these facts from here.
 All people and companies here are fictitious.
 """
 
+import json
+from pathlib import Path
+
 from .case_model import CaseModel, Money
 
 
@@ -114,3 +117,24 @@ def build_reference_case():
     )
 
     return case.build()
+
+
+# The frozen export of the reference dossier (AX-019). The golden test in
+# test_reference_dossier.py compares build_reference_case() against this file,
+# so any change to a fact above fails the test. Regenerate it only when the
+# change is intended, with: python3 -m case_model.reference_dossier
+GOLDEN_PATH = Path(__file__).with_name("reference_dossier.golden.json")
+
+
+def write_golden():
+    """Write the reference dossier's exported form to reference_dossier.golden.json."""
+    payload = build_reference_case().model_dump(mode="json")
+    GOLDEN_PATH.write_text(
+        json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+    return GOLDEN_PATH
+
+
+if __name__ == "__main__":
+    print(f"wrote {write_golden()}")
