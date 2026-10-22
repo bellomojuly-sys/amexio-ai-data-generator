@@ -77,11 +77,11 @@ def test_employee_number_is_six_digits():
 # AX-012 — reject input that already carries an ID.
 
 def test_reject_caller_id_passes_clean_input():
-    reject_caller_id({"name": "Sanne"})
+    reject_caller_id({"name": "Jan de Vries"})
 
 def test_reject_caller_id_refuses_an_id():
     with pytest.raises(ValueError):
-        reject_caller_id({"id": "P001", "name": "Sanne"})
+        reject_caller_id({"id": "P001", "name": "Jan de Vries"})
 
 
 # AX-014 — an amount is a number plus a currency.

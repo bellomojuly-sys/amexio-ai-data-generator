@@ -12,17 +12,17 @@ def _case_with_dossier():
 
 def test_ids_are_assigned_by_code():
     case = _case_with_dossier()
-    first = case.add_persona(name="Sanne Example", role="claimant", salutation="Ms")
-    second = case.add_persona(name="Tom Sample", role="claim_handler", salutation="Mr")
+    first = case.add_persona(name="Jan de Vries", role="employee", salutation="Mr")
+    second = case.add_persona(name="Petra Jansen", role="hr_officer", salutation="Ms")
     assert first == "P001"
     assert second == "P002"
 
 def test_event_references_persona_by_id():
     case = _case_with_dossier()
-    claimant = case.add_persona(name="Sanne Example", role="claimant", salutation="Ms")
+    employee = case.add_persona(name="Jan de Vries", role="employee", salutation="Mr")
     event_id = case.add_event(
-        type="incident", label="Collision", date="2026-03-04",
-        participant_ids=[claimant], summary="Rear-end collision.",
+        type="hiring", label="Employment contract signed", date="2021-03-01",
+        participant_ids=[employee], summary="Jan de Vries starts as Software Developer.",
     )
     assert event_id == "EVT-001"
     assert case.events["EVT-001"].participant_ids == ["P001"]
@@ -31,8 +31,8 @@ def test_unknown_persona_is_refused():
     case = _case_with_dossier()
     with pytest.raises(ValueError):
         case.add_event(
-            type="incident", label="Collision", date="2026-03-04",
-            participant_ids=["P404"], summary="Rear-end collision.",
+            type="hiring", label="Employment contract signed", date="2021-03-01",
+            participant_ids=["P404"], summary="A hiring that references a missing persona.",
         )
     assert case.events == {}
 
@@ -40,17 +40,17 @@ def test_caller_supplied_id_is_refused():
     # AX-012
     case = _case_with_dossier()
     with pytest.raises(ValueError):
-        case.add_persona(id="P001", name="Sanne", role="claimant", salutation="Ms")
+        case.add_persona(id="P001", name="Jan de Vries", role="employee", salutation="Mr")
     assert case.personas == {}
 
 def test_non_iso_date_is_refused():
     # AX-013
     case = _case_with_dossier()
-    pid = case.add_persona(name="Sanne", role="claimant", salutation="Ms")
+    pid = case.add_persona(name="Jan de Vries", role="employee", salutation="Mr")
     with pytest.raises(ValueError):
         case.add_event(
-            type="incident", label="Collision", date="12/03/2026",
-            participant_ids=[pid], summary="Rear-end collision.",
+            type="hiring", label="Employment contract signed", date="12/03/2026",
+            participant_ids=[pid], summary="Jan de Vries starts as Software Developer.",
         )
     assert case.events == {}
 
