@@ -1,0 +1,20 @@
+Validation report - GEN-2026-0001 - dossier_fixed
+
+[PASS] Required metadata present
+       All 5 documents have the 6 required fields.
+[PASS] IDs and references resolve
+       36 references between personas, events and documents all point to something that exists.
+[PASS] Names match the persona records
+       Every participant is named exactly as in personas, in every document.
+[PASS] Timeline is in a logical order
+       6 events run in order from 14 March 2026 to 7 April 2026.
+[PASS] Metadata matches the document text
+       Each document's date in the metadata also appears in its text.
+[PASS] Amounts add up
+       Repair estimate lines add up to €3,240.00; the decision letter pays the same amount.
+[PASS] Marked as synthetic data
+       Every document carries the watermark and DataType = SYNTHETIC.
+[SKIP] AI plausibility review
+       Planned: an AI pass for things rules cannot check, such as whether the story makes sense.
+
+0 error(s). Export allowed.

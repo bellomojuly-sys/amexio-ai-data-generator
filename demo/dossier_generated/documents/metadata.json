@@ -1,0 +1,97 @@
+{
+  "documents": [
+    {
+      "DocumentID": "DOC-001",
+      "DocumentType": "accident_statement",
+      "DocumentTypeLabel": "European accident statement",
+      "DocumentDate": "2026-03-14",
+      "ClaimNumber": "CLM-10045",
+      "PolicyNumber": "POL-2023-88412",
+      "Claimant": "Mark Jansen",
+      "IncidentDate": "2026-03-14",
+      "RelatedEvent": "EVT-001",
+      "Participants": [
+        "P001",
+        "P002"
+      ],
+      "DataType": "SYNTHETIC",
+      "File": "DOC-001_accident_statement.txt"
+    },
+    {
+      "DocumentID": "DOC-002",
+      "DocumentType": "claim_form",
+      "DocumentTypeLabel": "Claim form",
+      "DocumentDate": "2026-03-12",
+      "ClaimNumber": "CLM-10045",
+      "PolicyNumber": "POL-2023-88412",
+      "Claimant": "Mark Jansen",
+      "IncidentDate": "2026-03-14",
+      "RelatedEvent": "EVT-002",
+      "Participants": [
+        "P001",
+        "P002"
+      ],
+      "DataType": "SYNTHETIC",
+      "File": "DOC-002_claim_form.txt"
+    },
+    {
+      "DocumentID": "DOC-003",
+      "DocumentType": "acknowledgement_letter",
+      "DocumentTypeLabel": "Acknowledgement letter",
+      "DocumentDate": "2026-03-18",
+      "ClaimNumber": "CLM-10045",
+      "PolicyNumber": "POL-2023-88412",
+      "Claimant": "Mark Jansen",
+      "IncidentDate": "2026-03-14",
+      "Handler": "Lotte Verbeek",
+      "RelatedEvent": "EVT-003",
+      "Participants": [
+        "P001",
+        "P002",
+        "P003",
+        "P004"
+      ],
+      "DataType": "SYNTHETIC",
+      "File": "DOC-003_acknowledgement_letter.txt"
+    },
+    {
+      "DocumentID": "DOC-004",
+      "DocumentType": "damage_inspection_report",
+      "DocumentTypeLabel": "Damage inspection report",
+      "DocumentDate": "2026-03-24",
+      "ClaimNumber": "CLM-10045",
+      "PolicyNumber": "POL-2023-88412",
+      "Claimant": "Mark Jansen",
+      "IncidentDate": "2026-03-14",
+      "Amount": "3240.00",
+      "RelatedEvent": "EVT-004",
+      "Participants": [
+        "P001",
+        "P004"
+      ],
+      "DataType": "SYNTHETIC",
+      "File": "DOC-004_damage_inspection_report.txt"
+    },
+    {
+      "DocumentID": "DOC-005",
+      "DocumentType": "decision_letter",
+      "DocumentTypeLabel": "Decision letter",
+      "DocumentDate": "2026-04-02",
+      "ClaimNumber": "CLM-10045",
+      "PolicyNumber": "POL-2023-88412",
+      "Claimant": "Mark Jansen",
+      "IncidentDate": "2026-03-14",
+      "Handler": "Lotte Verbeek",
+      "Amount": "3240.00",
+      "RelatedEvent": "EVT-005",
+      "Participants": [
+        "P001",
+        "P002",
+        "P003",
+        "P004"
+      ],
+      "DataType": "SYNTHETIC",
+      "File": "DOC-005_decision_letter.txt"
+    }
+  ]
+}

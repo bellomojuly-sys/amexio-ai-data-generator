@@ -1,0 +1,461 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  MOCK DATA - Object Importer control file (import.xml)
+
+  Everything must sit inside one <import> ... </import> block.
+  Every <node> is one action on one object:
+    type   = what kind of object (folder, document, ...)
+    action = what to do with it (create, update, sync, addversion, delete)
+
+  Order matters: folders are created first so the documents have a place to go.
+  Dates are written as YYYYMMDD (for example 20260925 = 25-09-2026).
+-->
+<import>
+
+  <!-- ============ STEP 1: create the folders ============ -->
+
+  <node type="folder" action="create">
+    <location>Enterprise</location>
+    <title language="en">HR Dossiers</title>
+    <description language="en">Personnel files of all employees</description>
+  </node>
+  <node type="folder" action="create">
+    <location>Enterprise:HR Dossiers</location>
+    <title language="en">100101 Jan de Vries</title>
+    <description language="en">Personnel file of Jan de Vries, Software Developer (IT)</description>
+  </node>
+  <node type="folder" action="create">
+    <location>Enterprise:HR Dossiers</location>
+    <title language="en">100102 Sanne Jansen</title>
+    <description language="en">Personnel file of Sanne Jansen, HR Advisor (Human Resources)</description>
+  </node>
+  <node type="folder" action="create">
+    <location>Enterprise:HR Dossiers</location>
+    <title language="en">100103 Mohamed El Amrani</title>
+    <description language="en">Personnel file of Mohamed El Amrani, Warehouse Supervisor (Logistics)</description>
+  </node>
+  <node type="folder" action="create">
+    <location>Enterprise:HR Dossiers</location>
+    <title language="en">100104 Lisa van den Berg</title>
+    <description language="en">Personnel file of Lisa van den Berg, Financial Controller (Finance)</description>
+  </node>
+
+  <!-- ============ STEP 2: import the documents with their metadata ============ -->
+
+  <!-- Employee 100101 Jan de Vries -->
+  <node type="document" action="create">
+    <!-- Version control: the contract is stored as major version 1.0 -->
+    <location>Enterprise:HR Dossiers:100101 Jan de Vries</location>
+    <title language="en">Employment Contract</title>
+    <description language="en">Signed employment contract of Jan de Vries</description>
+    <file>C:\OI\mock-import-dossier\files\100101_employment_contract.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20210301</created>
+    <modified>20210301</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <versioncontrol>TRUE</versioncontrol>
+    <versiontype>MAJOR</versiontype>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100101</attribute>
+      <attribute name="Document Type">Employment Contract</attribute>
+      <attribute name="Document Date">20210301</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">contract</attribute>
+      <attribute name="Tags">legal</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100101 Jan de Vries</location>
+    <title language="en">Payslip September 2026</title>
+    <description language="en">Monthly payslip of Jan de Vries</description>
+    <file>C:\OI\mock-import-dossier\files\100101_payslip.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260925</created>
+    <modified>20260925</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100101</attribute>
+      <attribute name="Document Type">Payslip</attribute>
+      <attribute name="Document Date">20260925</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">payroll</attribute>
+      <attribute name="Tags">salary</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <!-- Permissions: only the HR Medical group may open medical files, everyone else sees nothing -->
+    <location>Enterprise:HR Dossiers:100101 Jan de Vries</location>
+    <title language="en">Medical Check</title>
+    <description language="en">Occupational health check result of Jan de Vries</description>
+    <file>C:\OI\mock-import-dossier\files\100101_medical_check.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260414</created>
+    <modified>20260414</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <acl group="HR Medical" permissions="111111100"></acl>
+    <acl standard="world" permissions="000000000"></acl>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100101</attribute>
+      <attribute name="Document Type">Medical Check</attribute>
+      <attribute name="Document Date">20260414</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">medical</attribute>
+      <attribute name="Tags">health</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100101 Jan de Vries</location>
+    <title language="en">Performance Appraisal 2026</title>
+    <description language="en">Yearly performance review of Jan de Vries</description>
+    <file>C:\OI\mock-import-dossier\files\100101_performance_appraisal.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260630</created>
+    <modified>20260630</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100101</attribute>
+      <attribute name="Document Type">Performance Appraisal</attribute>
+      <attribute name="Document Date">20260630</attribute>
+      <attribute name="Confidential">FALSE</attribute>
+      <attribute name="Tags">appraisal</attribute>
+      <attribute name="Tags">review</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100101 Jan de Vries</location>
+    <title language="en">Training Certificate</title>
+    <description language="en">Completed training certificate of Jan de Vries</description>
+    <file>C:\OI\mock-import-dossier\files\100101_training_certificate.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260220</created>
+    <modified>20260220</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100101</attribute>
+      <attribute name="Document Type">Training Certificate</attribute>
+      <attribute name="Document Date">20260220</attribute>
+      <attribute name="Confidential">FALSE</attribute>
+      <attribute name="Tags">training</attribute>
+      <attribute name="Tags">certificate</attribute>
+    </category>
+  </node>
+
+  <!-- Employee 100102 Sanne Jansen -->
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100102 Sanne Jansen</location>
+    <title language="en">Employment Contract</title>
+    <description language="en">Signed employment contract of Sanne Jansen</description>
+    <file>C:\OI\mock-import-dossier\files\100102_employment_contract.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20190916</created>
+    <modified>20190916</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100102</attribute>
+      <attribute name="Document Type">Employment Contract</attribute>
+      <attribute name="Document Date">20190916</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">contract</attribute>
+      <attribute name="Tags">legal</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <!-- Multilingual: one title per language (English and Dutch) -->
+    <location>Enterprise:HR Dossiers:100102 Sanne Jansen</location>
+    <title language="en">Payslip September 2026</title>
+    <title language="nl">Loonstrook september 2026</title>
+    <description language="en">Monthly payslip of Sanne Jansen</description>
+    <file>C:\OI\mock-import-dossier\files\100102_payslip.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260925</created>
+    <modified>20260925</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100102</attribute>
+      <attribute name="Document Type">Payslip</attribute>
+      <attribute name="Document Date">20260925</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">payroll</attribute>
+      <attribute name="Tags">salary</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <!-- Permissions: only the HR Medical group may open medical files, everyone else sees nothing -->
+    <location>Enterprise:HR Dossiers:100102 Sanne Jansen</location>
+    <title language="en">Medical Check</title>
+    <description language="en">Occupational health check result of Sanne Jansen</description>
+    <file>C:\OI\mock-import-dossier\files\100102_medical_check.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260414</created>
+    <modified>20260414</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <acl group="HR Medical" permissions="111111100"></acl>
+    <acl standard="world" permissions="000000000"></acl>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100102</attribute>
+      <attribute name="Document Type">Medical Check</attribute>
+      <attribute name="Document Date">20260414</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">medical</attribute>
+      <attribute name="Tags">health</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100102 Sanne Jansen</location>
+    <title language="en">Performance Appraisal 2026</title>
+    <description language="en">Yearly performance review of Sanne Jansen</description>
+    <file>C:\OI\mock-import-dossier\files\100102_performance_appraisal.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260630</created>
+    <modified>20260630</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100102</attribute>
+      <attribute name="Document Type">Performance Appraisal</attribute>
+      <attribute name="Document Date">20260630</attribute>
+      <attribute name="Confidential">FALSE</attribute>
+      <attribute name="Tags">appraisal</attribute>
+      <attribute name="Tags">review</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100102 Sanne Jansen</location>
+    <title language="en">Training Certificate</title>
+    <description language="en">Completed training certificate of Sanne Jansen</description>
+    <file>C:\OI\mock-import-dossier\files\100102_training_certificate.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260220</created>
+    <modified>20260220</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100102</attribute>
+      <attribute name="Document Type">Training Certificate</attribute>
+      <attribute name="Document Date">20260220</attribute>
+      <attribute name="Confidential">FALSE</attribute>
+      <attribute name="Tags">training</attribute>
+      <attribute name="Tags">certificate</attribute>
+    </category>
+  </node>
+
+  <!-- Employee 100103 Mohamed El Amrani -->
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100103 Mohamed El Amrani</location>
+    <title language="en">Employment Contract</title>
+    <description language="en">Signed employment contract of Mohamed El Amrani</description>
+    <file>C:\OI\mock-import-dossier\files\100103_employment_contract.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20220110</created>
+    <modified>20220110</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100103</attribute>
+      <attribute name="Document Type">Employment Contract</attribute>
+      <attribute name="Document Date">20220110</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">contract</attribute>
+      <attribute name="Tags">legal</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100103 Mohamed El Amrani</location>
+    <title language="en">Payslip September 2026</title>
+    <description language="en">Monthly payslip of Mohamed El Amrani</description>
+    <file>C:\OI\mock-import-dossier\files\100103_payslip.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260925</created>
+    <modified>20260925</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100103</attribute>
+      <attribute name="Document Type">Payslip</attribute>
+      <attribute name="Document Date">20260925</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">payroll</attribute>
+      <attribute name="Tags">salary</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <!-- Permissions: only the HR Medical group may open medical files, everyone else sees nothing -->
+    <location>Enterprise:HR Dossiers:100103 Mohamed El Amrani</location>
+    <title language="en">Medical Check</title>
+    <description language="en">Occupational health check result of Mohamed El Amrani</description>
+    <file>C:\OI\mock-import-dossier\files\100103_medical_check.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260414</created>
+    <modified>20260414</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <acl group="HR Medical" permissions="111111100"></acl>
+    <acl standard="world" permissions="000000000"></acl>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100103</attribute>
+      <attribute name="Document Type">Medical Check</attribute>
+      <attribute name="Document Date">20260414</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">medical</attribute>
+      <attribute name="Tags">health</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100103 Mohamed El Amrani</location>
+    <title language="en">Performance Appraisal 2026</title>
+    <description language="en">Yearly performance review of Mohamed El Amrani</description>
+    <file>C:\OI\mock-import-dossier\files\100103_performance_appraisal.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260630</created>
+    <modified>20260630</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100103</attribute>
+      <attribute name="Document Type">Performance Appraisal</attribute>
+      <attribute name="Document Date">20260630</attribute>
+      <attribute name="Confidential">FALSE</attribute>
+      <attribute name="Tags">appraisal</attribute>
+      <attribute name="Tags">review</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <!-- CDATA: the title contains an '&', CDATA stops the XML parser from reading it as code -->
+    <location>Enterprise:HR Dossiers:100103 Mohamed El Amrani</location>
+    <title language="en"><![CDATA[Training Certificate Health & Safety]]></title>
+    <description language="en">Completed training certificate of Mohamed El Amrani</description>
+    <file>C:\OI\mock-import-dossier\files\100103_training_certificate.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260220</created>
+    <modified>20260220</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100103</attribute>
+      <attribute name="Document Type">Training Certificate</attribute>
+      <attribute name="Document Date">20260220</attribute>
+      <attribute name="Confidential">FALSE</attribute>
+      <attribute name="Tags">training</attribute>
+      <attribute name="Tags">certificate</attribute>
+    </category>
+  </node>
+
+  <!-- Employee 100104 Lisa van den Berg -->
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100104 Lisa van den Berg</location>
+    <title language="en">Employment Contract</title>
+    <description language="en">Signed employment contract of Lisa van den Berg</description>
+    <file>C:\OI\mock-import-dossier\files\100104_employment_contract.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20200601</created>
+    <modified>20200601</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100104</attribute>
+      <attribute name="Document Type">Employment Contract</attribute>
+      <attribute name="Document Date">20200601</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">contract</attribute>
+      <attribute name="Tags">legal</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100104 Lisa van den Berg</location>
+    <title language="en">Payslip September 2026</title>
+    <description language="en">Monthly payslip of Lisa van den Berg</description>
+    <file>C:\OI\mock-import-dossier\files\100104_payslip.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260925</created>
+    <modified>20260925</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100104</attribute>
+      <attribute name="Document Type">Payslip</attribute>
+      <attribute name="Document Date">20260925</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">payroll</attribute>
+      <attribute name="Tags">salary</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <!-- Permissions: only the HR Medical group may open medical files, everyone else sees nothing -->
+    <location>Enterprise:HR Dossiers:100104 Lisa van den Berg</location>
+    <title language="en">Medical Check</title>
+    <description language="en">Occupational health check result of Lisa van den Berg</description>
+    <file>C:\OI\mock-import-dossier\files\100104_medical_check.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260414</created>
+    <modified>20260414</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <acl group="HR Medical" permissions="111111100"></acl>
+    <acl standard="world" permissions="000000000"></acl>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100104</attribute>
+      <attribute name="Document Type">Medical Check</attribute>
+      <attribute name="Document Date">20260414</attribute>
+      <attribute name="Confidential">TRUE</attribute>
+      <attribute name="Tags">medical</attribute>
+      <attribute name="Tags">health</attribute>
+    </category>
+  </node>
+  <node type="document" action="sync">
+    <!-- action="sync": creates the document if it is missing, updates it if it already exists -->
+    <location>Enterprise:HR Dossiers:100104 Lisa van den Berg</location>
+    <title language="en">Performance Appraisal 2026</title>
+    <description language="en">Yearly performance review of Lisa van den Berg</description>
+    <file>C:\OI\mock-import-dossier\files\100104_performance_appraisal.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260630</created>
+    <modified>20260630</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100104</attribute>
+      <attribute name="Document Type">Performance Appraisal</attribute>
+      <attribute name="Document Date">20260630</attribute>
+      <attribute name="Confidential">FALSE</attribute>
+      <attribute name="Tags">appraisal</attribute>
+      <attribute name="Tags">review</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:HR Dossiers:100104 Lisa van den Berg</location>
+    <title language="en">Training Certificate</title>
+    <description language="en">Completed training certificate of Lisa van den Berg</description>
+    <file>C:\OI\mock-import-dossier\files\100104_training_certificate.pdf</file>
+    <mime>application/pdf</mime>
+    <created>20260220</created>
+    <modified>20260220</modified>
+    <createby>hr.admin</createby>
+    <owner>hr.admin</owner>
+    <category name="Content Server Categories:HR Document">
+      <attribute name="Employee ID">100104</attribute>
+      <attribute name="Document Type">Training Certificate</attribute>
+      <attribute name="Document Date">20260220</attribute>
+      <attribute name="Confidential">FALSE</attribute>
+      <attribute name="Tags">training</attribute>
+      <attribute name="Tags">certificate</attribute>
+    </category>
+  </node>
+
+  <!-- ============ STEP 3: change something that already exists ============ -->
+
+  <!-- action="update": only the tags listed are changed, here just the description -->
+  <node type="document" action="update">
+    <location>Enterprise:HR Dossiers:100101 Jan de Vries</location>
+    <title language="en">Payslip September 2026</title>
+    <description language="en">Monthly payslip of Jan de Vries (checked by payroll)</description>
+  </node>
+
+</import>

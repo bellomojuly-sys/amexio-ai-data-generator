@@ -1,0 +1,43 @@
+*** AI-GENERATED FAKE DATA - SYNTHETIC TEST DOCUMENT ***
+
+DAMAGE INSPECTION REPORT
+Kroon Schade-expertise B.V.
+Document ID: DOC-004
+
+Report number:   KSE-26-0412
+Claim number:    CLM-10045
+Commissioned by: Aurelis Verzekeringen N.V.
+Inspection date: 24 March 2026
+Location:        Lindelaan 27, 5641 JD Eindhoven
+Expert:          Pieter Kroon
+
+Vehicle
+-------
+Make and model: Volkswagen Golf 1.5 TSI (2019)
+Registration:   ZK-318-P
+Owner:          Mark Jansen
+Odometer:       68,412 km
+
+Findings
+--------
+The damage is consistent with a low-speed rear-end collision, as described in
+the European accident statement of 14 March 2026. The rear bumper is cracked,
+the tailgate is dented, the left rear light is broken and two rear parking
+sensors are damaged. No structural damage was found.
+
+Repair estimate
+---------------
+Parts                                                                €1,412.00
+Labour (14.5 h × €62.00)                                               €899.00
+Paint and materials                                                    €366.69
+Subtotal excl. VAT                                                   €2,677.69
+VAT 21%                                                                €562.31
+Total incl. VAT                                                      €3,240.00
+
+Conclusion
+----------
+Repair is economically justified; the vehicle is not a total loss. We
+recommend settling the claim at €3,240.00.
+
+Pieter Kroon
+Damage expert, Kroon Schade-expertise B.V.

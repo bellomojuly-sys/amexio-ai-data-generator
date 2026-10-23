@@ -1,0 +1,41 @@
+{
+  "generation_id": "GEN-2026-0001",
+  "domain": "insurance_claims",
+  "scenario": "motor_vehicle_collision",
+  "outcome": "approved_and_paid",
+  "number_of_dossiers": 1,
+  "documents_per_dossier": 5,
+  "document_types": [
+    "accident_statement",
+    "claim_form",
+    "acknowledgement_letter",
+    "damage_inspection_report",
+    "decision_letter"
+  ],
+  "language": "en",
+  "target_system": "OpenText Content Server",
+  "metadata_fields": {
+    "required": [
+      "ClaimNumber",
+      "PolicyNumber",
+      "DocumentType",
+      "DocumentDate",
+      "Claimant",
+      "DataType"
+    ],
+    "optional": [
+      "IncidentDate",
+      "Handler",
+      "Amount",
+      "RelatedEvent"
+    ]
+  },
+  "human_review_after": [
+    "personas",
+    "storyline"
+  ],
+  "synthetic_marking": {
+    "watermark": "AI-GENERATED FAKE DATA",
+    "DataType": "SYNTHETIC"
+  }
+}

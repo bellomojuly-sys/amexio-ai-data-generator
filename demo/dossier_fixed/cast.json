@@ -1,0 +1,95 @@
+{
+  "personas": {
+    "P001": {
+      "name": "Mark Jansen",
+      "salutation": "Mr Jansen",
+      "role": "Policyholder (claimant)",
+      "dob": "1988-06-04",
+      "address": "Lindelaan 27, 5641 JD Eindhoven",
+      "org": null
+    },
+    "P002": {
+      "name": "Sanne de Vries",
+      "salutation": "Ms De Vries",
+      "role": "Other driver (liable party)",
+      "dob": "1995-11-19",
+      "address": "Heerbaan 8, 5505 AB Veldhoven",
+      "org": null
+    },
+    "P003": {
+      "name": "Lotte Verbeek",
+      "salutation": "Ms Verbeek",
+      "role": "Claims handler",
+      "dob": null,
+      "address": null,
+      "org": "ORG-01"
+    },
+    "P004": {
+      "name": "Pieter Kroon",
+      "salutation": "Mr Kroon",
+      "role": "Damage expert",
+      "dob": null,
+      "address": null,
+      "org": "ORG-03"
+    }
+  },
+  "orgs": {
+    "ORG-01": {
+      "name": "Aurelis Verzekeringen N.V.",
+      "role": "Claimant's insurer",
+      "city": "Eindhoven"
+    },
+    "ORG-02": {
+      "name": "Noordhaven Verzekeringen N.V.",
+      "role": "Other driver's insurer",
+      "city": "Zwolle"
+    },
+    "ORG-03": {
+      "name": "Kroon Schade-expertise B.V.",
+      "role": "Damage assessment firm",
+      "city": "Best"
+    }
+  },
+  "vehicles": {
+    "V001": {
+      "model": "Volkswagen Golf 1.5 TSI (2019)",
+      "plate": "ZK-318-P",
+      "owner": "P001"
+    },
+    "V002": {
+      "model": "Toyota Yaris (2021)",
+      "plate": "HT-552-R",
+      "owner": "P002"
+    }
+  },
+  "policy": {
+    "number": "POL-2023-88412",
+    "product": "Car insurance, all-risk",
+    "holder": "P001",
+    "insurer": "ORG-01"
+  },
+  "third_policy": {
+    "number": "NH-7730-2291",
+    "holder": "P002",
+    "insurer": "ORG-02"
+  },
+  "claim": {
+    "number": "CLM-10045",
+    "status": "Paid"
+  },
+  "estimate": {
+    "parts": 1412.0,
+    "labour_hours": 14.5,
+    "labour_rate": 62.0,
+    "labour": 899.0,
+    "paint": 366.69,
+    "subtotal": 2677.69,
+    "vat_rate": 0.21,
+    "vat": 562.31,
+    "total": 3240.0
+  },
+  "decision": {
+    "result": "Approved in full",
+    "amount": 3240.0
+  }
+}

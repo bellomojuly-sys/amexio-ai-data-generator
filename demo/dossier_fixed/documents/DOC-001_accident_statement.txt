@@ -1,0 +1,38 @@
+*** AI-GENERATED FAKE DATA - SYNTHETIC TEST DOCUMENT ***
+
+EUROPEAN ACCIDENT STATEMENT
+Completed jointly by both drivers at the scene
+Document ID: DOC-001
+
+Date of accident: 14 March 2026
+Time:             17:40
+Location:         Junction Boschdijk / Oude Bosschebaan, Eindhoven
+Injuries:         None
+Witnesses:        None
+
+Vehicle A
+---------
+Driver:        Mark Jansen
+Date of birth: 4 June 1988
+Address:       Lindelaan 27, 5641 JD Eindhoven
+Vehicle:       Volkswagen Golf 1.5 TSI (2019), ZK-318-P
+Insurer:       Aurelis Verzekeringen N.V., policy POL-2023-88412
+
+Vehicle B
+---------
+Driver:        Sanne de Vries
+Date of birth: 19 November 1995
+Address:       Heerbaan 8, 5505 AB Veldhoven
+Vehicle:       Toyota Yaris (2021), HT-552-R
+Insurer:       Noordhaven Verzekeringen N.V., policy NH-7730-2291
+
+Circumstances
+-------------
+Vehicle A: Box 1: was stationary (waiting at a red traffic light)
+Vehicle B: Box 8: hit the rear of the other vehicle, going in the same direction and lane
+
+Remarks
+-------
+Driver B: “I braked too late when the light turned red.”
+
+Signed at the scene by Mark Jansen (A) and Sanne de Vries (B).

@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AI-GENERATED FAKE DATA (SYNTHETIC) - generation GEN-2026-0001 -->
+<!-- Shape follows the Content Server Object Importer. Category and attribute names are placeholders. -->
+<import>
+  <node type="folder" action="create">
+    <location>Enterprise:Claims</location>
+    <title>CLM-10045 Mark Jansen</title>
+    <category name="Content Server Categories:Insurance Claim">
+      <attribute name="Claim Number">CLM-10045</attribute>
+      <attribute name="Policy Number">POL-2023-88412</attribute>
+      <attribute name="Claimant">Mark Jansen</attribute>
+      <attribute name="Incident Date">2026-03-14</attribute>
+      <attribute name="Status">Paid</attribute>
+      <attribute name="Data Type">SYNTHETIC</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:Claims:CLM-10045 Mark Jansen</location>
+    <title>DOC-001 European accident statement</title>
+    <file>CLM-10045/DOC-001_accident_statement.txt</file>
+    <category name="Content Server Categories:Claim Document">
+      <attribute name="Document Type">accident_statement</attribute>
+      <attribute name="Document Date">2026-03-14</attribute>
+      <attribute name="Claim Number">CLM-10045</attribute>
+      <attribute name="Policy Number">POL-2023-88412</attribute>
+      <attribute name="Claimant">Mark Jansen</attribute>
+      <attribute name="Related Event">EVT-001</attribute>
+      <attribute name="Data Type">SYNTHETIC</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:Claims:CLM-10045 Mark Jansen</location>
+    <title>DOC-002 Claim form</title>
+    <file>CLM-10045/DOC-002_claim_form.txt</file>
+    <category name="Content Server Categories:Claim Document">
+      <attribute name="Document Type">claim_form</attribute>
+      <attribute name="Document Date">2026-03-16</attribute>
+      <attribute name="Claim Number">CLM-10045</attribute>
+      <attribute name="Policy Number">POL-2023-88412</attribute>
+      <attribute name="Claimant">Mark Jansen</attribute>
+      <attribute name="Related Event">EVT-002</attribute>
+      <attribute name="Data Type">SYNTHETIC</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:Claims:CLM-10045 Mark Jansen</location>
+    <title>DOC-003 Acknowledgement letter</title>
+    <file>CLM-10045/DOC-003_acknowledgement_letter.txt</file>
+    <category name="Content Server Categories:Claim Document">
+      <attribute name="Document Type">acknowledgement_letter</attribute>
+      <attribute name="Document Date">2026-03-18</attribute>
+      <attribute name="Claim Number">CLM-10045</attribute>
+      <attribute name="Policy Number">POL-2023-88412</attribute>
+      <attribute name="Claimant">Mark Jansen</attribute>
+      <attribute name="Handler">Lotte Verbeek</attribute>
+      <attribute name="Related Event">EVT-003</attribute>
+      <attribute name="Data Type">SYNTHETIC</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:Claims:CLM-10045 Mark Jansen</location>
+    <title>DOC-004 Damage inspection report</title>
+    <file>CLM-10045/DOC-004_damage_inspection_report.txt</file>
+    <category name="Content Server Categories:Claim Document">
+      <attribute name="Document Type">damage_inspection_report</attribute>
+      <attribute name="Document Date">2026-03-24</attribute>
+      <attribute name="Claim Number">CLM-10045</attribute>
+      <attribute name="Policy Number">POL-2023-88412</attribute>
+      <attribute name="Claimant">Mark Jansen</attribute>
+      <attribute name="Amount">3240.00</attribute>
+      <attribute name="Related Event">EVT-004</attribute>
+      <attribute name="Data Type">SYNTHETIC</attribute>
+    </category>
+  </node>
+  <node type="document" action="create">
+    <location>Enterprise:Claims:CLM-10045 Mark Jansen</location>
+    <title>DOC-005 Decision letter</title>
+    <file>CLM-10045/DOC-005_decision_letter.txt</file>
+    <category name="Content Server Categories:Claim Document">
+      <attribute name="Document Type">decision_letter</attribute>
+      <attribute name="Document Date">2026-04-02</attribute>
+      <attribute name="Claim Number">CLM-10045</attribute>
+      <attribute name="Policy Number">POL-2023-88412</attribute>
+      <attribute name="Claimant">Mark Jansen</attribute>
+      <attribute name="Handler">Lotte Verbeek</attribute>
+      <attribute name="Amount">3240.00</attribute>
+      <attribute name="Related Event">EVT-005</attribute>
+      <attribute name="Data Type">SYNTHETIC</attribute>
+    </category>
+  </node>
+</import>

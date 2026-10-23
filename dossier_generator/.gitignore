@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-artifact/
+out/
+.env.local
+.env.*.local
+*.log
