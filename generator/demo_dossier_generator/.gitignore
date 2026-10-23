@@ -5,3 +5,6 @@ out/
 .env.local
 .env.*.local
 *.log
+
+# AMEXIO's mock data stays out of git; the golden test reads it from ../generated_mock_data
+tests/fixtures/

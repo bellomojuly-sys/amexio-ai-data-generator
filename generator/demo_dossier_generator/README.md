@@ -16,6 +16,8 @@ npm run example      # AMEXIO's example package -> out/mock-import-dossier/
 npm run example -- --offline 40 --years 5   # 40 employees, No AI -> out/hr-dossier-import/
 ```
 
+The golden test needs AMEXIO's mock package, which is kept out of git. Put it in `generator/generated_mock_data/mock_import_dossier/` (git-ignored), or point `AMEXIO_MOCK_DIR` at it. Without it, that test is skipped and the other tests still run.
+
 `npm run build:artifact` makes the single-file page for the hosted Claude demo (`dist-artifact/dossier-generator.html`).
 
 ## Choosing the model
