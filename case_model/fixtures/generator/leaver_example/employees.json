@@ -1,0 +1,42 @@
+{
+  "company": {
+    "employerName": "Acme Logistics B.V. (fictional)",
+    "trainingProvider": "Training Academy (fictional)",
+    "directorName": "H. de Wit (fictional)"
+  },
+  "employees": [
+    {
+      "firstName": "Femke",
+      "lastName": "Visser",
+      "department": "Logistics",
+      "position": "Logistics Manager",
+      "isManager": true,
+      "hireDate": "2018-04-01",
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "startSalary": 5200
+    },
+    {
+      "firstName": "Daan ",
+      "lastName": "Smit",
+      "department": "Logistics",
+      "position": "Planner",
+      "isManager": false,
+      "hireDate": "2022-02-01",
+      "contractType": "temporary",
+      "hoursPerWeek": 32,
+      "startSalary": 2900
+    },
+    {
+      "firstName": "Noor",
+      "lastName": "Bakker",
+      "department": "Logistics",
+      "position": "Warehouse Operator",
+      "isManager": false,
+      "hireDate": "2021-05-01",
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "startSalary": 2700
+    }
+  ]
+}

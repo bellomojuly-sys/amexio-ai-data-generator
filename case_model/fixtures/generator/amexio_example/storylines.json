@@ -1,0 +1,92 @@
+{
+  "storylines": [
+    {
+      "employeeId": "100101",
+      "events": [
+        {
+          "type": "training",
+          "date": "2026-02-20",
+          "course": "Secure Coding Fundamentals",
+          "durationDays": 2
+        },
+        {
+          "type": "medical_check",
+          "date": "2026-04-14",
+          "result": "Fit for work"
+        }
+      ],
+      "appraisals": [
+        {
+          "year": 2026,
+          "rating": "Exceeds expectations"
+        }
+      ]
+    },
+    {
+      "employeeId": "100102",
+      "events": [
+        {
+          "type": "training",
+          "date": "2026-02-20",
+          "course": "Employment Law Update",
+          "durationDays": 2
+        },
+        {
+          "type": "medical_check",
+          "date": "2026-04-14",
+          "result": "Fit for work"
+        }
+      ],
+      "appraisals": [
+        {
+          "year": 2026,
+          "rating": "Meets expectations"
+        }
+      ]
+    },
+    {
+      "employeeId": "100103",
+      "events": [
+        {
+          "type": "training",
+          "date": "2026-02-20",
+          "course": "Health & Safety Training",
+          "durationDays": 2
+        },
+        {
+          "type": "medical_check",
+          "date": "2026-04-14",
+          "result": "Fit for work"
+        }
+      ],
+      "appraisals": [
+        {
+          "year": 2026,
+          "rating": "Meets expectations"
+        }
+      ]
+    },
+    {
+      "employeeId": "100104",
+      "events": [
+        {
+          "type": "training",
+          "date": "2026-02-20",
+          "course": "IFRS Reporting Essentials",
+          "durationDays": 2
+        },
+        {
+          "type": "medical_check",
+          "date": "2026-04-14",
+          "result": "Fit for work"
+        }
+      ],
+      "appraisals": [
+        {
+          "year": 2026,
+          "rating": "Exceeds expectations"
+        }
+      ]
+    }
+  ]
+}

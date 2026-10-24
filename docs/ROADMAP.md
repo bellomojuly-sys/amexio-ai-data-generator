@@ -28,6 +28,8 @@ tracking lives in Notion; this file is the in-repo source of truth for status.
 
 - **Done:** M00–M02 and M03 (AX-001 → AX-020, plus AX-018a). Case model v1 is
   tagged `v1` and the reference dossier runs as a regression test on every push.
+- **In progress:** M03b, case model v1.1 and the generator bridge, on branch
+  `case-model-v1.1` (AX-011a/b done there). Plan: [ROADMAP_BRIDGE.md](ROADMAP_BRIDGE.md).
 - **Next gate:** M04 (Sprint 3 — fact lookup and placeholders).
 
 ## Milestones
@@ -58,6 +60,14 @@ tracking lives in Notion; this file is the in-repo source of truth for status.
 | AX-013 | Dates stored only as ISO 8601 | "12/03/2026" fails | ✅ |
 | AX-014 | Amounts as number plus currency | "EUR 4.350" fails | ✅ |
 | AX-015 | Uniqueness test over 100 dossiers | 0 duplicate IDs | ✅ |
+| AX-011a | Strict ID and employee-number regexes: `fullmatch` and `[0-9]` instead of `^…$` and `\d` | `"P001\n"`, `"100101\n"` and non-ASCII digits (`"P٠٠١"`) fail | ✅ (v1.1) |
+| AX-011b | `Case` checks every ID's pattern with `validate_id`, so a case loaded from JSON obeys AX-011 too | A loaded case with persona id `"banana"` or event id `"EVT-1"` fails | ✅ (v1.1) |
+
+> AX-011a and AX-011b were found on 24 October while reviewing `format_rules.py`:
+> all tests were green, but the rules did not hold. Today a case built with
+> `CaseModel` always has well-formed IDs (they come from `next_id`), while a
+> case read by `load_case` — such as one exported by the demo — is never
+> checked for ID patterns. Do AX-011a first; AX-011b relies on it.
 
 ### M03 — Reference dossier and integration
 | ID | Build | Verify | Status |

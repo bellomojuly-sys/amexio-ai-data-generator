@@ -1,118 +1,21 @@
 {
   "case_number": "100101",
-  "documents": {
-    "DOC-001": {
-      "event_id": "EVT-001",
-      "id": "DOC-001",
-      "metadata": {
-        "confidential": true,
-        "document_date": "2021-03-01",
-        "document_type": "employment_contract",
-        "employee_id": "100101",
-        "tags": [
-          "contract",
-          "hr"
-        ]
-      },
-      "participant_ids": [
-        "P001",
-        "P002"
-      ],
-      "text": "[stub] Employment contract for Jan de Vries.",
-      "type": "employment_contract"
-    },
-    "DOC-002": {
-      "event_id": "EVT-002",
-      "id": "DOC-002",
-      "metadata": {
-        "confidential": true,
-        "document_date": "2021-03-31",
-        "document_type": "payslip",
-        "employee_id": "100101",
-        "tags": [
-          "payroll"
-        ]
-      },
-      "participant_ids": [
-        "P001"
-      ],
-      "text": "[stub] Payslip for March 2021.",
-      "type": "payslip"
-    },
-    "DOC-003": {
-      "event_id": "EVT-003",
-      "id": "DOC-003",
-      "metadata": {
-        "confidential": true,
-        "document_date": "2022-02-15",
-        "document_type": "performance_review",
-        "employee_id": "100101",
-        "tags": [
-          "review"
-        ]
-      },
-      "participant_ids": [
-        "P001",
-        "P003"
-      ],
-      "text": "[stub] Performance review 2022.",
-      "type": "performance_review"
-    },
-    "DOC-004": {
-      "event_id": "EVT-004",
-      "id": "DOC-004",
-      "metadata": {
-        "confidential": true,
-        "document_date": "2022-03-01",
-        "document_type": "salary_change_letter",
-        "employee_id": "100101",
-        "tags": [
-          "salary",
-          "hr"
-        ]
-      },
-      "participant_ids": [
-        "P001",
-        "P002"
-      ],
-      "text": "[stub] Salary change letter.",
-      "type": "salary_change_letter"
-    },
-    "DOC-005": {
-      "event_id": "EVT-005",
-      "id": "DOC-005",
-      "metadata": {
-        "confidential": false,
-        "document_date": "2024-06-28",
-        "document_type": "resignation_letter",
-        "employee_id": "100101",
-        "tags": [
-          "offboarding"
-        ]
-      },
-      "participant_ids": [
-        "P001",
-        "P002"
-      ],
-      "text": "[stub] Resignation letter.",
-      "type": "resignation_letter"
-    }
-  },
+  "documents": {},
   "dossier": {
-    "description": "HR dossier for Jan de Vries, Software Developer.",
+    "description": null,
     "employee_number": "100101",
-    "folder_title": "Personeelsdossier Jan de Vries"
+    "folder_title": "100101 Jan de Vries"
   },
   "employments": [
     {
-      "contract_type": "permanent",
-      "department": "Engineering",
+      "contract_type": "Permanent",
+      "department": "IT",
       "hours": 40.0,
       "organisation_id": "ORG-01",
       "persona_id": "P001",
       "position": "Software Developer",
       "salary": {
-        "amount": "3850.00",
+        "amount": "4350.00",
         "currency": "EUR"
       },
       "start_date": "2021-03-01"
@@ -122,56 +25,51 @@
     "EVT-001": {
       "date": "2021-03-01",
       "id": "EVT-001",
-      "label": "Employment contract signed",
-      "participant_ids": [
-        "P001",
-        "P002"
-      ],
-      "summary": "Jan de Vries starts as Software Developer.",
-      "type": "hiring"
-    },
-    "EVT-002": {
-      "date": "2021-03-31",
-      "id": "EVT-002",
-      "label": "First payslip issued",
+      "label": null,
       "participant_ids": [
         "P001"
       ],
-      "summary": "First monthly payslip.",
-      "type": "payroll"
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "course": "Secure Coding Fundamentals",
+      "date": "2026-02-20",
+      "duration_days": 2,
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
     },
     "EVT-003": {
-      "date": "2022-02-15",
+      "date": "2026-04-14",
       "id": "EVT-003",
-      "label": "Annual performance review",
+      "label": null,
       "participant_ids": [
         "P001",
         "P003"
       ],
-      "summary": "Annual review with the line manager.",
-      "type": "review"
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
     },
     "EVT-004": {
-      "date": "2022-03-01",
+      "comment": null,
+      "date": "2026-06-30",
       "id": "EVT-004",
-      "label": "Salary increase",
+      "label": null,
       "participant_ids": [
         "P001",
         "P002"
       ],
-      "summary": "Salary raised after the review.",
-      "type": "salary_change"
-    },
-    "EVT-005": {
-      "date": "2024-06-28",
-      "id": "EVT-005",
-      "label": "Resignation received",
-      "participant_ids": [
-        "P001",
-        "P002"
-      ],
-      "summary": "Jan de Vries hands in his resignation.",
-      "type": "offboarding"
+      "rating": "Exceeds expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
     }
   },
   "organisations": {
@@ -179,36 +77,48 @@
       "address": null,
       "id": "ORG-01",
       "kind": "employer",
-      "name": "AMEXIO B.V."
+      "name": "Acme Logistics B.V. (fictional)"
+    },
+    "ORG-02": {
+      "address": null,
+      "id": "ORG-02",
+      "kind": "training_provider",
+      "name": "Training Academy (fictional)"
+    },
+    "ORG-03": {
+      "address": null,
+      "id": "ORG-03",
+      "kind": "occupational_health",
+      "name": "Occupational health service (fictional)"
     }
   },
   "personas": {
     "P001": {
       "address": null,
-      "date_of_birth": "1988-07-12",
+      "date_of_birth": null,
       "id": "P001",
       "name": "Jan de Vries",
-      "organisation_id": null,
+      "organisation_id": "ORG-01",
       "role": "employee",
-      "salutation": "Mr"
+      "salutation": null
     },
     "P002": {
       "address": null,
       "date_of_birth": null,
       "id": "P002",
-      "name": "Petra Jansen",
+      "name": "M. Bakker (fictional)",
       "organisation_id": "ORG-01",
-      "role": "hr_officer",
-      "salutation": "Ms"
+      "role": "manager",
+      "salutation": null
     },
     "P003": {
       "address": null,
       "date_of_birth": null,
       "id": "P003",
-      "name": "Dirk Bakker",
-      "organisation_id": "ORG-01",
-      "role": "manager",
-      "salutation": "Mr"
+      "name": "Occupational physician (fictional)",
+      "organisation_id": "ORG-03",
+      "role": "examiner",
+      "salutation": null
     }
   }
 }

@@ -1,4 +1,4 @@
-"""AMEXIO case model — version 1.
+"""AMEXIO case model — version 1.1.
 
 The single place where the facts of one dossier live. Import the parts and
 the builder from here:
@@ -7,15 +7,22 @@ the builder from here:
 """
 
 from .case_model import (
+    AbsenceEvent,
+    AppraisalEvent,
     Case,
     CaseModel,
     Document,
     DocumentMetadata,
     Dossier,
+    ContractChangeEvent,
     Employment,
     Event,
+    HireEvent,
+    MedicalCheckEvent,
     Organisation,
     Persona,
+    TerminationEvent,
+    TrainingEvent,
 )
 from .format_rules import (
     Money,
@@ -27,7 +34,14 @@ from .format_rules import (
 )
 
 __all__ = [
+    "AbsenceEvent",
+    "AppraisalEvent",
     "Case",
+    "ContractChangeEvent",
+    "HireEvent",
+    "MedicalCheckEvent",
+    "TerminationEvent",
+    "TrainingEvent",
     "CaseModel",
     "Document",
     "DocumentMetadata",

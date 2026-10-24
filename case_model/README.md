@@ -1,6 +1,7 @@
-# Case model — module contract (version 1)
+# Case model — module contract (version 1.1)
 
-Owner: Giulia Bellomo. Status: v1 (16 October 2026, tag `v1`).
+Owner: Giulia Bellomo. Status: v1.1 on branch `case-model-v1.1` (24 October
+2026); v1 is tag `v1`. What changed and why: [v1 → v1.1](#v1--v11).
 
 ## What it is for
 
@@ -12,32 +13,39 @@ text.** Writing document bodies is the generation module's job.
 
 ## How to use it
 
+From the generator's JSON (the usual way, see [Ingest](#ingest--the-generators-json-goes-in-v11)):
+
+```bash
+python -m case_model.ingest employees.json storylines.json --out runs/batch-01
+```
+
+Or step by step, in code:
+
 ```python
 from case_model import CaseModel, Money
 
 case = CaseModel("100101")
-case.set_dossier(employee_number="100101", folder_title="Personeelsdossier Jan de Vries")
+case.set_dossier(employee_number="100101", folder_title="100101 Jan de Vries")
 
-employer = case.add_organisation(name="AMEXIO B.V.", kind="employer")       # "ORG-01"
-jan = case.add_persona(name="Jan de Vries", role="employee", salutation="Mr")  # "P001"
-officer = case.add_persona(name="Petra Jansen", role="hr_officer", salutation="Ms",
-                           organisation_id=employer)                          # "P002"
+employer = case.add_organisation(name="Acme Logistics B.V.", kind="employer")   # "ORG-01"
+provider = case.add_organisation(name="Training Academy", kind="training_provider")  # "ORG-02"
+jan = case.add_persona(name="Jan de Vries", role="employee", organisation_id=employer)  # "P001"
+manager = case.add_persona(name="M. Bakker", role="manager", organisation_id=employer)  # "P002"
 
 case.add_employment(persona_id=jan, organisation_id=employer, position="Software Developer",
-                    department="Engineering", start_date="2021-03-01",
-                    contract_type="permanent", hours=40,
-                    salary=Money(amount="3850.00", currency="EUR"))
+                    department="IT", start_date="2021-03-01", contract_type="Permanent",
+                    hours=40, salary=Money(amount="4350.00", currency="EUR"))
 
-evt = case.add_event(type="hiring", label="Contract signed", date="2021-03-01",
-                     participant_ids=[jan, officer], summary="Jan starts as developer.")   # "EVT-001"
+hire = case.add_event(type="hire", date="2021-03-01", participant_ids=[jan])      # "EVT-001"
+case.add_event(type="appraisal", date="2026-06-30", participant_ids=[jan, manager],
+               year=2026, rating="Exceeds expectations")                         # "EVT-002"
 
-case.add_document(type="employment_contract", event_id=evt, participant_ids=[jan, officer],
-                  text="[stub]",
+case.add_document(type="employment_contract", event_id=hire, participant_ids=[jan],
                   metadata={"employee_id": "100101", "document_type": "employment_contract",
                             "document_date": "2021-03-01", "confidential": True,
-                            "tags": ["contract", "hr"]})                      # "DOC-001"
+                            "tags": ["contract", "hr"]})                        # "DOC-001"
 
-dossier = case.build()   # a validated Case — every link checked in one call
+dossier = case.build()   # a validated Case — every link and rule checked in one call
 ```
 
 ## The parts
@@ -47,13 +55,59 @@ dossier = case.build()   # a validated Case — every link checked in one call
 | Persona | a person; a professional persona points at an organisation | `P001` |
 | Organisation | a company or body (the employer, an agency) | `ORG-01` |
 | Employment | a person's job at an organisation (position, salary as `Money`, …) | — (linked) |
-| Event | something that happened, on a date, with participants | `EVT-001` |
-| Document | a record tied to an event, with five metadata fields | `DOC-001` |
+| Event | something that happened, on a date, with participants — one class per type (below) | `EVT-001` |
+| Document | a record tied to an event (none for payslips), with five metadata fields; `text` optional | `DOC-001` |
 | Dossier | dossier-level facts (employee number, folder title, description) | — |
 | Case | one object that holds all of the above | — |
 
 Document metadata carries AMEXIO's five attributes: `employee_id`,
 `document_type`, `document_date`, `confidential`, `tags`.
+
+**Events (v1.1).** Every event has `id`, `type`, `date`, `participant_ids` and
+optional `label`, `summary`. The `type` picks the class and its own facts:
+
+| `type` | Own facts |
+|---|---|
+| `hire` | — (the agreed terms are in `Employment`) |
+| `contract_change` | `reason`; optional `new_salary` (Money), `new_position`, `new_contract_type`, `new_hours` |
+| `training` | `course`, `duration_days`, `provider_id` (an Organisation) |
+| `appraisal` | `year`, `rating`; optional `comment` |
+| `medical_check` | `result` |
+| `absence` | optional `end_date` (dates only, never a cause) |
+| `termination` | `reason`; optional `notice_date` |
+
+**Closed value sets (v1.1).** `contract_type`: Permanent, Temporary.
+`document_type`: employment_contract, payslip, medical_check,
+performance_appraisal, training_certificate (AMEXIO) and contract_amendment,
+annual_income_statement, absence_report, termination_letter (proposed).
+`rating`: Below / Meets / Exceeds expectations. `result`: Fit for work, Fit for
+work with adjustments. Termination `reason`: Resignation, End of temporary
+contract, Mutual agreement, Retirement. Persona `role`: employee, manager,
+hr_officer, examiner.
+
+## Stored or derived (v1.1)
+
+The field-by-field analysis of AMEXIO's five PDFs ("AMEXIO Full Dossier Format
+Analysis") sorts every printed value into *generate*, *reuse*, *calculate*,
+*constant* or *conditional*. The case model stores only the facts (generate
+and conditional values). Calculated and constant values are derived when a
+document is written, so each fact has one copy (D3b) — the same choice as the
+generator's `plan()`. Two cases are fixed here:
+
+- **Payslip period.** A payslip has no event (D3a). Its period is the month and
+  year of `metadata.document_date`: `2026-09-25` prints "Payslip September
+  2026" and "Period: September 2026". The payment date (the 25th), wage tax and
+  net salary are not stored; they are derived from the period, the salary in
+  `Employment` and the run configuration.
+- **Training certificate title.** The title depends on the course: "Training
+  Certificate" by default, "Training Certificate Health & Safety" for a health
+  and safety course (AMEXIO's employee 100103). This is a template rule; the
+  case model stores only `course` on the `training` event.
+
+Other derived values follow the same rule: next medical check (examination
+date + interval), appraisal review period (year + review cycle), document
+titles, header and footer, file names. The rules and their parameters belong to
+the run configuration and placeholders (M04), not to the case model.
 
 ## What you get back
 
@@ -65,19 +119,59 @@ Document metadata carries AMEXIO's five attributes: `employee_id`,
 ## ID and format rules (M02)
 
 - **AX-011 — one ID pattern per type.** `persona P001`, `organisation ORG-01`,
-  `vehicle V001`, `event EVT-001`, `document DOC-001`; the employee number is
-  six digits (`100101`). A value in the wrong shape is refused.
+  `event EVT-001`, `document DOC-001`; the employee number is six digits
+  (`100101`). A value in the wrong shape is refused — also with a trailing
+  newline or non-ASCII digits (AX-011a), and also in a case read from JSON
+  (AX-011b).
 - **AX-012 — IDs come from the case model, not the caller.** Passing `id=` raises.
 - **AX-013 — dates are ISO 8601.** `"12/03/2026"` is refused.
 - **AX-014 — amounts are a number plus a currency** (`Money`). The text
   `"€3,240.00"` is refused.
 
+## Ingest — the generator's JSON goes in (v1.1)
+
+The generator asks the LLM for two JSON objects, in the shapes its prompts fix,
+and sends them here unchanged (camelCase names). The case model creates the
+cases, assigns every ID, normalizes the values and records each correction
+(decision D4).
+
+```python
+from case_model.ingest import ingest_employees, ingest_storylines, ingest_files
+
+cases, corrections = ingest_employees(employees_json)            # one case per employee
+cases, more = ingest_storylines(cases, storylines_json)          # their events
+cases, corrections = ingest_files("employees.json", "storylines.json", out_dir="runs/b1")
+```
+
+- `employees.json`: `{"company": {"employerName", "trainingProvider", "examiner",
+  "absenceService", "directorName"}, "employees": [{"firstName", "lastName",
+  "department", "position", "isManager", "hireDate", "contractType",
+  "hoursPerWeek", "startSalary", "managerName"?}]}`. The first employee gets
+  number `100101` (or `first_number`), the next `100102`, in list order.
+- `storylines.json`: `{"storylines": [{"employeeId", "events": [...],
+  "appraisals": [...]}]}`, with the event shapes of the generator's prompt.
+- A department's manager is the employee marked `isManager` there; the
+  managers themselves report to `directorName`; `managerName` overrides both.
+- An appraisal without a `date` is dated 30 June of its `year`.
+- Output folder: one case folder per employee (`runs/b1/100101/case.json`, …)
+  and `corrections.json`.
+
+## JSON Schemas for the generator (v1.1)
+
+`case_model/schema/` holds `input.employees.schema.json`,
+`input.storylines.schema.json` and `case.schema.json`, generated with
+`python3 -m case_model.schema`. A test fails when they no longer match the
+code. A schema carries the shape only: the rules between parts hold only
+through `load_case`.
+
 ## The reference dossier
 
-`build_reference_case()` returns the HR reference dossier 100101 (Jan de Vries):
-a small set of hand-entered facts used as a regression fixture and for
-save/load. It is test data — document `text` is a one-line stub, not generated
-prose.
+`build_reference_case()` returns the HR reference dossier 100101 (Jan de Vries).
+Since v1.1 it is **AMEXIO's own employee 100101** (decision D1), built by
+ingesting AMEXIO's example in the generator's JSON shapes
+(`fixtures/generator/amexio_example/`). Its values follow the generator's
+AMEXIO preset and are provisional until each one is checked against AMEXIO's
+PDFs (BR-00); it holds no documents until then.
 
 ```python
 from case_model.reference_dossier import build_reference_case
@@ -87,9 +181,9 @@ case = build_reference_case()
 **AX-019 — the reference dossier is the regression anchor.** Its full exported
 form is frozen in `reference_dossier.golden.json`, and
 `test_reference_dossier_matches_golden` checks the fixture against it on every
-run (and on every push, through CI). Change any fact in the fixture — a name, a
-date, an amount, a participant — and the test fails on purpose. When the change
-is intended, regenerate the snapshot:
+run (and on every push, through CI). Change any fact — a name, a date, an
+amount, a participant — and the test fails on purpose. When the change is
+intended, regenerate the snapshot:
 
 ```bash
 python3 -m case_model.reference_dossier
@@ -124,6 +218,29 @@ assert load_case("runs/100101") == case
 - A date that is not ISO 8601 (AX-013); an amount as formatted text (AX-014).
 - A dossier without an employee number, or a missing required field — a
   validation error names the field.
+- A value outside a closed list, an event without its own facts, or an event
+  of an unknown type.
+- A story that cannot happen: two hires, a hire on another day than the
+  employment start, anything before the hire or after the last working day,
+  an absence that ends before it starts.
+- A non-recurring document without an event; metadata that names another
+  document type or another employee.
+- From the generator: an `id`, a field the shape does not name, a storyline
+  for an employee that has no case.
+
+## v1 → v1.1
+
+| Change | Why | Test |
+|---|---|---|
+| Typed events (7 types) | facts such as a rating had no field (D2) | `test_events.py` |
+| Rules between events | a case must tell a possible story | `test_events.py` (BR-06) |
+| Closed value sets; `salutation` optional | AMEXIO prints from fixed lists; the generator sends no salutation | `-k "outside_the_list or salutation or role"` |
+| Documents: `event_id` optional for recurring types, `text` optional | one copy of each fact (D3a, D3b) | `-k "payslip or contract_without or metadata_"` |
+| Strict ID patterns, checked on load | AX-011a, AX-011b | `-k "pattern or malformed"` |
+| `vehicle` ID type removed | insurance leftover; the domain is HR | `-k "four_types"` |
+| Ingest of the generator's JSON + command | the generator's data passes through the case model (D4) | `test_ingest.py` |
+| Reference dossier = AMEXIO's 100101, through ingest | D1 | `test_reference_dossier.py` |
+| JSON Schemas; fixtures test | the browser demo builds its types from them (BR-10, BR-11) | `test_fixtures.py` |
 
 ## Not built yet
 
@@ -166,4 +283,4 @@ AX-006 → AX-014 were first built step by step (my own commits `fced31a`, `dc33
 | AX-019 | this commit | The reference dossier is frozen as a golden snapshot; a deliberate break fails, and CI runs it on every push | `-k "matches_golden"` (1) |
 | AX-020 | tag `v1` | Case model v1 is tagged for integration; generation and export read the dossier through the module | `git show v1 --stat` |
 
-All 55 tests: `python3 -m pytest -v`.
+All 100 tests (v1.1): `python3 -m pytest -v`.
