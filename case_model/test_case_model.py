@@ -21,7 +21,7 @@ def test_event_references_persona_by_id():
     case = _case_with_dossier()
     employee = case.add_persona(name="Jan de Vries", role="employee", salutation="Mr")
     event_id = case.add_event(
-        type="hiring", label="Employment contract signed", date="2021-03-01",
+        type="hire", label="Employment contract signed", date="2021-03-01",
         participant_ids=[employee], summary="Jan de Vries starts as Software Developer.",
     )
     assert event_id == "EVT-001"
@@ -31,7 +31,7 @@ def test_unknown_persona_is_refused():
     case = _case_with_dossier()
     with pytest.raises(ValueError):
         case.add_event(
-            type="hiring", label="Employment contract signed", date="2021-03-01",
+            type="hire", label="Employment contract signed", date="2021-03-01",
             participant_ids=["P404"], summary="A hiring that references a missing persona.",
         )
     assert case.events == {}
@@ -49,7 +49,7 @@ def test_non_iso_date_is_refused():
     pid = case.add_persona(name="Jan de Vries", role="employee", salutation="Mr")
     with pytest.raises(ValueError):
         case.add_event(
-            type="hiring", label="Employment contract signed", date="12/03/2026",
+            type="hire", label="Employment contract signed", date="12/03/2026",
             participant_ids=[pid], summary="Jan de Vries starts as Software Developer.",
         )
     assert case.events == {}
@@ -79,7 +79,7 @@ def test_employment_links_persona_and_organisation():
     jan = case.add_persona(name="Jan", role="employee", salutation="Mr")
     job = case.add_employment(
         persona_id=jan, organisation_id=org, position="Dev", department="Eng",
-        start_date="2021-03-01", contract_type="permanent", hours=40,
+        start_date="2021-03-01", contract_type="Permanent", hours=40,
         salary=Money(amount="3850.00", currency="EUR"),
     )
     assert job.persona_id == "P001" and job.organisation_id == "ORG-01"
@@ -92,7 +92,7 @@ def test_employment_missing_field_fails():
         case.add_employment(
             persona_id=jan, organisation_id=org, position="Dev",
             # department missing
-            start_date="2021-03-01", contract_type="permanent", hours=40,
+            start_date="2021-03-01", contract_type="Permanent", hours=40,
             salary=Money(amount="3850.00", currency="EUR"),
         )
 
@@ -127,10 +127,10 @@ def test_employee_number_must_be_six_digits():
 
 def test_full_case_validates_in_one_call():
     case = _case_with_dossier()
-    org = case.add_organisation(name="AMEXIO B.V.")
+    org = case.add_organisation(name="Acme Logistics B.V.")
     jan = case.add_persona(name="Jan", role="employee", salutation="Mr")
     officer = case.add_persona(name="Petra", role="hr_officer", salutation="Ms", organisation_id=org)
-    evt = case.add_event(type="hiring", label="Signed", date="2021-03-01",
+    evt = case.add_event(type="hire", label="Signed", date="2021-03-01",
                          participant_ids=[jan, officer], summary="Starts.")
     case.add_document(type="employment_contract", event_id=evt, participant_ids=[jan],
                       text="[stub]",
@@ -160,3 +160,93 @@ def test_build_without_dossier_fails():
     case = CaseModel("100101")
     with pytest.raises(ValueError):
         case.build()
+
+
+# BR-04 — closed value sets.
+
+def test_contract_type_outside_the_list_is_refused():
+    case = _case_with_dossier()
+    org = case.add_organisation(name="Acme Logistics B.V.")
+    jan = case.add_persona(name="Jan de Vries", role="employee")
+    with pytest.raises(ValueError):
+        case.add_employment(
+            persona_id=jan, organisation_id=org, position="Software Developer",
+            department="IT", start_date="2021-03-01", contract_type="permanent", hours=40,
+            salary=Money(amount="4350.00", currency="EUR"),
+        )
+    assert case.employments == []
+
+def test_persona_needs_no_salutation():
+    # The generator's employees JSON has no salutation.
+    case = _case_with_dossier()
+    jan = case.add_persona(name="Jan de Vries", role="employee")
+    assert case.personas[jan].salutation is None
+
+def test_unknown_persona_role_is_refused():
+    case = _case_with_dossier()
+    with pytest.raises(ValueError):
+        case.add_persona(name="Jan de Vries", role="claimant")
+    assert case.personas == {}
+
+def test_document_type_outside_the_list_is_refused():
+    case = _case_with_dossier()
+    jan = case.add_persona(name="Jan de Vries", role="employee")
+    evt = case.add_event(type="hire", date="2021-03-01", participant_ids=[jan])
+    with pytest.raises(ValueError):
+        case.add_document(
+            type="performance_review", event_id=evt, participant_ids=[jan],
+            metadata={"employee_id": "100101", "document_type": "performance_review",
+                      "document_date": "2021-03-01", "confidential": True},
+        )
+    assert case.documents == {}
+
+
+# BR-08 — documents in v1.1: an event for every non-recurring document,
+# optional text, metadata that agrees with the document and the dossier.
+
+def _meta(document_type, employee_id="100101"):
+    return {"employee_id": employee_id, "document_type": document_type,
+            "document_date": "2026-09-25", "confidential": True, "tags": []}
+
+def test_payslip_may_have_no_event_and_no_text():
+    case = _case_with_dossier()
+    jan = case.add_persona(name="Jan de Vries", role="employee")
+    case.add_document(type="payslip", participant_ids=[jan], metadata=_meta("payslip"))
+    built = case.build()
+    assert built.documents["DOC-001"].event_id is None
+    assert built.documents["DOC-001"].text is None
+
+def test_contract_without_event_is_refused():
+    case = _case_with_dossier()
+    jan = case.add_persona(name="Jan de Vries", role="employee")
+    case.add_document(type="employment_contract", participant_ids=[jan],
+                      metadata=_meta("employment_contract"))
+    with pytest.raises(ValueError, match="needs an event"):
+        case.build()
+
+def test_metadata_type_must_match_the_document():
+    case = _case_with_dossier()
+    jan = case.add_persona(name="Jan de Vries", role="employee")
+    case.add_document(type="payslip", participant_ids=[jan], metadata=_meta("medical_check"))
+    with pytest.raises(ValueError, match="metadata says"):
+        case.build()
+
+def test_metadata_employee_must_be_the_dossier_employee():
+    case = _case_with_dossier()
+    jan = case.add_persona(name="Jan de Vries", role="employee")
+    case.add_document(type="payslip", participant_ids=[jan],
+                      metadata=_meta("payslip", employee_id="100102"))
+    with pytest.raises(ValueError, match="belongs to employee 100102"):
+        case.build()
+
+
+# AX-011b — a case read from JSON obeys the ID patterns too.
+
+def test_loaded_case_with_malformed_ids_is_refused():
+    from case_model import Persona
+    with pytest.raises(ValueError, match="persona"):
+        Case(
+            case_number="100101",
+            dossier=Dossier(employee_number="100101"),
+            personas={"banana": Persona(id="banana", name="Jan de Vries", role="employee")},
+        )
