@@ -85,6 +85,30 @@ work with adjustments. Termination `reason`: Resignation, End of temporary
 contract, Mutual agreement, Retirement. Persona `role`: employee, manager,
 hr_officer, examiner.
 
+## Stored or derived (v1.1)
+
+The field-by-field analysis of AMEXIO's five PDFs ("AMEXIO Full Dossier Format
+Analysis") sorts every printed value into *generate*, *reuse*, *calculate*,
+*constant* or *conditional*. The case model stores only the facts (generate
+and conditional values). Calculated and constant values are derived when a
+document is written, so each fact has one copy (D3b) — the same choice as the
+generator's `plan()`. Two cases are fixed here:
+
+- **Payslip period.** A payslip has no event (D3a). Its period is the month and
+  year of `metadata.document_date`: `2026-09-25` prints "Payslip September
+  2026" and "Period: September 2026". The payment date (the 25th), wage tax and
+  net salary are not stored; they are derived from the period, the salary in
+  `Employment` and the run configuration.
+- **Training certificate title.** The title depends on the course: "Training
+  Certificate" by default, "Training Certificate Health & Safety" for a health
+  and safety course (AMEXIO's employee 100103). This is a template rule; the
+  case model stores only `course` on the `training` event.
+
+Other derived values follow the same rule: next medical check (examination
+date + interval), appraisal review period (year + review cycle), document
+titles, header and footer, file names. The rules and their parameters belong to
+the run configuration and placeholders (M04), not to the case model.
+
 ## What you get back
 
 - `add_*` methods return the new ID; `build()` returns a validated `Case`.
