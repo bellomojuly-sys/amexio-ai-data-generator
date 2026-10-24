@@ -11,23 +11,23 @@ def _build_dossier(n):
 
     org = case.add_organisation(name=f"Company {n}")
     people = [
-        case.add_persona(name=f"Person {n}-{i}", role="employee", salutation="Mx")
+        case.add_persona(name=f"Person {n}-{i}", role="employee")
         for i in range(3)
     ]
     case.add_employment(
         persona_id=people[0], organisation_id=org, position="Dev", department="Eng",
-        start_date="2021-03-01", contract_type="permanent", hours=40,
+        start_date="2021-03-01", contract_type="Permanent", hours=40,
         salary=Money(amount="3000.00", currency="EUR"),
     )
     events = [
-        case.add_event(type="event", label=f"Event {i}", date="2021-03-01",
-                       participant_ids=[people[0]], summary="…")
+        case.add_event(type="training", date="2021-03-01", course=f"Course {i}",
+                       duration_days=1, provider_id=org, participant_ids=[people[0]])
         for i in range(5)
     ]
     for i, evt in enumerate(events):
         case.add_document(
-            type="doc", event_id=evt, participant_ids=[people[0]], text="[stub]",
-            metadata={"employee_id": employee_number, "document_type": "doc",
+            type="training_certificate", event_id=evt, participant_ids=[people[0]],
+            metadata={"employee_id": employee_number, "document_type": "training_certificate",
                       "document_date": "2021-03-01", "confidential": False, "tags": []},
         )
     return case.build()

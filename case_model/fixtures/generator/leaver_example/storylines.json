@@ -1,0 +1,81 @@
+{
+  "storylines": [
+    {
+      "employeeId": "100101",
+      "events": [
+        {
+          "type": "contract_change",
+          "date": "2024-04-01",
+          "reason": "Annual salary review",
+          "newSalary": 5360,
+          "newPosition": null,
+          "newContractType": null,
+          "newHours": null
+        }
+      ],
+      "appraisals": [
+        {
+          "year": 2024,
+          "rating": "Exceeds expectations"
+        }
+      ]
+    },
+    {
+      "employeeId": "100102",
+      "events": [
+        {
+          "type": "contract_change",
+          "date": "2023-02-01",
+          "reason": "Temporary contract made permanent",
+          "newSalary": 2990,
+          "newPosition": null,
+          "newContractType": "permanent",
+          "newHours": null
+        },
+        {
+          "type": "absence",
+          "startDate": "2023-11-06",
+          "endDate": "2023-11-17"
+        },
+        {
+          "type": "training",
+          "date": "2024-03-12",
+          "course": "Warehouse Planning Basics",
+          "durationDays": 3
+        }
+      ],
+      "appraisals": [
+        {
+          "year": 2023,
+          "rating": "meets expectations"
+        },
+        {
+          "year": 2024,
+          "rating": "Meets expectations",
+          "comment": "Plans carefully and keeps the team informed."
+        }
+      ]
+    },
+    {
+      "employeeId": "100103",
+      "events": [
+        {
+          "type": "absence",
+          "startDate": "2023-01-09",
+          "endDate": "2023-01-13"
+        },
+        {
+          "type": "termination",
+          "date": "2024-08-31",
+          "reason": "Resignation"
+        }
+      ],
+      "appraisals": [
+        {
+          "year": 2023,
+          "rating": "Meets expectations"
+        }
+      ]
+    }
+  ]
+}

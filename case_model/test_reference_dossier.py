@@ -1,4 +1,4 @@
-"""AX-016, AX-017 — the HR reference dossier 100101 loads and is coherent.
+"""AX-016, AX-017 — the HR reference dossier 100101 loads and is coherent (v1.1: AMEXIO's 100101, built through ingest).
 AX-019 — and its exported form is frozen, so a deliberate break fails."""
 
 import json
@@ -19,24 +19,22 @@ def test_every_event_participant_exists():
         for pid in event.participant_ids:
             assert pid in case.personas
 
-def test_five_documents_each_with_event_and_a_participant():
-    # AX-017 — five documents, each with its event ID and at least one participant.
+def test_it_is_amexio_employee_100101():
+    # D1 — the reference is AMEXIO's own employee, not a hand-written story.
     case = build_reference_case()
-    assert len(case.documents) == 5
-    for document in case.documents.values():
-        assert document.event_id in case.events
-        assert len(document.participant_ids) >= 1
-        for pid in document.participant_ids:
-            assert pid in case.personas
+    employee = next(p for p in case.personas.values() if p.role == "employee")
+    job = case.employments[0]
+    assert employee.name == "Jan de Vries"
+    assert (job.department, job.position) == ("IT", "Software Developer")
+    assert str(job.salary.amount) == "4350.00"
 
-def test_metadata_has_the_five_fields():
+def test_events_behind_amexios_documents():
+    # Contract <- hire, training certificate <- training, medical check <-
+    # medical_check, appraisal <- appraisal. The payslip recurs: no event (D3a).
     case = build_reference_case()
-    meta = case.documents["DOC-001"].metadata
-    assert meta.employee_id == "100101"
-    assert meta.document_type
-    assert meta.document_date is not None
-    assert isinstance(meta.confidential, bool)
-    assert isinstance(meta.tags, list)
+    assert sorted(e.type for e in case.events.values()) == [
+        "appraisal", "hire", "medical_check", "training",
+    ]
 
 def test_reference_dossier_matches_golden():
     # AX-019 — the fixture is the regression anchor. Its full exported form is

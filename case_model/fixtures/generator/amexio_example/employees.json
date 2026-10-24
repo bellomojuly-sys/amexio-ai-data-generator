@@ -1,0 +1,59 @@
+{
+  "company": {
+    "employerName": "Acme Logistics B.V. (fictional)",
+    "trainingProvider": "Training Academy (fictional)",
+    "examiner": "Occupational physician (fictional)",
+    "absenceService": "Occupational health service (fictional)",
+    "directorName": "H. de Wit (fictional)"
+  },
+  "employees": [
+    {
+      "firstName": "Jan",
+      "lastName": "de Vries",
+      "department": "IT",
+      "position": "Software Developer",
+      "hireDate": "2021-03-01",
+      "startSalary": 4350,
+      "isManager": false,
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "managerName": "M. Bakker (fictional)"
+    },
+    {
+      "firstName": "Sanne",
+      "lastName": "Jansen",
+      "department": "Human Resources",
+      "position": "HR Advisor",
+      "hireDate": "2019-09-16",
+      "startSalary": 3900,
+      "isManager": false,
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "managerName": "M. Bakker (fictional)"
+    },
+    {
+      "firstName": "Mohamed",
+      "lastName": "El Amrani",
+      "department": "Logistics",
+      "position": "Warehouse Supervisor",
+      "hireDate": "2022-01-10",
+      "startSalary": 3450,
+      "isManager": false,
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "managerName": "M. Bakker (fictional)"
+    },
+    {
+      "firstName": "Lisa",
+      "lastName": "van den Berg",
+      "department": "Finance",
+      "position": "Financial Controller",
+      "hireDate": "2020-06-01",
+      "startSalary": 5100,
+      "isManager": false,
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "managerName": "M. Bakker (fictional)"
+    }
+  ]
+}

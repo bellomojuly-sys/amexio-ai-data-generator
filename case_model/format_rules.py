@@ -9,10 +9,14 @@ Persona, Organisation, Event, Document and the rest all share them.
           Input that already carries an ``id`` is refused.
 - AX-013  Dates are ISO 8601 (``YYYY-MM-DD``) and nothing else.
 - AX-014  An amount is a number plus a currency, never a formatted string.
+
+v1.1 adds the closed value sets (BR-04): a field that AMEXIO's documents print
+from a fixed list accepts only that list's values.
 """
 
 import re
 from decimal import Decimal, InvalidOperation
+from typing import Literal
 
 from pydantic import BaseModel, field_validator
 
@@ -20,18 +24,19 @@ from pydantic import BaseModel, field_validator
 ID_PATTERNS = {
     "persona": ("P", 3),          # P001
     "organisation": ("ORG-", 2),  # ORG-01
-    "vehicle": ("V", 3),          # V001
     "event": ("EVT-", 3),         # EVT-001
     "document": ("DOC-", 3),      # DOC-001
 }
 
+# AX-011a — matched with fullmatch and [0-9]: "$" would accept a trailing
+# newline, and "\d" would accept non-ASCII digits such as "٠".
 ID_REGEXES = {
-    kind: re.compile(rf"^{re.escape(prefix)}\d{{{digits}}}$")
+    kind: re.compile(rf"{re.escape(prefix)}[0-9]{{{digits}}}")
     for kind, (prefix, digits) in ID_PATTERNS.items()
 }
 
 # The employee number that titles a dossier: exactly six digits.
-EMPLOYEE_NUMBER_REGEX = re.compile(r"^\d{6}$")
+EMPLOYEE_NUMBER_REGEX = re.compile(r"[0-9]{6}")
 
 
 def _require_known(kind):
@@ -51,7 +56,7 @@ def example_id(kind):
 def is_valid_id(kind, value):
     """True when ``value`` is a well-formed ID for ``kind`` (AX-011)."""
     _require_known(kind)
-    return isinstance(value, str) and bool(ID_REGEXES[kind].match(value))
+    return isinstance(value, str) and bool(ID_REGEXES[kind].fullmatch(value))
 
 
 def validate_id(kind, value):
@@ -67,7 +72,7 @@ def validate_id(kind, value):
 
 def is_valid_employee_number(value):
     """True when ``value`` is a six-digit employee number (AX-011)."""
-    return isinstance(value, str) and bool(EMPLOYEE_NUMBER_REGEX.match(value))
+    return isinstance(value, str) and bool(EMPLOYEE_NUMBER_REGEX.fullmatch(value))
 
 
 def next_id(kind, existing_ids):
@@ -127,3 +132,38 @@ class Money(BaseModel):
                 f"Currency must be a 3-letter ISO 4217 code like 'EUR', got {v!r}."
             )
         return v
+
+
+# BR-04 — closed value sets. The values are the ones AMEXIO's documents print
+# (and the generator on branch Demo-Generator uses), so a value written in any
+# other way ("permanent", "performance_review") is refused.
+
+ContractType = Literal["Permanent", "Temporary"]
+
+DocumentType = Literal[
+    # In AMEXIO's example package.
+    "employment_contract",
+    "payslip",
+    "medical_check",
+    "performance_appraisal",
+    "training_certificate",
+    # Proposed by the generator, not yet confirmed by AMEXIO.
+    "contract_amendment",
+    "annual_income_statement",
+    "absence_report",
+    "termination_letter",
+]
+
+# Documents that recur (one per month or per year) rather than record one
+# happening: only these may have no event (D3a).
+RECURRING_DOCUMENT_TYPES = frozenset({"payslip", "annual_income_statement"})
+
+Rating = Literal["Below expectations", "Meets expectations", "Exceeds expectations"]
+
+MedicalResult = Literal["Fit for work", "Fit for work with adjustments"]
+
+TerminationReason = Literal[
+    "Resignation", "End of temporary contract", "Mutual agreement", "Retirement",
+]
+
+PersonaRole = Literal["employee", "manager", "hr_officer", "examiner"]
