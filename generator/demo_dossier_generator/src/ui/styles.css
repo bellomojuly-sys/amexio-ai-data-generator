@@ -453,3 +453,8 @@ table.data td.num, table.data th.num { text-align: right; font-variant-numeric: 
 
 .toast { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 6px; font-size: 13.5px; z-index: 30; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
 .empty { padding: 28px 20px; text-align: center; color: var(--muted); display: flex; flex-direction: column; gap: 10px; align-items: center; }
+
+/* Case model IDs on a document, and the case files viewer */
+.case-ids { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); }
+.case-ids .mono { color: var(--ink); }
+.tree.case-json { max-height: 360px; overflow: auto; font-size: 12px; }

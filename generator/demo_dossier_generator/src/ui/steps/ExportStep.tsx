@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { zipSync, strToU8 } from "fflate";
 import { buildZip, countsByType, generationRecord } from "../../export/package";
 import type { PackageProgress } from "../../export/package";
 import { saveFile } from "../../export/save";
@@ -34,7 +35,7 @@ export function ExportStep({ gen, notify }: Props) {
     setBusy(true);
     ctl.current = new AbortController();
     try {
-      const zip = await buildZip(set, pkg, setProgress, ctl.current.signal);
+      const zip = await buildZip(set, pkg, setProgress, ctl.current.signal, { files: gen.caseFiles, record: gen.record ?? set });
       const outcome = await saveFile(`${name}.zip`, zip, "application/zip");
       await report_(outcome, `${name}.zip`);
     } catch (e) {
@@ -45,11 +46,15 @@ export function ExportStep({ gen, notify }: Props) {
     }
   }
 
+  const caseCount = gen.stage?.cases.length ?? 0;
+  const hasInput = "cases/employees.json" in gen.caseFiles;
   const tree = [
     `${name}/`,
     `├── README.md`,
     `├── import.xml          ${pkg.folders.length} folders, ${pkg.documents.length} documents${pkg.updates.length ? `, ${pkg.updates.length} update` : ""}`,
-    `├── generation.json     the facts every document was made from`,
+    `├── generation.json     the run: settings, personas, storylines`,
+    `├── cases/              ${caseCount} case folder${caseCount === 1 ? "" : "s"} (case model v1.1): what the PDFs are made from`,
+    ...(hasInput ? [`│   ├── employees.json  the run as input for case_model.ingest`, `│   └── storylines.json`] : []),
     `└── files/              ${pkg.documents.length} PDFs`,
     ...sample.map((f, i) => `    ${i === sample.length - 1 && pkg.documents.length <= 3 ? "└──" : "├──"} ${f}`),
     ...(pkg.documents.length > 3 ? [`    └── ... ${pkg.documents.length - 3} more`] : []),
@@ -107,8 +112,18 @@ export function ExportStep({ gen, notify }: Props) {
               <button className="btn" id="download-xml" onClick={async () => report_(await saveFile("import.xml", xml, "application/xml"), "import.xml")}>
                 import.xml only
               </button>
-              <button className="btn" onClick={async () => report_(await saveFile("generation.json", JSON.stringify(generationRecord(set), null, 2), "application/json"), "generation.json")}>
+              <button className="btn" onClick={async () => report_(await saveFile("generation.json", JSON.stringify(generationRecord(gen.record ?? set), null, 2), "application/json"), "generation.json")}>
                 generation.json (personas and storylines)
+              </button>
+              <button
+                className="btn"
+                id="download-cases"
+                onClick={async () => {
+                  const entries = Object.fromEntries(Object.entries(gen.caseFiles).map(([p, t]) => [p, strToU8(t)]));
+                  report_(await saveFile("cases.zip", zipSync(entries), "application/zip"), "cases.zip");
+                }}
+              >
+                cases.zip (the case folders only)
               </button>
               <button className="btn" onClick={async () => report_(await saveFile("format-spec.json", JSON.stringify(formatSpec(), null, 2), "application/json"), "format-spec.json")}>
                 format-spec.json (the format, machine-readable)

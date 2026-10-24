@@ -25,23 +25,26 @@ export function ConfigureStep({ gen, openSettings }: Props) {
 
   /** Changes that alter who the people are or what happened to them clear the generated data. */
   const update = (patch: Partial<GenerationConfig>, regenerate = true) => {
-    if (regenerate && generated) gen.resetGenerated();
+    if (regenerate && generated && !gen.loaded) gen.resetGenerated();
     gen.setConfig({ ...c, ...patch });
   };
 
   const deferred = useDeferredValue(c);
+  const loadedPkg = gen.loaded ? gen.pkg : null;
   const estimate = useMemo(() => {
     try {
+      if (loadedPkg) return countsByType(loadedPkg);
       if (gen.presetId === "example") return countsByType(expandDossiers(examplePreset()));
       if (deferred.employeeCount > LIMITS.maxEmployeesOffline) return null;
       return countsByType(expandDossiers(generateOffline(deferred)));
     } catch {
       return null;
     }
-  }, [deferred, gen.presetId]);
+  }, [deferred, gen.presetId, loadedPkg]);
   const total = estimate?.reduce((a, b) => a + b.count, 0) ?? 0;
   const max = Math.max(1, ...(estimate?.map((e) => e.count) ?? [1]));
-  const isExample = gen.presetId === "example";
+  const isExample = gen.presetId === "example" || gen.presetId === "reference";
+  const folderPicker = { webkitdirectory: "", directory: "" } as Record<string, string>;
 
   return (
     <>
@@ -65,9 +68,42 @@ export function ConfigureStep({ gen, openSettings }: Props) {
         ))}
       </div>
 
+      <section className="panel panel-pad stack" aria-label="Open cases">
+        <div className="section-title">
+          <h3>Or open cases from the case model</h3>
+          <span className="small muted">one folder per employee: case.json, cast.json, storyline.json, documents.json</span>
+        </div>
+        <div className="row">
+          <button className="btn" id="load-reference" aria-pressed={gen.presetId === "reference"} onClick={gen.loadReference}>
+            Reference case 100101
+          </button>
+          <label className="btn" id="open-case-folder">
+            Open case folder…
+            <input type="file" multiple hidden {...folderPicker} onChange={(e) => e.target.files?.length && gen.loadCaseFiles(e.target.files)} />
+          </label>
+          <label className="btn" id="open-case-zip">
+            Open exported ZIP…
+            <input type="file" accept=".zip" hidden onChange={(e) => e.target.files?.length && gen.loadCaseFiles(e.target.files)} />
+          </label>
+        </div>
+        <span className="help">
+          The reference case is AMEXIO's 100101 as the case model builds it (<code>case_model/reference_dossier.golden.json</code>); rendering it gives AMEXIO's five PDFs and import.xml entries (BR-14). A folder written by <code>python -m case_model.ingest</code>, or a ZIP this demo exported, opens the same way. Every generated run also goes through case folders before any document is made.
+        </span>
+        {gen.loadError && <div className="callout err">{gen.loadError}</div>}
+        {gen.loaded && (
+          <div className="callout">
+            Opened {gen.loaded.cases.length} case{gen.loaded.cases.length === 1 ? "" : "s"} from {gen.loaded.source}.{" "}
+            {gen.loaded.followConfig ? "The period, document types and import options below apply." : "AMEXIO's example settings apply."}{" "}
+            {gen.stage && gen.stage.read.problems.length > 0 && `${gen.stage.read.problems.length} problem${gen.stage.read.problems.length === 1 ? "" : "s"} found: see Validate.`}
+          </div>
+        )}
+      </section>
+
       {isExample ? (
         <div className="callout">
-          This preset loads AMEXIO's four example employees as fixed input. Generating from it rebuilds the 20 documents and the import.xml of the mock package, including its special cases (version control, a Dutch title, an "&" in a title, sync and update). It is the generator's proof that it understands the format.
+          {gen.presetId === "reference"
+            ? "The reference case is read with AMEXIO's example settings: one document per type, data as of 30 September 2026, the contract under version control and the update node of the example."
+            : "This preset loads AMEXIO's four example employees as fixed input. Generating from it rebuilds the 20 documents and the import.xml of the mock package, including its special cases (version control, a Dutch title, an \"&\" in a title, sync and update). It is the generator's proof that it understands the format."}
         </div>
       ) : (
         <div className="grid-2">
@@ -267,7 +303,7 @@ export function ConfigureStep({ gen, openSettings }: Props) {
               <div className="big">{estimate ? `≈ ${total.toLocaleString("en-GB")}` : "—"}</div>
             </div>
             <div className="small muted" style={{ maxWidth: "46ch" }}>
-              documents in {c.employeeCount + 1} folders{isExample ? "" : ", estimated with the sample generator; an AI run lands close to this"}.
+              documents in {(gen.loaded ? gen.loaded.cases.length : c.employeeCount) + 1} folders{isExample || gen.loaded ? "" : ", estimated with the sample generator; an AI run lands close to this"}.
             </div>
           </div>
           <div className="row">

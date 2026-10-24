@@ -1,0 +1,166 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2020-05-15",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "date": "2020-06-21",
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-003": {
+      "course": "Secure Coding Fundamentals",
+      "date": "2021-02-07",
+      "duration_days": 2,
+      "id": "EVT-003",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-004": {
+      "date": "2022-06-21",
+      "id": "EVT-004",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-005": {
+      "course": "First Aid at Work",
+      "date": "2024-03-22",
+      "duration_days": 1,
+      "id": "EVT-005",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-006": {
+      "date": "2024-06-21",
+      "id": "EVT-006",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-007": {
+      "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge.",
+      "date": "2024-06-30",
+      "id": "EVT-007",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2024
+    },
+    "EVT-008": {
+      "comment": "Handles a high workload calmly. Next step is to take the lead in improvement projects.",
+      "date": "2025-06-30",
+      "id": "EVT-008",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Exceeds expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2025
+    },
+    "EVT-009": {
+      "date": "2025-07-01",
+      "id": "EVT-009",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "3100.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-010": {
+      "date": "2026-01-01",
+      "id": "EVT-010",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "3200.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-011": {
+      "date": "2026-06-21",
+      "id": "EVT-011",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-012": {
+      "comment": "Handles a high workload calmly. Next step is to take the lead in improvement projects.",
+      "date": "2026-06-30",
+      "id": "EVT-012",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Exceeds expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    }
+  }
+}

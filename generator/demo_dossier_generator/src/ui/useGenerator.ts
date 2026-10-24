@@ -15,9 +15,24 @@ import { BREAKERS } from "../validate/breakers";
 import type { ValidationReport } from "../validate/validate";
 import { validate } from "../validate/validate";
 import { DOC_TYPES } from "../spec/doctypes";
+import { unzipSync, strFromU8 } from "fflate";
+import type { CaseStage } from "../case/bridge";
+import { caseExportFiles, ingestInput, readCaseFiles, renderCases, throughCases } from "../case/bridge";
+import type { RunSettings } from "../case/fromCase";
+import type { Case } from "../case/generated/case";
+import { referenceCase, referenceRun } from "../case/reference";
 
 export type StepId = "configure" | "personas" | "storylines" | "documents" | "validate" | "export";
-export type PresetId = "example" | "small" | "volume" | "custom";
+export type PresetId = "example" | "small" | "volume" | "custom" | "reference" | "cases";
+
+/** Case folders opened in the demo (R6): the bundled reference case, or folders from disk. */
+export interface LoadedCases {
+  cases: Case[];
+  run: RunSettings;
+  source: string;
+  /** Folders from disk follow the settings in Configure; the reference case keeps AMEXIO's. */
+  followConfig: boolean;
+}
 
 export interface RunState {
   status: "idle" | "running" | "done" | "error";
@@ -94,11 +109,13 @@ export function useGenerator() {
   const [exchanges, setExchanges] = useState<ModelExchange[]>([]);
   const [breakers, setBreakers] = useState<AppliedBreaker[]>([]);
   const [personaRun, setPersonaRun] = useState<RunState>({ status: "idle" });
+  const [loaded, setLoaded] = useState<LoadedCases | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [storyRun, setStoryRun] = useState<RunState>({ status: "idle" });
   const abortRef = useRef<AbortController | null>(null);
 
   const [presetOffline, setPresetOffline] = useState(false);
-  const forcedOffline = presetId === "example" || presetOffline;
+  const forcedOffline = presetId === "example" || presetOffline || !!loaded;
   const provider = useMemo(() => createProvider(forcedOffline ? { ...settings, provider: "offline" } : settings), [settings, forcedOffline]);
 
   /** Choosing a model in Model settings overrides a preset's "no AI" choice. */
@@ -110,6 +127,8 @@ export function useGenerator() {
 
   const resetGenerated = useCallback(() => {
     abortRef.current?.abort();
+    setLoaded(null);
+    setLoadError(null);
     setEmployees(null);
     setStorylines(null);
     setPersonaCorrections([]);
@@ -123,9 +142,52 @@ export function useGenerator() {
   const setConfig = useCallback(
     (c: GenerationConfig, keepPreset = false) => {
       setConfigState(c);
-      if (!keepPreset) setPresetId("custom");
+      if (!keepPreset) setPresetId((id) => (id === "reference" || id === "cases" ? id : "custom"));
     },
     [],
+  );
+
+  /** R6: open the case model's reference case 100101 (bundled) with AMEXIO's run settings. */
+  const loadReference = useCallback(() => {
+    resetGenerated();
+    const run = referenceRun();
+    setPresetId("reference");
+    setPresetOffline(true);
+    setConfigState(cloneConfig(run.config));
+    setLoaded({ cases: [referenceCase()], run, source: "Reference case 100101 (case_model/reference_dossier.golden.json)", followConfig: false });
+  }, [resetGenerated]);
+
+  /**
+   * R6: open case folders from disk: a folder holding 100101/case.json ..., or
+   * the ZIP this demo exports (its cases/ folder). The run settings (period,
+   * document types, import options) are the ones in Configure.
+   */
+  const loadCaseFiles = useCallback(
+    async (list: FileList | File[]) => {
+      const files: Record<string, string> = {};
+      try {
+        for (const file of Array.from(list)) {
+          if (file.name.toLowerCase().endsWith(".zip")) {
+            const entries = unzipSync(new Uint8Array(await file.arrayBuffer()), { filter: (f) => f.name.endsWith(".json") });
+            for (const [path, data] of Object.entries(entries)) files[path] = strFromU8(data);
+          } else if (file.name.endsWith(".json")) {
+            files[(file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name] = await file.text();
+          }
+        }
+        const cases = readCaseFiles(files);
+        if (!cases.length) throw new Error("No case folders found: pick a folder with 100101/case.json, cast.json, storyline.json and documents.json in it, or the demo's ZIP.");
+        const keep = cloneConfig(config);
+        resetGenerated();
+        setPresetId("cases");
+        setPresetOffline(true);
+        setConfigState(keep);
+        const names = [...new Set(Array.from(list).map((f) => ((f as File & { webkitRelativePath?: string }).webkitRelativePath || f.name).split("/")[0]))];
+        setLoaded({ cases, run: { config: keep }, source: `Case folders (${names.slice(0, 2).join(", ")}${names.length > 2 ? ", ..." : ""})`, followConfig: true });
+      } catch (e) {
+        setLoadError((e as Error)?.message ?? "These files could not be read as case folders.");
+      }
+    },
+    [config, resetGenerated],
   );
 
   const choosePreset = useCallback(
@@ -150,6 +212,7 @@ export function useGenerator() {
     setStoryCorrections([]);
     setStoryRun({ status: "idle" });
     setBreakers([]);
+    setLoaded(null);
     setPersonaRun({ status: "running", label: "Personas", stream: "", startedAt: Date.now() });
     try {
       if (presetId === "example") {
@@ -207,20 +270,8 @@ export function useGenerator() {
     }
   }, [config, employees, provider, presetId]);
 
-  /** Editing a persona invalidates the storylines that were written for it. */
-  const updateEmployee = useCallback((id: string, patch: Partial<Employee>) => {
-    setEmployees((list) => (list ? list.map((e) => (e.id === id ? { ...e, ...patch } : e)) : list));
-    setStorylines(null);
-    setStoryRun({ status: "idle" });
-    setBreakers([]);
-  }, []);
-
-  const updateStoryline = useCallback((employeeId: string, s: Storyline) => {
-    setStorylines((all) => (all ? { ...all, [employeeId]: s } : all));
-    setBreakers([]);
-  }, []);
-
-  const set: DossierSet | null = useMemo(() => {
+  /** The generation run, in the AI's format (generation.json). Documents never read it directly. */
+  const generated: DossierSet | null = useMemo(() => {
     if (!employees || !storylines) return null;
     const ex = presetId === "example" ? examplePreset() : null;
     return {
@@ -235,18 +286,49 @@ export function useGenerator() {
     };
   }, [employees, storylines, presetId, generationId, config, personaCorrections, storyCorrections, personaSource, storySource]);
 
+  /**
+   * The bridge: the run is written as case folders and read back; documents,
+   * validation and export read the cases (src/case/bridge.ts).
+   */
+  const { stage, caseError } = useMemo((): { stage: CaseStage | null; caseError: string | null } => {
+    try {
+      if (loaded) return { stage: renderCases(loaded.cases, loaded.followConfig ? { ...loaded.run, config } : loaded.run), caseError: null };
+      if (!generated) return { stage: null, caseError: null };
+      return { stage: throughCases(generated), caseError: null };
+    } catch (e) {
+      return { stage: null, caseError: (e as Error)?.message ?? "The run could not be written as cases." };
+    }
+  }, [loaded, generated, config]);
+
+  /** The facts as read back from the cases: what every document is made from. */
+  const set: DossierSet | null = stage?.read.set ?? null;
+
   const pkg: DossierPackage | null = useMemo(() => {
-    if (!set) return null;
-    const p = expandDossiers(set);
-    for (const b of breakers) BREAKERS.find((x) => x.id === b.id)?.apply(set, p);
+    if (!stage) return null;
+    if (!breakers.length) return stage.pkg;
+    const p = expandDossiers(stage.read.set, stage.read.index);
+    for (const b of breakers) BREAKERS.find((x) => x.id === b.id)?.apply(stage.read.set, p);
     return p;
-  }, [set, breakers]);
+  }, [stage, breakers]);
+
+  /** cases/ in the ZIP: one folder per employee, plus the run as the case model's input (R2). */
+  const caseFiles = useMemo(() => {
+    if (!stage) return {};
+    let input: ReturnType<typeof ingestInput> | undefined;
+    try {
+      input = generated ? ingestInput(generated) : undefined;
+    } catch {
+      input = undefined;
+    }
+    return caseExportFiles(stage, input);
+  }, [stage, generated]);
 
   const xml = useMemo(() => (set && pkg ? buildImportXml(set, pkg) : ""), [set, pkg]);
 
   const report: ValidationReport | null = useMemo(() => {
     if (!set || !pkg) return null;
     return validate(set, pkg, {
+      cases: stage?.cases,
       xml,
       parseXml: (text) => {
         if (typeof DOMParser === "undefined") return null;
@@ -255,17 +337,18 @@ export function useGenerator() {
         return err ? (err.textContent ?? "parse error").slice(0, 200) : null;
       },
     });
-  }, [set, pkg, xml]);
+  }, [set, pkg, xml, stage]);
 
   const applyBreaker = useCallback(
     (id: string) => {
-      if (!set) return;
-      const probe = expandDossiers(set);
-      for (const b of breakers) BREAKERS.find((x) => x.id === b.id)?.apply(set, probe);
-      const note = BREAKERS.find((x) => x.id === id)?.apply(set, probe);
+      if (!stage) return;
+      const s = stage.read.set;
+      const probe = expandDossiers(s, stage.read.index);
+      for (const b of breakers) BREAKERS.find((x) => x.id === b.id)?.apply(s, probe);
+      const note = BREAKERS.find((x) => x.id === id)?.apply(s, probe);
       if (note) setBreakers((list) => [...list, { id, note }]);
     },
-    [set, breakers],
+    [stage, breakers],
   );
 
   const enabledTypes = DOC_TYPES.filter((d) => config.docTypes.includes(d.id));
@@ -282,21 +365,28 @@ export function useGenerator() {
     setConfig,
     step,
     setStep,
-    employees,
+    employees: loaded ? (stage?.read.set.employees ?? null) : employees,
     personaCorrections,
-    personaSource,
+    personaSource: loaded ? loaded.source : personaSource,
     personaRun,
     generatePersonas,
-    updateEmployee,
-    storylines,
+    storylines: loaded ? (stage?.read.set.storylines ?? null) : storylines,
     storyCorrections,
-    storySource,
+    storySource: loaded ? loaded.source : storySource,
     storyRun,
     generateStorylines,
-    updateStoryline,
     exchanges,
     stop,
     set,
+    /** What generation.json records: the run in the AI's format, or the facts read from opened cases. */
+    record: generated ?? set,
+    stage,
+    caseError,
+    caseFiles,
+    loaded,
+    loadError,
+    loadReference,
+    loadCaseFiles,
     pkg,
     xml,
     report,

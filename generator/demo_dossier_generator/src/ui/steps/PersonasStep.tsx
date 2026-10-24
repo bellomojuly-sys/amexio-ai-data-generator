@@ -1,6 +1,5 @@
 import { fullName } from "../../model/dossier";
 import type { Employee } from "../../model/dossier";
-import { department } from "../../generate/vocab";
 import { CorrectionsList, Exchanges, RunStatus } from "../components/RunPanel";
 import type { Generator } from "../useGenerator";
 
@@ -12,6 +11,7 @@ interface Props {
 export function PersonasStep({ gen, openSettings }: Props) {
   const running = gen.personaRun.status === "running";
   const isExample = gen.presetId === "example";
+  const fromCases = !!gen.loaded;
   const offline = gen.provider.id === "offline";
   const actionLabel = isExample
     ? "Load AMEXIO's 4 employees"
@@ -31,6 +31,14 @@ export function PersonasStep({ gen, openSettings }: Props) {
         </div>
       </div>
 
+      {fromCases ? (
+        <section className="panel panel-pad stack">
+          <div className="callout">
+            Read from <strong>{gen.loaded!.source}</strong>: {gen.employees?.length ?? 0} case{gen.employees?.length === 1 ? "" : "s"}. The people, the jobs and the managers below are the facts these cases hold; nothing is generated.
+          </div>
+          {gen.caseError && <div className="callout err">{gen.caseError}</div>}
+        </section>
+      ) : (
       <section className="panel panel-pad stack">
         <div className="row">
           <button className="btn btn-primary" id="generate-personas" onClick={gen.generatePersonas} disabled={running || gen.aiLimitExceeded}>
@@ -56,6 +64,7 @@ export function PersonasStep({ gen, openSettings }: Props) {
         <CorrectionsList corrections={gen.personaCorrections} title="Personas" />
         <Exchanges exchanges={gen.exchanges.filter((x) => x.label === "Personas")} />
       </section>
+      )}
 
       {gen.employees ? (
         <>
@@ -77,14 +86,14 @@ export function PersonasStep({ gen, openSettings }: Props) {
               </thead>
               <tbody>
                 {gen.employees.map((e) => (
-                  <PersonaRow key={e.id} e={e} all={gen.employees!} director={gen.config.company.directorName} locked={isExample} onChange={(patch) => gen.updateEmployee(e.id, patch)} />
+                  <PersonaRow key={e.id} e={e} all={gen.employees!} director={gen.config.company.directorName} />
                 ))}
               </tbody>
             </table>
           </div>
           <div className="row">
             <span className="small muted">
-              Editing a person clears the storylines, because those were written for the old facts.
+              Read-only: these facts go into the case model as they are (one case per employee, P001 is the employee, P002 the manager). To change them, change the configuration and generate again.
             </span>
             <span className="spacer" />
             <button className="btn btn-primary" id="to-storylines" onClick={() => gen.setStep("storylines")}>
@@ -104,60 +113,23 @@ export function PersonasStep({ gen, openSettings }: Props) {
   );
 }
 
-function PersonaRow({ e, all, director, locked, onChange }: { e: Employee; all: Employee[]; director: string; locked: boolean; onChange(p: Partial<Employee>): void }) {
+function PersonaRow({ e, all, director }: { e: Employee; all: Employee[]; director: string }) {
   const manager = e.managerId ? all.find((m) => m.id === e.managerId) : undefined;
-  const positions = department(e.department)?.positions ?? [];
   return (
     <tr>
       <td className="mono">{e.id}</td>
-      <td style={{ minWidth: 190 }}>
-        {locked ? (
-          fullName(e)
-        ) : (
-          <div className="row" style={{ gap: 4, flexWrap: "nowrap" }}>
-            <input aria-label="First name" className="input cell" style={{ width: 90 }} value={e.firstName} onChange={(ev) => onChange({ firstName: ev.target.value })} />
-            <input aria-label="Last name" className="input cell" style={{ width: 120 }} value={e.lastName} onChange={(ev) => onChange({ lastName: ev.target.value })} />
-          </div>
-        )}
-      </td>
+      <td style={{ minWidth: 160 }}>{fullName(e)}</td>
       <td>
         {e.department}
         {e.isManager && <span className="badge badge-info" style={{ marginLeft: 6 }}>Manager</span>}
       </td>
-      <td>
-        {locked || e.isManager ? (
-          e.position
-        ) : (
-          <select aria-label="Position" className="select input cell" value={e.position} onChange={(ev) => onChange({ position: ev.target.value })}>
-            {positions.filter((p) => !p.manager).map((p) => (
-              <option key={p.title}>{p.title}</option>
-            ))}
-          </select>
-        )}
-      </td>
-      <td>
-        {locked ? <span className="mono">{e.hireDate}</span> : <input aria-label="Hire date" type="date" className="input cell" value={e.hireDate} onChange={(ev) => ev.target.value && onChange({ hireDate: ev.target.value })} />}
-      </td>
+      <td>{e.position}</td>
+      <td className="mono">{e.hireDate}</td>
       <td>{e.contractType}</td>
       <td className="num">{e.hoursPerWeek}</td>
-      <td className="num">
-        {locked ? (
-          e.startSalary.toLocaleString("en-GB")
-        ) : (
-          <input aria-label="Start salary" type="number" step={50} className="input cell num" style={{ width: 90, textAlign: "right" }} value={e.startSalary} onChange={(ev) => onChange({ startSalary: Math.round(Number(ev.target.value) || 0) })} />
-        )}
-      </td>
+      <td className="num">{e.startSalary.toLocaleString("en-GB")}</td>
       <td className="small">{manager ? `${manager.id} ${fullName(manager)}` : (e.managerName ?? director)}</td>
-      <td>
-        {locked ? (
-          "No"
-        ) : (
-          <label className="check" style={{ alignItems: "center" }}>
-            <input type="checkbox" checked={e.leaves} disabled={e.isManager} onChange={(ev) => onChange({ leaves: ev.target.checked })} />
-            <span className="small">{e.leaves ? "Yes" : "No"}</span>
-          </label>
-        )}
-      </td>
+      <td>{e.leaves ? "Yes" : "No"}</td>
     </tr>
   );
 }

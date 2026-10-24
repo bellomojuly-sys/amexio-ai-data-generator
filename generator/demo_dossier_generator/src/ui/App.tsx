@@ -20,7 +20,7 @@ const STEPS: StepDef[] = [
   { id: "configure", title: "Configure", hint: "Company, period, document types" },
   { id: "personas", title: "Personas", hint: "The AI proposes employees" },
   { id: "storylines", title: "Storylines", hint: "The AI writes each career" },
-  { id: "documents", title: "Documents", hint: "Code builds PDFs and metadata" },
+  { id: "documents", title: "Documents", hint: "Code builds PDFs from the cases" },
   { id: "validate", title: "Validate", hint: "Checks across all documents" },
   { id: "export", title: "Export", hint: "ZIP for Object Importer" },
 ];

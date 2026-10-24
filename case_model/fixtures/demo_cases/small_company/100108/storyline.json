@@ -1,0 +1,82 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2025-02-02",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "date": "2025-05-14",
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-003": {
+      "comment": "Very helpful to colleagues and customers. Ready for more responsibility.",
+      "date": "2025-06-30",
+      "id": "EVT-003",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2025
+    },
+    "EVT-004": {
+      "date": "2026-02-02",
+      "id": "EVT-004",
+      "label": null,
+      "new_contract_type": "Permanent",
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Temporary contract made permanent",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-005": {
+      "course": "BHV Emergency Response",
+      "date": "2026-02-24",
+      "duration_days": 3,
+      "id": "EVT-005",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-006": {
+      "comment": "Very helpful to colleagues and customers. Ready for more responsibility.",
+      "date": "2026-06-30",
+      "id": "EVT-006",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    }
+  }
+}

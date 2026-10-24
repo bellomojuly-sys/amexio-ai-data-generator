@@ -4,13 +4,15 @@
  *   npm run example                  AMEXIO's example package  -> out/mock-import-dossier/
  *   npm run example -- --offline 40  40 employees, "No AI" mode -> out/hr-dossier-import/
  *
- * Same TypeScript modules as the web app. This is the route to the large
+ * Same TypeScript modules as the web app, and the same route: the run is
+ * written as case folders (cases/ in the package) and the documents are made
+ * from those. This is the route to the large
  * volumes AMEXIO mentioned (100 dossiers x thousands of documents).
  */
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { examplePreset } from "../src/generate/examplePreset";
-import { expandDossiers } from "../src/generate/expand";
+import { caseExportFiles, ingestInput, throughCases } from "../src/case/bridge";
 import { buildPackageFiles } from "../src/export/package";
 import { generateOffline } from "../src/generate/offline";
 import { DEFAULT_CONFIG, cloneConfig } from "../src/generate/config";
@@ -31,8 +33,10 @@ if (offlineIndex >= 0) {
   set = examplePreset();
 }
 
-const pkg = expandDossiers(set);
-const report = validate(set, pkg);
+// Through the case model's format: the documents are made from the case folders.
+const stage = throughCases(set);
+const pkg = stage.pkg;
+const report = validate(stage.read.set, pkg, { cases: stage.cases });
 console.log(`${pkg.folders.length} folders, ${pkg.documents.length} documents`);
 console.log(`Validation: ${report.errors} errors, ${report.warnings} warnings`);
 for (const issue of report.issues.filter((i) => i.severity === "error").slice(0, 20)) console.log(`  ERROR ${issue.code}: ${issue.message}`);
@@ -40,7 +44,10 @@ if (report.errors > 0) {
   console.error("Export blocked: fix the errors first.");
   process.exit(1);
 }
-const files = await buildPackageFiles(set, pkg);
+const files = await buildPackageFiles(stage.read.set, pkg, undefined, undefined, {
+  files: caseExportFiles(stage, ingestInput(set)),
+  record: set,
+});
 const outDir = join(process.cwd(), "out");
 for (const [path, data] of Object.entries(files)) {
   const full = join(outDir, path);

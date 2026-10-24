@@ -3,14 +3,21 @@ import { addYears, minDate } from "../model/dates";
 import type { Employee } from "../model/dossier";
 import { fullName } from "../model/dossier";
 import { buildTimeline } from "../model/timeline";
+import type { Timeline } from "../model/timeline";
 import { DOC_TYPES } from "../spec/doctypes";
 import { pdfDate } from "../spec/format";
 import type { DocumentInstance, PlanContext } from "../spec/types";
+import type { CaseIndex, CaseView } from "../case/fromCase";
+import { matchCaseDocument } from "../case/fromCase";
 import type { DossierPackage, DossierSet, FolderNode, GenerationConfig, UpdateNode } from "./types";
 
 /**
  * Step 4: turn personas + storylines into documents and folders.
  * Pure code, no AI: every document type's plan() reads the same facts.
+ *
+ * With a CaseIndex (src/case/fromCase.ts) the facts come from saved cases:
+ * each document gets the case's DOC and EVT IDs, and when a case lists its
+ * documents, the case decides which documents exist.
  */
 
 export function employeeFolderLocation(config: GenerationConfig): string {
@@ -21,8 +28,35 @@ export function employeeFolderTitle(e: Employee): string {
   return `${e.id} ${fullName(e)}`;
 }
 
-export function managerLabelFor(e: Pick<Employee, "firstName" | "lastName">): string {
-  return `${e.firstName.trim().charAt(0)}. ${e.lastName} (fictional)`;
+export interface Signer {
+  label: string;
+  employeeId?: string;
+}
+
+/**
+ * Who signs an employee's appraisal on a date: the free-text manager when the
+ * manager is not in the dataset (AMEXIO's example), else the department
+ * manager if employed on that date, else the director. The case model stores
+ * the result as the appraisal's manager participant.
+ */
+export function managerResolver(set: DossierSet, timelines: Map<string, Timeline>) {
+  const byId = new Map(set.employees.map((e) => [e.id, e]));
+  return (employee: Employee) =>
+    (date: ISODate): Signer => {
+      if (employee.managerName) return { label: employee.managerName };
+      const manager = employee.managerId ? byId.get(employee.managerId) : undefined;
+      if (manager && manager.id !== employee.id && timelines.get(manager.id)?.employedOn(date)) {
+        return { label: fullName(manager), employeeId: manager.id };
+      }
+      return { label: set.config.company.directorName };
+    };
+}
+
+/** The manager the case model files for an employee (P002), as ingest.py picks it. */
+export function caseManagerName(set: DossierSet, employee: Employee): string {
+  if (employee.managerName) return employee.managerName;
+  const manager = employee.managerId ? set.employees.find((e) => e.id === employee.managerId) : undefined;
+  return manager ? fullName(manager) : set.config.company.directorName;
 }
 
 export function windowStartFor(config: GenerationConfig): ISODate {
@@ -30,13 +64,13 @@ export function windowStartFor(config: GenerationConfig): ISODate {
   return addYears(config.asOf, -config.historyYears);
 }
 
-export function expandDossiers(set: DossierSet): DossierPackage {
+export function expandDossiers(set: DossierSet, cases?: CaseIndex): DossierPackage {
   const { config, employees, storylines } = set;
-  const byId = new Map(employees.map((e) => [e.id, e]));
   const timelines = new Map(employees.map((e) => [e.id, buildTimeline(e, storylines[e.id])]));
   const enabled = new Set(config.docTypes);
-  const windowStart = windowStartFor(config);
   const rootLocation = employeeFolderLocation(config);
+  const signerFor = managerResolver(set, timelines);
+  const caseIssues: { employeeId: string; message: string }[] = [];
 
   const folders: FolderNode[] = [
     {
@@ -51,38 +85,43 @@ export function expandDossiers(set: DossierSet): DossierPackage {
     const timeline = timelines.get(employee.id)!;
     const lastDay = timeline.endDate ? minDate(timeline.endDate, config.asOf) : config.asOf;
     const current = timeline.stateAt(lastDay);
+    const view: CaseView | undefined = cases?.byEmployee.get(employee.id);
+    // When the case lists its documents, the case decides which exist: plan() lists every possible one.
+    const caseDriven = !!view && view.documents.length > 0;
     folders.push({
       location: rootLocation,
       title: employeeFolderTitle(employee),
-      description: `Personnel file of ${fullName(employee)}, ${current.position} (${employee.department})`,
+      description:
+        view?.folderDescription ?? `Personnel file of ${fullName(employee)}, ${current.position} (${employee.department})`,
       employeeId: employee.id,
     });
-
-    const managerAt = (date: ISODate) => {
-      if (employee.managerName) return { label: employee.managerName };
-      const manager = employee.managerId ? byId.get(employee.managerId) : undefined;
-      if (manager && manager.id !== employee.id && timelines.get(manager.id)!.employedOn(date)) {
-        return { label: managerLabelFor(manager), employeeId: manager.id };
-      }
-      return { label: config.company.directorName };
-    };
 
     const ctx: PlanContext = {
       employee,
       timeline,
-      company: config.company,
+      company: view?.company ?? config.company,
       asOf: config.asOf,
-      windowStart,
-      managerAt,
+      windowStart: caseDriven ? "1900-01-01" : windowStartFor(config),
+      managerAt: view ? view.managerAt : signerFor(employee),
     };
+    const matched = new Set<string>();
 
     const usedTitles = new Set<string>();
     const usedFiles = new Set<string>();
 
     for (const spec of DOC_TYPES) {
       if (!enabled.has(spec.id)) continue;
+      const eventIdOf = (sourceEvent?: number) =>
+        !view ? undefined
+        : spec.id === "employment_contract" ? (view.hireEventId ?? null)
+        : sourceEvent !== undefined ? (view.eventIds[sourceEvent] ?? null)
+        : null;
       let drafts = spec.plan(ctx);
-      if (config.history === "latest" && drafts.length > 1) drafts = drafts.slice(-1);
+      if (caseDriven) {
+        drafts = drafts.filter((d) => matchCaseDocument(view!, spec.id, d.date, eventIdOf(d.sourceEvent)) !== undefined);
+      } else if (config.history === "latest" && drafts.length > 1) {
+        drafts = drafts.slice(-1);
+      }
       const many = drafts.length > 1;
 
       for (const draft of drafts) {
@@ -102,6 +141,9 @@ export function expandDossiers(set: DossierSet): DossierPackage {
         }
         usedFiles.add(fileName);
 
+        const eventId = eventIdOf(draft.sourceEvent);
+        const caseDoc = view ? matchCaseDocument(view, spec.id, draft.date, eventId) : undefined;
+        if (caseDoc) matched.add(caseDoc.id);
         documents.push({
           key: `${employee.id}/${spec.id}/${draft.fileSuffix}`,
           docType: spec.id,
@@ -113,13 +155,26 @@ export function expandDossiers(set: DossierSet): DossierPackage {
           fileName,
           values: { ...draft.values },
           meta: { ...(draft.meta ?? {}) },
-          tags: [...spec.tags],
-          confidential: spec.confidential,
+          tags: caseDoc ? [...caseDoc.tags] : [...spec.tags],
+          confidential: caseDoc ? caseDoc.confidential : spec.confidential,
           acl: spec.acl.map((a) => ({ ...a })),
           action: config.importOptions.action,
           versionControl:
             spec.id === "employment_contract" && config.importOptions.versionControlContracts ? "MAJOR" : undefined,
           sourceEvent: draft.sourceEvent,
+          ...(view ? { caseEventId: eventId ?? null, caseDocId: caseDoc?.id, participantIds: caseDoc?.participantIds } : {}),
+        });
+      }
+    }
+
+    if (caseDriven) {
+      for (const d of view!.documents) {
+        if (matched.has(d.id)) continue;
+        caseIssues.push({
+          employeeId: employee.id,
+          message: enabled.has(d.type as never)
+            ? `${d.id} (${d.type}, ${d.date}) cannot be rendered: no template rule makes a ${d.type} on that date${d.eventId ? ` for ${d.eventId}` : ""}.`
+            : `${d.id} (${d.type}) is not rendered: that document type is switched off in this run.`,
         });
       }
     }
@@ -127,7 +182,7 @@ export function expandDossiers(set: DossierSet): DossierPackage {
 
   applyOverrides(set, documents);
   const updates = set.updates ?? defaultUpdates(set, documents);
-  return { folders, documents, updates };
+  return cases ? { folders, documents, updates, caseIssues } : { folders, documents, updates };
 }
 
 function applyOverrides(set: DossierSet, documents: DocumentInstance[]) {

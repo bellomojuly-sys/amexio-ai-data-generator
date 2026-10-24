@@ -1,0 +1,461 @@
+{
+  "storylines": [
+    {
+      "employeeId": "100101",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2017-10-04",
+          "result": "Fit for work"
+        },
+        {
+          "type": "contract_change",
+          "date": "2019-01-01",
+          "reason": "Annual salary review",
+          "newSalary": 4050
+        },
+        {
+          "type": "medical_check",
+          "date": "2019-10-04",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2019-11-25",
+          "course": "First Aid at Work",
+          "durationDays": 2
+        },
+        {
+          "type": "contract_change",
+          "date": "2021-07-01",
+          "reason": "Promotion",
+          "newSalary": 4950,
+          "newPosition": "Financial Controller"
+        },
+        {
+          "type": "medical_check",
+          "date": "2021-10-04",
+          "result": "Fit for work"
+        },
+        {
+          "type": "contract_change",
+          "date": "2022-07-01",
+          "reason": "Annual salary review",
+          "newSalary": 5050
+        },
+        {
+          "type": "contract_change",
+          "date": "2023-01-01",
+          "reason": "Promotion",
+          "newSalary": 5750,
+          "newPosition": "Senior Financial Controller"
+        },
+        {
+          "type": "medical_check",
+          "date": "2023-10-04",
+          "result": "Fit for work"
+        },
+        {
+          "type": "appraisal",
+          "year": 2024,
+          "rating": "Meets expectations",
+          "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge."
+        },
+        {
+          "type": "contract_change",
+          "date": "2025-04-01",
+          "reason": "Annual salary review",
+          "newSalary": 5850
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Meets expectations",
+          "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge."
+        },
+        {
+          "type": "medical_check",
+          "date": "2025-10-04",
+          "result": "Fit for work with adjustments"
+        },
+        {
+          "type": "contract_change",
+          "date": "2026-04-01",
+          "reason": "Annual salary review",
+          "newSalary": 6100
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Meets expectations",
+          "comment": "Good progress since the last review. Attention point: documenting decisions more consistently."
+        }
+      ]
+    },
+    {
+      "employeeId": "100102",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2020-06-21",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2021-02-07",
+          "course": "Secure Coding Fundamentals",
+          "durationDays": 2
+        },
+        {
+          "type": "medical_check",
+          "date": "2022-06-21",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2024-03-22",
+          "course": "First Aid at Work",
+          "durationDays": 1
+        },
+        {
+          "type": "medical_check",
+          "date": "2024-06-21",
+          "result": "Fit for work"
+        },
+        {
+          "type": "appraisal",
+          "year": 2024,
+          "rating": "Meets expectations",
+          "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge."
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Exceeds expectations",
+          "comment": "Handles a high workload calmly. Next step is to take the lead in improvement projects."
+        },
+        {
+          "type": "contract_change",
+          "date": "2025-07-01",
+          "reason": "Annual salary review",
+          "newSalary": 3100
+        },
+        {
+          "type": "contract_change",
+          "date": "2026-01-01",
+          "reason": "Annual salary review",
+          "newSalary": 3200
+        },
+        {
+          "type": "medical_check",
+          "date": "2026-06-21",
+          "result": "Fit for work"
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Exceeds expectations",
+          "comment": "Handles a high workload calmly. Next step is to take the lead in improvement projects."
+        }
+      ]
+    },
+    {
+      "employeeId": "100103",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2021-04-28",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2021-06-08",
+          "course": "Forklift Certification",
+          "durationDays": 3
+        },
+        {
+          "type": "training",
+          "date": "2021-09-06",
+          "course": "Lean Warehousing",
+          "durationDays": 1
+        },
+        {
+          "type": "training",
+          "date": "2022-03-13",
+          "course": "Dangerous Goods Awareness",
+          "durationDays": 2
+        },
+        {
+          "type": "contract_change",
+          "date": "2023-04-01",
+          "reason": "Annual salary review",
+          "newSalary": 3350
+        },
+        {
+          "type": "medical_check",
+          "date": "2023-04-28",
+          "result": "Fit for work"
+        },
+        {
+          "type": "appraisal",
+          "year": 2024,
+          "rating": "Meets expectations",
+          "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge."
+        },
+        {
+          "type": "termination",
+          "date": "2024-11-30",
+          "reason": "Resignation"
+        }
+      ]
+    },
+    {
+      "employeeId": "100104",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2021-05-31",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2022-09-23",
+          "course": "Interviewing Skills",
+          "durationDays": 1
+        },
+        {
+          "type": "contract_change",
+          "date": "2023-01-01",
+          "reason": "Annual salary review",
+          "newSalary": 2700
+        },
+        {
+          "type": "training",
+          "date": "2023-04-08",
+          "course": "Absence Management Basics",
+          "durationDays": 2
+        },
+        {
+          "type": "medical_check",
+          "date": "2023-05-31",
+          "result": "Fit for work"
+        },
+        {
+          "type": "contract_change",
+          "date": "2024-01-01",
+          "reason": "Annual salary review",
+          "newSalary": 2800
+        },
+        {
+          "type": "appraisal",
+          "year": 2024,
+          "rating": "Meets expectations",
+          "comment": "Strong technical work this period. Could share knowledge with colleagues more often."
+        },
+        {
+          "type": "termination",
+          "date": "2024-07-31",
+          "reason": "Resignation"
+        }
+      ]
+    },
+    {
+      "employeeId": "100105",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2023-01-20",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2023-06-13",
+          "course": "Internal Controls Basics",
+          "durationDays": 1
+        },
+        {
+          "type": "contract_change",
+          "date": "2023-07-01",
+          "reason": "Annual salary review",
+          "newSalary": 4050
+        },
+        {
+          "type": "appraisal",
+          "year": 2024,
+          "rating": "Meets expectations",
+          "comment": "Good progress since the last review. Attention point: documenting decisions more consistently."
+        },
+        {
+          "type": "absence",
+          "startDate": "2024-12-17",
+          "endDate": "2025-01-18"
+        },
+        {
+          "type": "medical_check",
+          "date": "2025-01-20",
+          "result": "Fit for work"
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Meets expectations",
+          "comment": "Strong technical work this period. Could share knowledge with colleagues more often."
+        },
+        {
+          "type": "contract_change",
+          "date": "2025-07-01",
+          "reason": "Promotion",
+          "newSalary": 4950,
+          "newPosition": "Financial Controller"
+        },
+        {
+          "type": "training",
+          "date": "2025-07-28",
+          "course": "First Aid at Work",
+          "durationDays": 2
+        },
+        {
+          "type": "training",
+          "date": "2025-10-15",
+          "course": "Dutch Payroll Tax Update",
+          "durationDays": 1
+        },
+        {
+          "type": "contract_change",
+          "date": "2026-01-01",
+          "reason": "Annual salary review",
+          "newSalary": 5150
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Meets expectations",
+          "comment": "Very helpful to colleagues and customers. Ready for more responsibility."
+        }
+      ]
+    },
+    {
+      "employeeId": "100106",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2023-09-06",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2023-10-16",
+          "course": "Interviewing Skills",
+          "durationDays": 3
+        },
+        {
+          "type": "appraisal",
+          "year": 2024,
+          "rating": "Meets expectations",
+          "comment": "Strong technical work this period. Could share knowledge with colleagues more often."
+        },
+        {
+          "type": "training",
+          "date": "2025-04-23",
+          "course": "GDPR for HR Professionals",
+          "durationDays": 3
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Meets expectations",
+          "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge."
+        },
+        {
+          "type": "medical_check",
+          "date": "2025-09-06",
+          "result": "Fit for work with adjustments"
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Meets expectations",
+          "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge."
+        }
+      ]
+    },
+    {
+      "employeeId": "100107",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2024-09-08",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2024-10-11",
+          "course": "Information Security Awareness",
+          "durationDays": 1
+        },
+        {
+          "type": "training",
+          "date": "2025-02-21",
+          "course": "Lean Warehousing",
+          "durationDays": 2
+        },
+        {
+          "type": "absence",
+          "startDate": "2025-06-07",
+          "endDate": "2025-07-22"
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Meets expectations",
+          "comment": "Very helpful to colleagues and customers. Ready for more responsibility."
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Meets expectations",
+          "comment": "Very helpful to colleagues and customers. Ready for more responsibility."
+        },
+        {
+          "type": "medical_check",
+          "date": "2026-09-08",
+          "result": "Fit for work"
+        }
+      ]
+    },
+    {
+      "employeeId": "100108",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2025-05-14",
+          "result": "Fit for work"
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Meets expectations",
+          "comment": "Very helpful to colleagues and customers. Ready for more responsibility."
+        },
+        {
+          "type": "contract_change",
+          "date": "2026-02-02",
+          "reason": "Temporary contract made permanent",
+          "newContractType": "Permanent"
+        },
+        {
+          "type": "training",
+          "date": "2026-02-24",
+          "course": "BHV Emergency Response",
+          "durationDays": 3
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Meets expectations",
+          "comment": "Very helpful to colleagues and customers. Ready for more responsibility."
+        }
+      ]
+    }
+  ]
+}

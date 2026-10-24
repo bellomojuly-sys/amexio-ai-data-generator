@@ -2,7 +2,7 @@ import { BREAKERS } from "../../validate/breakers";
 import type { CheckKind, CheckResult } from "../../validate/validate";
 import type { Generator } from "../useGenerator";
 
-const KIND_ORDER: CheckKind[] = ["format", "relationships", "consistency", "timeline", "target system", "privacy"];
+const KIND_ORDER: CheckKind[] = ["case model", "format", "relationships", "consistency", "timeline", "target system", "privacy"];
 
 function status(c: CheckResult): "pass" | "warn" | "fail" | "info" {
   if (c.issues.some((i) => i.severity === "error")) return "fail";

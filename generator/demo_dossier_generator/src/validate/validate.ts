@@ -10,6 +10,8 @@ import { employeeFolderTitle } from "../generate/expand";
 import type { DossierPackage, DossierSet } from "../generate/types";
 import { hasInvalidXmlChars } from "../export/importXml";
 import { nonWinAnsiChars } from "../export/winansi";
+import { checkCase } from "../case/checkCase";
+import type { Case } from "../case/generated/case";
 
 /**
  * Step 5: deterministic checks. No AI judges AI output here: every check is
@@ -18,7 +20,7 @@ import { nonWinAnsiChars } from "../export/winansi";
  */
 
 export type Severity = "error" | "warning" | "info";
-export type CheckKind = "format" | "relationships" | "timeline" | "consistency" | "target system" | "privacy";
+export type CheckKind = "case model" | "format" | "relationships" | "timeline" | "consistency" | "target system" | "privacy";
 
 export interface Issue {
   check: string;
@@ -54,6 +56,7 @@ interface Ctx {
   docsByEmployee: Map<string, DocumentInstance[]>;
   xml?: string;
   parseXml?: (xml: string) => string | null;
+  cases?: Case[];
 }
 
 interface CheckDef {
@@ -77,6 +80,21 @@ function num(v: unknown): number {
 }
 
 const CHECKS: CheckDef[] = [
+  {
+    code: "CASE",
+    title: "Every dossier is a valid case",
+    description:
+      "The saved cases follow the case model's rules (the ones load_case applies): well-formed IDs, every reference points at a part the case holds, one hire on the start date, nothing before the hire or after the last working day, and every document except payslips and annual statements points at the event it records. Every document a case lists is rendered.",
+    kind: "case model",
+    run(ctx, add) {
+      if (!ctx.cases) return 0;
+      for (const c of ctx.cases) {
+        for (const message of checkCase(c)) add("error", `Case ${c.case_number}: ${message}`, { employeeId: c.case_number });
+      }
+      for (const i of ctx.pkg.caseIssues ?? []) add("error", `Case ${i.employeeId}: ${i.message}`, { employeeId: i.employeeId });
+      return ctx.cases.length;
+    },
+  },
   {
     code: "FIELDS",
     title: "Every field is filled in and well formed",
@@ -442,7 +460,7 @@ const CHECKS: CheckDef[] = [
 export function validate(
   set: DossierSet,
   pkg: DossierPackage,
-  options: { xml?: string; parseXml?: (xml: string) => string | null } = {},
+  options: { xml?: string; parseXml?: (xml: string) => string | null; cases?: Case[] } = {},
 ): ValidationReport {
   const ctx: Ctx = {
     set,
@@ -451,6 +469,7 @@ export function validate(
     docsByEmployee: new Map(),
     xml: options.xml,
     parseXml: options.parseXml,
+    cases: options.cases,
   };
   for (const d of pkg.documents) {
     const list = ctx.docsByEmployee.get(d.employeeId) ?? [];

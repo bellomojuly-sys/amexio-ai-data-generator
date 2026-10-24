@@ -1,6 +1,6 @@
 import { useState } from "react";
-import type { CareerEvent, Rating } from "../../model/dossier";
-import { eventDate, fullName, RATINGS } from "../../model/dossier";
+import type { CareerEvent } from "../../model/dossier";
+import { eventDate, fullName } from "../../model/dossier";
 import { eurGrouped, pdfDate } from "../../spec/format";
 import { CorrectionsList, Exchanges, RunStatus } from "../components/RunPanel";
 import type { Generator } from "../useGenerator";
@@ -47,23 +47,17 @@ export function StorylinesStep({ gen, openSettings }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const running = gen.storyRun.status === "running";
   const isExample = gen.presetId === "example";
+  const fromCases = !!gen.loaded;
   const offline = gen.provider.id === "offline";
   const employees = gen.employees ?? [];
   const current = employees.find((e) => e.id === selected) ?? employees[0];
-  const story = current && gen.storylines?.[current.id];
+  // The events as read back from the case, so each one shows its EVT ID.
+  const story = current && (gen.set?.storylines ?? gen.storylines)?.[current.id];
+  const view = current && gen.stage?.read.index.byEmployee.get(current.id);
 
   const label = isExample
     ? "Load the example's events"
     : `${gen.storylines ? "Regenerate" : "Write"} storylines with ${offline ? "the sample generator" : gen.provider.label}`;
-
-  const removeEvent = (index: number) => {
-    if (!story || !current) return;
-    gen.updateStoryline(current.id, { ...story, events: story.events.filter((_, i) => i !== index) });
-  };
-  const patchEvent = (index: number, patch: Partial<CareerEvent>) => {
-    if (!story || !current) return;
-    gen.updateStoryline(current.id, { ...story, events: story.events.map((ev, i) => (i === index ? ({ ...ev, ...patch } as CareerEvent) : ev)) });
-  };
 
   return (
     <>
@@ -77,6 +71,13 @@ export function StorylinesStep({ gen, openSettings }: Props) {
         </div>
       </div>
 
+      {fromCases ? (
+        <section className="panel panel-pad stack">
+          <div className="callout">
+            Read from <strong>{gen.loaded!.source}</strong>. Each event below is an event of the case, with its ID; the documents point at these IDs.
+          </div>
+        </section>
+      ) : (
       <section className="panel panel-pad stack">
         <div className="row">
           <button className="btn btn-primary" id="generate-storylines" onClick={gen.generateStorylines} disabled={running || !gen.employees}>
@@ -96,7 +97,9 @@ export function StorylinesStep({ gen, openSettings }: Props) {
         <RunStatus run={gen.storyRun} onStop={gen.stop} offline={offline || isExample} />
         <CorrectionsList corrections={gen.storyCorrections} title="Storylines" />
         <Exchanges exchanges={gen.exchanges.filter((x) => x.label.startsWith("Storylines"))} />
+        {gen.caseError && <div className="callout err">These storylines could not be written as cases: {gen.caseError}</div>}
       </section>
+      )}
 
       {gen.storylines && current ? (
         <>
@@ -141,36 +144,21 @@ export function StorylinesStep({ gen, openSettings }: Props) {
                       <span className="tl-kind">Hired</span>
                       <span className="tl-detail">Employment contract signed</span>
                     </div>
-                    <span />
+                    <span className="tl-actions mono small muted">{view?.hireEventId ?? ""}</span>
                   </li>
                   {story?.events.map((ev, i) => (
                     <li className="tl-item" key={`${ev.type}-${eventDate(ev)}-${i}`}>
-                      <span className="tl-date">{ev.type === "appraisal" ? `${ev.year}` : pdfDate(eventDate(ev))}</span>
+                      <span className="tl-date">{pdfDate(eventDate(ev))}</span>
                       <span className={`tl-dot t-${ev.type}`} aria-hidden="true" />
                       <div className="tl-body">
                         <span className="tl-kind">{KIND_LABEL[ev.type]}</span>
-                        {ev.type === "appraisal" && !isExample ? (
-                          <>
-                            <select aria-label="Rating" className="select input cell" style={{ maxWidth: 240 }} value={ev.rating} onChange={(e) => patchEvent(i, { rating: e.target.value as Rating })}>
-                              {RATINGS.map((r) => (
-                                <option key={r}>{r}</option>
-                              ))}
-                            </select>
-                            {ev.comment !== undefined && (
-                              <textarea aria-label="Manager comment" className="textarea" rows={2} value={ev.comment} onChange={(e) => patchEvent(i, { comment: e.target.value })} />
-                            )}
-                          </>
-                        ) : (
-                          <span className="tl-detail">{describe(ev)}</span>
-                        )}
+                        <span className="tl-detail">
+                          {describe(ev)}
+                          {ev.type === "appraisal" && view && ` · manager: ${view.managerAt(eventDate(ev)).label}`}
+                        </span>
+                        {ev.type === "appraisal" && ev.comment && <span className="tl-detail muted">"{ev.comment}"</span>}
                       </div>
-                      <span className="tl-actions">
-                        {!isExample && ev.type !== "appraisal" && ev.type !== "medical_check" && (
-                          <button className="btn btn-sm btn-quiet" aria-label={`Remove ${KIND_LABEL[ev.type]}`} onClick={() => removeEvent(i)}>
-                            Remove
-                          </button>
-                        )}
-                      </span>
+                      <span className="tl-actions mono small muted">{view?.eventIds[i] ?? ""}</span>
                     </li>
                   ))}
                 </ol>
@@ -178,7 +166,7 @@ export function StorylinesStep({ gen, openSettings }: Props) {
             </div>
           </div>
           <div className="row">
-            <span className="small muted">Edits here flow straight into the documents. The validator re-checks everything.</span>
+            <span className="small muted">Read-only: every event is a fact in the employee's case (EVT-001 is the hire); the documents are made from the cases, not from this screen.</span>
             <span className="spacer" />
             <button className="btn btn-primary" id="to-documents" onClick={() => gen.setStep("documents")}>
               Next: documents

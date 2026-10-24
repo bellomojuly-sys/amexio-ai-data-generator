@@ -14,8 +14,18 @@ import { formatSpec } from "../spec/exportSpec";
  *   ├── README.md        what is in the package and how it was made
  *   ├── import.xml       the Object Importer control file
  *   ├── generation.json  the facts the documents were made from (config, personas, storylines)
+ *   ├── cases/           the same facts in the case model's format: one folder per employee
+ *   │                    (case.json, cast.json, storyline.json, documents.json), plus
+ *   │                    employees.json and storylines.json for python -m case_model.ingest
  *   └── files/           one PDF per document
  */
+
+export interface PackageExtras {
+  /** Extra text files by path inside the package, e.g. "cases/100101/case.json". */
+  files?: Record<string, string>;
+  /** What generation.json records (the generation run); defaults to the set the documents were made from. */
+  record?: DossierSet;
+}
 
 export interface PackageProgress {
   done: number;
@@ -28,6 +38,7 @@ export async function buildPackageFiles(
   pkg: DossierPackage,
   onProgress?: (p: PackageProgress) => void,
   signal?: AbortSignal,
+  extras: PackageExtras = {},
 ): Promise<Record<string, Uint8Array>> {
   const root = set.config.target.packageName;
   const files: Record<string, Uint8Array> = {};
@@ -44,8 +55,10 @@ export async function buildPackageFiles(
     }
   }
   files[`${root}/import.xml`] = strToU8(buildImportXml(set, pkg));
-  files[`${root}/README.md`] = strToU8(buildReadme(set, pkg));
-  files[`${root}/generation.json`] = strToU8(JSON.stringify(generationRecord(set), null, 2));
+  const extra = extras.files ?? {};
+  files[`${root}/README.md`] = strToU8(buildReadme(set, pkg, Object.keys(extra).some((p) => p.startsWith("cases/"))));
+  files[`${root}/generation.json`] = strToU8(JSON.stringify(generationRecord(extras.record ?? set), null, 2));
+  for (const [path, text] of Object.entries(extra)) files[`${root}/${path}`] = strToU8(text);
   return files;
 }
 
@@ -54,8 +67,9 @@ export async function buildZip(
   pkg: DossierPackage,
   onProgress?: (p: PackageProgress) => void,
   signal?: AbortSignal,
+  extras: PackageExtras = {},
 ): Promise<Uint8Array> {
-  const files = await buildPackageFiles(set, pkg, onProgress, signal);
+  const files = await buildPackageFiles(set, pkg, onProgress, signal, extras);
   onProgress?.({ done: pkg.documents.length, total: pkg.documents.length, phase: "zip" });
   await new Promise((r) => setTimeout(r, 0));
   // PDFs are already compressed; store them, deflate the text files.
@@ -89,7 +103,7 @@ export function countsByType(pkg: DossierPackage): { id: string; label: string; 
   })).filter((r) => r.count > 0);
 }
 
-export function buildReadme(set: DossierSet, pkg: DossierPackage): string {
+export function buildReadme(set: DossierSet, pkg: DossierPackage, withCases = false): string {
   const c = set.config;
   const counts = countsByType(pkg);
   const leavers = set.employees.filter((e) => set.storylines[e.id]?.events.some((ev) => ev.type === "termination"));
@@ -133,6 +147,11 @@ export function buildReadme(set: DossierSet, pkg: DossierPackage): string {
     `- \`import.xml\`: the control file. Folders first, then documents, then updates.`,
     `- \`files/\`: one PDF per document. Names are \`{employee id}_{type}.pdf\`, with a date or year added when an employee has more than one document of a type.`,
     `- \`generation.json\`: the configuration, personas and storylines every document was made from, so the package can be checked or made again.`,
+    ...(withCases
+      ? [
+          `- \`cases/\`: the same facts in the case model's format (v1.1), one folder per employee: \`case.json\`, \`cast.json\` (personas, organisations, employment), \`storyline.json\` (events, EVT-001 is the hire) and \`documents.json\` (one entry per PDF, DOC-001... in date order, each pointing at the event it records). The PDFs and \`import.xml\` were made from these folders. \`cases/employees.json\` and \`cases/storylines.json\` are the same run as input for \`python -m case_model.ingest\`.`,
+        ]
+      : []),
     ``,
     `## Assumptions`,
     ``,

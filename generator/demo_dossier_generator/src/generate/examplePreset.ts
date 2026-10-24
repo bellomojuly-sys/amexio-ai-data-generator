@@ -62,14 +62,14 @@ export function examplePreset(): DossierSet {
       "100104": examStory("100104", "IFRS Reporting Essentials", "Exceeds expectations"),
     },
     corrections: [],
-    // The special cases from the example, each shown once:
+    // The special cases from the example, each shown once. (The CDATA case, the
+    // title "Training Certificate Health & Safety" of 100103, is no longer an
+    // override: it follows from the course, see trainingCertificate.ts.)
     overrides: [
       // Version control: the contract of 100101 is stored as major version 1.0
       { employeeId: "100101", docType: "employment_contract", set: { versionControl: "MAJOR" } },
       // Multilingual: the payslip of 100102 also has a Dutch title
       { employeeId: "100102", docType: "payslip", set: { extraTitles: { nl: "Loonstrook september 2026" } } },
-      // CDATA: this title contains '&'
-      { employeeId: "100103", docType: "training_certificate", set: { title: "Training Certificate Health & Safety" } },
       // sync instead of create
       { employeeId: "100104", docType: "performance_appraisal", set: { action: "sync" } },
     ],

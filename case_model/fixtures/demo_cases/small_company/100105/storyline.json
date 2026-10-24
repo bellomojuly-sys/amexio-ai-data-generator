@@ -1,0 +1,184 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2022-12-12",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "date": "2023-01-20",
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-003": {
+      "course": "Internal Controls Basics",
+      "date": "2023-06-13",
+      "duration_days": 1,
+      "id": "EVT-003",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-004": {
+      "date": "2023-07-01",
+      "id": "EVT-004",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "4050.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-005": {
+      "comment": "Good progress since the last review. Attention point: documenting decisions more consistently.",
+      "date": "2024-06-30",
+      "id": "EVT-005",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2024
+    },
+    "EVT-006": {
+      "date": "2024-12-17",
+      "end_date": "2025-01-18",
+      "id": "EVT-006",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "absence"
+    },
+    "EVT-007": {
+      "date": "2025-01-20",
+      "id": "EVT-007",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-008": {
+      "comment": "Strong technical work this period. Could share knowledge with colleagues more often.",
+      "date": "2025-06-30",
+      "id": "EVT-008",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2025
+    },
+    "EVT-009": {
+      "date": "2025-07-01",
+      "id": "EVT-009",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": "Financial Controller",
+      "new_salary": {
+        "amount": "4950.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Promotion",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-010": {
+      "course": "First Aid at Work",
+      "date": "2025-07-28",
+      "duration_days": 2,
+      "id": "EVT-010",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-011": {
+      "course": "Dutch Payroll Tax Update",
+      "date": "2025-10-15",
+      "duration_days": 1,
+      "id": "EVT-011",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-012": {
+      "date": "2026-01-01",
+      "id": "EVT-012",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "5150.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-013": {
+      "comment": "Very helpful to colleagues and customers. Ready for more responsibility.",
+      "date": "2026-06-30",
+      "id": "EVT-013",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    }
+  }
+}

@@ -1,0 +1,101 @@
+{
+  "documents": {
+    "DOC-001": {
+      "event_id": "EVT-001",
+      "id": "DOC-001",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2022-01-10",
+        "document_type": "employment_contract",
+        "employee_id": "100103",
+        "tags": [
+          "contract",
+          "legal"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "employment_contract"
+    },
+    "DOC-002": {
+      "event_id": "EVT-002",
+      "id": "DOC-002",
+      "metadata": {
+        "confidential": false,
+        "document_date": "2026-02-20",
+        "document_type": "training_certificate",
+        "employee_id": "100103",
+        "tags": [
+          "training",
+          "certificate"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "training_certificate"
+    },
+    "DOC-003": {
+      "event_id": "EVT-003",
+      "id": "DOC-003",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-04-14",
+        "document_type": "medical_check",
+        "employee_id": "100103",
+        "tags": [
+          "medical",
+          "health"
+        ]
+      },
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "text": null,
+      "type": "medical_check"
+    },
+    "DOC-004": {
+      "event_id": "EVT-004",
+      "id": "DOC-004",
+      "metadata": {
+        "confidential": false,
+        "document_date": "2026-06-30",
+        "document_type": "performance_appraisal",
+        "employee_id": "100103",
+        "tags": [
+          "appraisal",
+          "review"
+        ]
+      },
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "text": null,
+      "type": "performance_appraisal"
+    },
+    "DOC-005": {
+      "event_id": null,
+      "id": "DOC-005",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-09-25",
+        "document_type": "payslip",
+        "employee_id": "100103",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    }
+  }
+}

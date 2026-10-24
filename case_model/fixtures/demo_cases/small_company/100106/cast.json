@@ -1,0 +1,66 @@
+{
+  "employments": [
+    {
+      "contract_type": "Permanent",
+      "department": "Human Resources",
+      "hours": 36.0,
+      "organisation_id": "ORG-01",
+      "persona_id": "P001",
+      "position": "HR Assistant",
+      "salary": {
+        "amount": "2850.00",
+        "currency": "EUR"
+      },
+      "start_date": "2023-05-29"
+    }
+  ],
+  "organisations": {
+    "ORG-01": {
+      "address": null,
+      "id": "ORG-01",
+      "kind": "employer",
+      "name": "Acme Logistics B.V. (fictional)"
+    },
+    "ORG-02": {
+      "address": null,
+      "id": "ORG-02",
+      "kind": "training_provider",
+      "name": "Training Academy (fictional)"
+    },
+    "ORG-03": {
+      "address": null,
+      "id": "ORG-03",
+      "kind": "occupational_health",
+      "name": "Occupational health service (fictional)"
+    }
+  },
+  "personas": {
+    "P001": {
+      "address": null,
+      "date_of_birth": null,
+      "id": "P001",
+      "name": "Jesse Rossi",
+      "organisation_id": "ORG-01",
+      "role": "employee",
+      "salutation": null
+    },
+    "P002": {
+      "address": null,
+      "date_of_birth": null,
+      "id": "P002",
+      "name": "H. de Wit (fictional)",
+      "organisation_id": "ORG-01",
+      "role": "manager",
+      "salutation": null
+    },
+    "P003": {
+      "address": null,
+      "date_of_birth": null,
+      "id": "P003",
+      "name": "Occupational physician (fictional)",
+      "organisation_id": "ORG-03",
+      "role": "examiner",
+      "salutation": null
+    }
+  }
+}

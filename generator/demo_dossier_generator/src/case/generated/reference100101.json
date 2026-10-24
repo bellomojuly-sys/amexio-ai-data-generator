@@ -1,0 +1,124 @@
+{
+  "case_number": "100101",
+  "documents": {},
+  "dossier": {
+    "description": null,
+    "employee_number": "100101",
+    "folder_title": "100101 Jan de Vries"
+  },
+  "employments": [
+    {
+      "contract_type": "Permanent",
+      "department": "IT",
+      "hours": 40.0,
+      "organisation_id": "ORG-01",
+      "persona_id": "P001",
+      "position": "Software Developer",
+      "salary": {
+        "amount": "4350.00",
+        "currency": "EUR"
+      },
+      "start_date": "2021-03-01"
+    }
+  ],
+  "events": {
+    "EVT-001": {
+      "date": "2021-03-01",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "course": "Secure Coding Fundamentals",
+      "date": "2026-02-20",
+      "duration_days": 2,
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-003": {
+      "date": "2026-04-14",
+      "id": "EVT-003",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-004": {
+      "comment": null,
+      "date": "2026-06-30",
+      "id": "EVT-004",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Exceeds expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    }
+  },
+  "organisations": {
+    "ORG-01": {
+      "address": null,
+      "id": "ORG-01",
+      "kind": "employer",
+      "name": "Acme Logistics B.V. (fictional)"
+    },
+    "ORG-02": {
+      "address": null,
+      "id": "ORG-02",
+      "kind": "training_provider",
+      "name": "Training Academy (fictional)"
+    },
+    "ORG-03": {
+      "address": null,
+      "id": "ORG-03",
+      "kind": "occupational_health",
+      "name": "Occupational health service (fictional)"
+    }
+  },
+  "personas": {
+    "P001": {
+      "address": null,
+      "date_of_birth": null,
+      "id": "P001",
+      "name": "Jan de Vries",
+      "organisation_id": "ORG-01",
+      "role": "employee",
+      "salutation": null
+    },
+    "P002": {
+      "address": null,
+      "date_of_birth": null,
+      "id": "P002",
+      "name": "M. Bakker (fictional)",
+      "organisation_id": "ORG-01",
+      "role": "manager",
+      "salutation": null
+    },
+    "P003": {
+      "address": null,
+      "date_of_birth": null,
+      "id": "P003",
+      "name": "Occupational physician (fictional)",
+      "organisation_id": "ORG-03",
+      "role": "examiner",
+      "salutation": null
+    }
+  }
+}

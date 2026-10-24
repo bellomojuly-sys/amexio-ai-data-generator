@@ -80,6 +80,8 @@ export interface DossierPackage {
   folders: FolderNode[];
   documents: DocumentInstance[];
   updates: UpdateNode[];
+  /** Rendering from cases: documents a case lists that no template rule can make. */
+  caseIssues?: { employeeId: string; message: string }[];
 }
 
 /** Where each step's content came from, for the README and the UI. */

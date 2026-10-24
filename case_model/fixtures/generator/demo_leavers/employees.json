@@ -1,0 +1,77 @@
+{
+  "company": {
+    "employerName": "Acme Logistics B.V. (fictional)",
+    "trainingProvider": "Training Academy (fictional)",
+    "examiner": "Occupational physician (fictional)",
+    "absenceService": "Occupational health service (fictional)",
+    "directorName": "H. de Wit (fictional)"
+  },
+  "employees": [
+    {
+      "firstName": "Anouk",
+      "lastName": "van Leeuwen",
+      "department": "Customer Service",
+      "position": "Customer Service Manager",
+      "isManager": true,
+      "hireDate": "2022-03-03",
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "startSalary": 5150
+    },
+    {
+      "firstName": "Fleur",
+      "lastName": "van Leeuwen",
+      "department": "Customer Service",
+      "position": "Senior Customer Service Agent",
+      "isManager": false,
+      "hireDate": "2022-06-15",
+      "contractType": "Permanent",
+      "hoursPerWeek": 32,
+      "startSalary": 2550
+    },
+    {
+      "firstName": "Thijs",
+      "lastName": "Bos",
+      "department": "Logistics",
+      "position": "Logistics Manager",
+      "isManager": true,
+      "hireDate": "2023-10-05",
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "startSalary": 5350
+    },
+    {
+      "firstName": "Fatima",
+      "lastName": "de Wit",
+      "department": "Logistics",
+      "position": "Warehouse Employee",
+      "isManager": false,
+      "hireDate": "2024-08-04",
+      "contractType": "Temporary",
+      "hoursPerWeek": 40,
+      "startSalary": 2500
+    },
+    {
+      "firstName": "Bas",
+      "lastName": "Hendriks",
+      "department": "Customer Service",
+      "position": "Senior Customer Service Agent",
+      "isManager": false,
+      "hireDate": "2024-11-15",
+      "contractType": "Temporary",
+      "hoursPerWeek": 28,
+      "startSalary": 2350
+    },
+    {
+      "firstName": "Kevin",
+      "lastName": "Mulder",
+      "department": "Logistics",
+      "position": "Logistics Planner",
+      "isManager": false,
+      "hireDate": "2025-04-20",
+      "contractType": "Permanent",
+      "hoursPerWeek": 32,
+      "startSalary": 3250
+    }
+  ]
+}

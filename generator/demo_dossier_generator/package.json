@@ -10,7 +10,9 @@
     "build:artifact": "tsc --noEmit && vite build --mode artifact && node scripts/to-artifact.mjs",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "example": "vite-node scripts/generate-example.ts"
+    "example": "vite-node scripts/generate-example.ts",
+    "types": "vite-node scripts/write-case-types.ts",
+    "fixtures": "vite-node scripts/write-case-fixtures.ts"
   },
   "dependencies": {
     "fflate": "0.8.2",
@@ -24,6 +26,9 @@
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
     "@xmldom/xmldom": "0.8.10",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "json-schema-to-typescript": "15.0.4",
     "typescript": "5.6.3",
     "vite": "5.4.11",
     "vite-node": "2.1.8",

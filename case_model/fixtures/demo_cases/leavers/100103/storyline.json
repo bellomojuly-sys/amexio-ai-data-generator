@@ -1,0 +1,137 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2023-10-05",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "date": "2024-01-20",
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-003": {
+      "date": "2024-03-04",
+      "end_date": "2024-03-27",
+      "id": "EVT-003",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "absence"
+    },
+    "EVT-004": {
+      "date": "2024-07-01",
+      "id": "EVT-004",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "5550.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-005": {
+      "date": "2024-07-22",
+      "end_date": "2024-09-01",
+      "id": "EVT-005",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "absence"
+    },
+    "EVT-006": {
+      "course": "Health & Safety Training",
+      "date": "2024-12-01",
+      "duration_days": 3,
+      "id": "EVT-006",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-007": {
+      "comment": "Good progress since the last review. Attention point: documenting decisions more consistently.",
+      "date": "2025-06-30",
+      "id": "EVT-007",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2025
+    },
+    "EVT-008": {
+      "date": "2026-01-20",
+      "id": "EVT-008",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-009": {
+      "comment": "Very helpful to colleagues and customers. Ready for more responsibility.",
+      "date": "2026-06-30",
+      "id": "EVT-009",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    },
+    "EVT-010": {
+      "date": "2026-07-01",
+      "id": "EVT-010",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "5650.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    }
+  }
+}

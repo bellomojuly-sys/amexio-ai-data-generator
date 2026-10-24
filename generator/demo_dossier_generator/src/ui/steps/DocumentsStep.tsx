@@ -22,6 +22,7 @@ export function DocumentsStep({ gen, notify }: Props) {
   const [docKey, setDocKey] = useState<string | null>(null);
   const [showOrigin, setShowOrigin] = useState(true);
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [caseFile, setCaseFile] = useState<string>("documents.json");
 
   const counts = useMemo(() => (pkg ? countsByType(pkg) : []), [pkg]);
   const byEmployee = useMemo(() => {
@@ -54,7 +55,7 @@ export function DocumentsStep({ gen, notify }: Props) {
           <div className="eyebrow">Step 4</div>
           <h2>Documents</h2>
           <p className="lead">
-            Code turns the storylines into documents. Every name, date and amount below is read from the same facts, which is what keeps a payslip in line with its contract.
+            Code turns the cases into documents. Every name, date and amount below is read from the employee's case (one folder of four JSON files per employee, in the case model's format), which is what keeps a payslip in line with its contract.
           </p>
         </div>
         <button className="btn btn-primary" id="to-validate" onClick={() => gen.setStep("validate")}>
@@ -156,12 +157,32 @@ export function DocumentsStep({ gen, notify }: Props) {
                   </label>
                   <button className="btn btn-sm" onClick={downloadPdf}>Download PDF</button>
                 </div>
+                {doc.caseEventId !== undefined && (
+                  <div className="case-ids small">
+                    <span className="mono">{doc.caseDocId ?? "not listed in the case"}</span>
+                    <span>{doc.caseEventId ? <>records <span className="mono">{doc.caseEventId}</span></> : "recurring: no event"}</span>
+                    {doc.participantIds && <span>involves <span className="mono">{doc.participantIds.join(", ")}</span></span>}
+                  </div>
+                )}
                 {showOrigin && <OriginLegend fromAi={!/No AI|AMEXIO example/.test(`${set.provenance.personas} ${set.provenance.storylines}`)} />}
                 <DocumentPage doc={rendered} showOrigin={showOrigin} />
                 <div className="stack" style={{ gap: 6 }}>
                   <div className="eyebrow">Its node in import.xml</div>
                   <XmlView xml={documentNode(set, doc, "").join("\n")} />
                 </div>
+                {gen.stage?.files[`${employee.id}/case.json`] && (
+                  <details className="disclosure">
+                    <summary>This dossier in the case model ({employee.id}/)</summary>
+                    <div className="disclosure-body stack">
+                      <div className="seg" role="group" aria-label="Case file">
+                        {["case.json", "cast.json", "storyline.json", "documents.json"].map((f) => (
+                          <button key={f} aria-pressed={caseFile === f} onClick={() => setCaseFile(f)}>{f}</button>
+                        ))}
+                      </div>
+                      <pre className="tree case-json">{gen.stage.files[`${employee.id}/${caseFile}`]}</pre>
+                    </div>
+                  </details>
+                )}
               </>
             ) : (
               <div className="empty">Pick a document.</div>

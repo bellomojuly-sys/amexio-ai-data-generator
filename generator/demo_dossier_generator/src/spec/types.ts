@@ -145,6 +145,12 @@ export interface DocumentInstance {
   action: "create" | "sync";
   versionControl?: "MAJOR" | "MINOR";
   sourceEvent?: number;
+  /** Rendered from a case: the case's document ID (DOC-001), when the case lists its documents. */
+  caseDocId?: string;
+  /** Rendered from a case: the event the document records (EVT-001), or null for payslips and annual statements. */
+  caseEventId?: string | null;
+  /** Rendered from a case: the personas the document involves (P001, P002...). */
+  participantIds?: string[];
 }
 
 /** A row as printed in the PDF. */
