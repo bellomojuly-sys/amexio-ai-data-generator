@@ -15,13 +15,13 @@ from case_model.format_rules import (
 
 # AX-011 — one ID pattern per type.
 
-def test_the_five_types_have_a_pattern():
-    assert set(ID_PATTERNS) == {"persona", "organisation", "vehicle", "event", "document"}
+def test_the_four_types_have_a_pattern():
+    # The insurance-era "vehicle" type is gone: the domain is HR.
+    assert set(ID_PATTERNS) == {"persona", "organisation", "event", "document"}
 
 @pytest.mark.parametrize("kind, value", [
     ("persona", "P001"),
     ("organisation", "ORG-01"),
-    ("vehicle", "V001"),
     ("event", "EVT-001"),
     ("document", "DOC-001"),
 ])
@@ -37,7 +37,10 @@ def test_well_formed_id_is_accepted(kind, value):
     ("organisation", "ORG-1"),
     ("organisation", "ORG-001"),
     ("organisation", "ORG01"),
-    ("vehicle", "V01"),
+    # AX-011a — a trailing newline and non-ASCII digits are not an ID.
+    ("persona", "P001\n"),
+    ("persona", "P\u0660\u0660\u0661"),
+    ("event", "EVT-001\n"),
     ("event", "EVT-01"),
     ("event", "EVT001"),
     ("document", "DOC-1"),
@@ -72,6 +75,9 @@ def test_employee_number_is_six_digits():
     assert not is_valid_employee_number("123")
     assert not is_valid_employee_number("1001011")
     assert not is_valid_employee_number("10010a")
+    # AX-011a
+    assert not is_valid_employee_number("100101\n")
+    assert not is_valid_employee_number("\u0661\u0660\u0660\u0661\u0660\u0661")
 
 
 # AX-012 — reject input that already carries an ID.

@@ -1,2 +1,2 @@
-pydantic
+pydantic==2.13.5  # pinned: the committed JSON Schemas depend on the exact version
 pytest
