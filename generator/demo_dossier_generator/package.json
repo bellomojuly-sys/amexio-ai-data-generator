@@ -15,7 +15,7 @@
     "fixtures": "vite-node scripts/write-case-fixtures.ts"
   },
   "dependencies": {
-    "fflate": "0.8.2",
+    "fflate": "0.8.3",
     "pdf-lib": "1.17.1",
     "react": "18.3.1",
     "react-dom": "18.3.1"
@@ -25,17 +25,17 @@
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.4",
-    "@xmldom/xmldom": "0.8.10",
-    "ajv": "8.17.1",
+    "@xmldom/xmldom": "0.8.15",
+    "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "json-schema-to-typescript": "15.0.4",
     "typescript": "5.6.3",
-    "vite": "5.4.11",
-    "vite-node": "2.1.8",
-    "vite-plugin-singlefile": "2.0.3",
-    "vitest": "2.1.8"
+    "vite": "6.4.4",
+    "vite-node": "3.2.4",
+    "vite-plugin-singlefile": "2.3.3",
+    "vitest": "3.2.7"
   },
   "allowScripts": {
-    "esbuild@0.21.5": true
+    "esbuild@0.25.12": true
   }
 }
