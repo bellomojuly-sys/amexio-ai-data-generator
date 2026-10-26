@@ -1,0 +1,312 @@
+{
+  "storylines": [
+    {
+      "employeeId": "100101",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2022-04-14",
+          "result": "Fit for work"
+        },
+        {
+          "type": "absence",
+          "startDate": "2023-03-07",
+          "endDate": "2023-04-13"
+        },
+        {
+          "type": "medical_check",
+          "date": "2024-04-14",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2025-03-20",
+          "course": "De-escalation Skills",
+          "durationDays": 1
+        },
+        {
+          "type": "absence",
+          "startDate": "2025-04-13",
+          "endDate": "2025-05-05"
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Meets expectations",
+          "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge."
+        },
+        {
+          "type": "medical_check",
+          "date": "2026-04-14",
+          "result": "Fit for work"
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Meets expectations",
+          "comment": "Good progress since the last review. Attention point: documenting decisions more consistently."
+        },
+        {
+          "type": "contract_change",
+          "date": "2026-07-01",
+          "reason": "Annual salary review",
+          "newSalary": 5300
+        }
+      ]
+    },
+    {
+      "employeeId": "100102",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2022-08-02",
+          "result": "Fit for work"
+        },
+        {
+          "type": "contract_change",
+          "date": "2023-07-01",
+          "reason": "Annual salary review",
+          "newSalary": 2650
+        },
+        {
+          "type": "training",
+          "date": "2023-07-13",
+          "course": "De-escalation Skills",
+          "durationDays": 1
+        },
+        {
+          "type": "training",
+          "date": "2023-08-16",
+          "course": "Customer Communication",
+          "durationDays": 2
+        },
+        {
+          "type": "medical_check",
+          "date": "2024-08-02",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2025-02-07",
+          "course": "Complaint Handling",
+          "durationDays": 3
+        },
+        {
+          "type": "contract_change",
+          "date": "2025-04-01",
+          "reason": "Annual salary review",
+          "newSalary": 2750
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Meets expectations",
+          "comment": "Reliable and well organised. Takes ownership of planning and keeps the team informed."
+        },
+        {
+          "type": "absence",
+          "startDate": "2026-01-04",
+          "endDate": "2026-01-15"
+        },
+        {
+          "type": "absence",
+          "startDate": "2026-04-18",
+          "endDate": "2026-05-09"
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Exceeds expectations",
+          "comment": "Good progress since the last review. Attention point: documenting decisions more consistently."
+        },
+        {
+          "type": "medical_check",
+          "date": "2026-08-02",
+          "result": "Fit for work"
+        }
+      ]
+    },
+    {
+      "employeeId": "100103",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2024-01-20",
+          "result": "Fit for work"
+        },
+        {
+          "type": "absence",
+          "startDate": "2024-03-04",
+          "endDate": "2024-03-27"
+        },
+        {
+          "type": "contract_change",
+          "date": "2024-07-01",
+          "reason": "Annual salary review",
+          "newSalary": 5550
+        },
+        {
+          "type": "absence",
+          "startDate": "2024-07-22",
+          "endDate": "2024-09-01"
+        },
+        {
+          "type": "training",
+          "date": "2024-12-01",
+          "course": "Health & Safety Training",
+          "durationDays": 3
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Meets expectations",
+          "comment": "Good progress since the last review. Attention point: documenting decisions more consistently."
+        },
+        {
+          "type": "medical_check",
+          "date": "2026-01-20",
+          "result": "Fit for work"
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Meets expectations",
+          "comment": "Very helpful to colleagues and customers. Ready for more responsibility."
+        },
+        {
+          "type": "contract_change",
+          "date": "2026-07-01",
+          "reason": "Annual salary review",
+          "newSalary": 5650
+        }
+      ]
+    },
+    {
+      "employeeId": "100104",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2024-09-21",
+          "result": "Fit for work"
+        },
+        {
+          "type": "training",
+          "date": "2025-01-05",
+          "course": "Forklift Certification",
+          "durationDays": 3
+        },
+        {
+          "type": "absence",
+          "startDate": "2025-03-19",
+          "endDate": "2025-05-03"
+        },
+        {
+          "type": "contract_change",
+          "date": "2025-04-01",
+          "reason": "Promotion",
+          "newSalary": 3400,
+          "newPosition": "Warehouse Supervisor"
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Meets expectations",
+          "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge."
+        },
+        {
+          "type": "termination",
+          "date": "2026-05-31",
+          "reason": "End of temporary contract"
+        }
+      ]
+    },
+    {
+      "employeeId": "100105",
+      "events": [
+        {
+          "type": "medical_check",
+          "date": "2025-01-11",
+          "result": "Fit for work with adjustments"
+        },
+        {
+          "type": "training",
+          "date": "2025-02-25",
+          "course": "Complaint Handling",
+          "durationDays": 1
+        },
+        {
+          "type": "appraisal",
+          "year": 2025,
+          "rating": "Meets expectations",
+          "comment": "Strong technical work this period. Could share knowledge with colleagues more often."
+        },
+        {
+          "type": "absence",
+          "startDate": "2025-07-26",
+          "endDate": "2025-08-25"
+        },
+        {
+          "type": "training",
+          "date": "2025-11-14",
+          "course": "BHV Emergency Response",
+          "durationDays": 2
+        },
+        {
+          "type": "contract_change",
+          "date": "2026-04-01",
+          "reason": "Annual salary review",
+          "newSalary": 2450
+        },
+        {
+          "type": "termination",
+          "date": "2026-06-30",
+          "reason": "End of temporary contract"
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Meets expectations",
+          "comment": "Strong technical work this period. Could share knowledge with colleagues more often."
+        }
+      ]
+    },
+    {
+      "employeeId": "100106",
+      "events": [
+        {
+          "type": "training",
+          "date": "2025-07-23",
+          "course": "Lean Warehousing",
+          "durationDays": 1
+        },
+        {
+          "type": "medical_check",
+          "date": "2025-08-03",
+          "result": "Fit for work"
+        },
+        {
+          "type": "absence",
+          "startDate": "2026-01-15",
+          "endDate": "2026-01-21"
+        },
+        {
+          "type": "contract_change",
+          "date": "2026-04-01",
+          "reason": "Annual salary review",
+          "newSalary": 3350
+        },
+        {
+          "type": "appraisal",
+          "year": 2026,
+          "rating": "Below expectations",
+          "comment": "Reliable and well organised. Takes ownership of planning and keeps the team informed."
+        },
+        {
+          "type": "termination",
+          "date": "2026-07-31",
+          "reason": "Resignation"
+        }
+      ]
+    }
+  ]
+}

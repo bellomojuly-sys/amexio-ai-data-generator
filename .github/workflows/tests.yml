@@ -14,3 +14,22 @@ jobs:
           python-version: "3.13"
       - run: pip install -r requirements.txt
       - run: python -m pytest -v
+
+  # The dossier generator demo: its case files must stay in step with the case
+  # model (generated types, demo_cases fixtures, the same broken cases refused).
+  # AMEXIO's mock package is not in git, so the golden comparison is skipped here.
+  vitest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: generator/demo_dossier_generator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: generator/demo_dossier_generator/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test

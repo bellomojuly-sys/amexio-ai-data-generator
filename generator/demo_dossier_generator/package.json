@@ -1,0 +1,41 @@
+{
+  "name": "amexio-dossier-generator",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Demo: AI-assisted generator for synthetic HR dossiers in the OpenText Object Importer format (AMEXIO project).",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:artifact": "tsc --noEmit && vite build --mode artifact && node scripts/to-artifact.mjs",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "example": "vite-node scripts/generate-example.ts",
+    "types": "vite-node scripts/write-case-types.ts",
+    "fixtures": "vite-node scripts/write-case-fixtures.ts"
+  },
+  "dependencies": {
+    "fflate": "0.8.3",
+    "pdf-lib": "1.17.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.17.6",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "@xmldom/xmldom": "0.8.15",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "json-schema-to-typescript": "15.0.4",
+    "typescript": "5.6.3",
+    "vite": "6.4.4",
+    "vite-node": "3.2.4",
+    "vite-plugin-singlefile": "2.3.3",
+    "vitest": "3.2.7"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}

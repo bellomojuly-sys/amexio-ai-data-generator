@@ -1,0 +1,103 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2024-07-15",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "date": "2024-09-08",
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-003": {
+      "course": "Information Security Awareness",
+      "date": "2024-10-11",
+      "duration_days": 1,
+      "id": "EVT-003",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-004": {
+      "course": "Lean Warehousing",
+      "date": "2025-02-21",
+      "duration_days": 2,
+      "id": "EVT-004",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-005": {
+      "date": "2025-06-07",
+      "end_date": "2025-07-22",
+      "id": "EVT-005",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "absence"
+    },
+    "EVT-006": {
+      "comment": "Very helpful to colleagues and customers. Ready for more responsibility.",
+      "date": "2025-06-30",
+      "id": "EVT-006",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2025
+    },
+    "EVT-007": {
+      "comment": "Very helpful to colleagues and customers. Ready for more responsibility.",
+      "date": "2026-06-30",
+      "id": "EVT-007",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    },
+    "EVT-008": {
+      "date": "2026-09-08",
+      "id": "EVT-008",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    }
+  }
+}

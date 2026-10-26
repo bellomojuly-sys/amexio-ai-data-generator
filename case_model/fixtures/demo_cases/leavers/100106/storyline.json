@@ -1,0 +1,94 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2025-04-20",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "course": "Lean Warehousing",
+      "date": "2025-07-23",
+      "duration_days": 1,
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-003": {
+      "date": "2025-08-03",
+      "id": "EVT-003",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-004": {
+      "date": "2026-01-15",
+      "end_date": "2026-01-21",
+      "id": "EVT-004",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "absence"
+    },
+    "EVT-005": {
+      "date": "2026-04-01",
+      "id": "EVT-005",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "3350.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-006": {
+      "comment": "Reliable and well organised. Takes ownership of planning and keeps the team informed.",
+      "date": "2026-06-30",
+      "id": "EVT-006",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Below expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    },
+    "EVT-007": {
+      "date": "2026-07-31",
+      "id": "EVT-007",
+      "label": null,
+      "notice_date": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Resignation",
+      "summary": null,
+      "type": "termination"
+    }
+  }
+}

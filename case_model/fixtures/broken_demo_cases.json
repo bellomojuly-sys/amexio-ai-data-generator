@@ -1,0 +1,78 @@
+{
+  "note": "Deliberately broken copies of demo_cases/amexio_example/100101. Each one breaks one rule; load_case must refuse every one (test_demo_cases.py) and so must the demo's own pre-check (generator/demo_dossier_generator/tests/case.test.ts). 'error' is a regular expression both error messages match.",
+  "base": "demo_cases/amexio_example/100101",
+  "cases": [
+    {
+      "name": "event_id_wrong_shape",
+      "rule": "AX-011b: an event is filed under EVT- and three digits",
+      "changes": [{"file": "storyline.json", "rename": ["events", "EVT-002"], "to": "EVT-2"}],
+      "error": "Invalid event id .EVT-2."
+    },
+    {
+      "name": "appraisal_without_rating",
+      "rule": "BR-05: an appraisal has a rating from the closed list",
+      "changes": [{"file": "storyline.json", "path": ["events", "EVT-004", "rating"], "delete": true}],
+      "error": "rating"
+    },
+    {
+      "name": "rating_not_in_list",
+      "rule": "BR-04: ratings come from AMEXIO's closed list",
+      "changes": [{"file": "storyline.json", "path": ["events", "EVT-004", "rating"], "value": "Excellent"}],
+      "error": "Excellent|rating"
+    },
+    {
+      "name": "event_before_hire",
+      "rule": "BR-06: nothing happens before the hire",
+      "changes": [{"file": "storyline.json", "path": ["events", "EVT-002", "date"], "value": "2020-01-15"}],
+      "error": "happens before the hire"
+    },
+    {
+      "name": "hire_not_on_start_date",
+      "rule": "BR-06: the hire is dated on the employment's start date",
+      "changes": [{"file": "storyline.json", "path": ["events", "EVT-001", "date"], "value": "2021-03-02"}],
+      "error": "employment starts on 2021-03-01"
+    },
+    {
+      "name": "second_hire",
+      "rule": "BR-06: at most one hire",
+      "changes": [{"file": "storyline.json", "path": ["events", "EVT-005"], "value": {"date": "2021-03-01", "id": "EVT-005", "label": null, "participant_ids": ["P001"], "summary": null, "type": "hire"}}],
+      "error": "at most one hire"
+    },
+    {
+      "name": "contract_without_event",
+      "rule": "D3a: only payslips and annual income statements may have no event",
+      "changes": [{"file": "documents.json", "path": ["documents", "DOC-001", "event_id"], "value": null}],
+      "error": "needs an event"
+    },
+    {
+      "name": "document_unknown_event",
+      "rule": "Every document points at an event the case holds",
+      "changes": [{"file": "documents.json", "path": ["documents", "DOC-002", "event_id"], "value": "EVT-099"}],
+      "error": "unknown event"
+    },
+    {
+      "name": "document_of_another_employee",
+      "rule": "A document's Employee ID is the dossier's employee number",
+      "changes": [{"file": "documents.json", "path": ["documents", "DOC-003", "metadata", "employee_id"], "value": "100102"}],
+      "error": "belongs to employee 100102"
+    },
+    {
+      "name": "metadata_type_differs",
+      "rule": "metadata.document_type is the document's type",
+      "changes": [{"file": "documents.json", "path": ["documents", "DOC-004", "metadata", "document_type"], "value": "payslip"}],
+      "error": "metadata says payslip"
+    },
+    {
+      "name": "amount_as_text",
+      "rule": "AX-014: an amount is a number plus a currency, never formatted text",
+      "changes": [{"file": "cast.json", "path": ["employments", 0, "salary", "amount"], "value": "EUR 4.350"}],
+      "error": "mount must be a number"
+    },
+    {
+      "name": "unknown_participant",
+      "rule": "Every participant is a persona the case holds",
+      "changes": [{"file": "storyline.json", "path": ["events", "EVT-003", "participant_ids"], "value": ["P001", "P009"]}],
+      "error": "unknown persona"
+    }
+  ]
+}

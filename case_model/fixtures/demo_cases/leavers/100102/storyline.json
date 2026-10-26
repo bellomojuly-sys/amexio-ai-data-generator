@@ -1,0 +1,175 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2022-06-15",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "date": "2022-08-02",
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-003": {
+      "date": "2023-07-01",
+      "id": "EVT-003",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "2650.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-004": {
+      "course": "De-escalation Skills",
+      "date": "2023-07-13",
+      "duration_days": 1,
+      "id": "EVT-004",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-005": {
+      "course": "Customer Communication",
+      "date": "2023-08-16",
+      "duration_days": 2,
+      "id": "EVT-005",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-006": {
+      "date": "2024-08-02",
+      "id": "EVT-006",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-007": {
+      "course": "Complaint Handling",
+      "date": "2025-02-07",
+      "duration_days": 3,
+      "id": "EVT-007",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-008": {
+      "date": "2025-04-01",
+      "id": "EVT-008",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "2750.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-009": {
+      "comment": "Reliable and well organised. Takes ownership of planning and keeps the team informed.",
+      "date": "2025-06-30",
+      "id": "EVT-009",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2025
+    },
+    "EVT-010": {
+      "date": "2026-01-04",
+      "end_date": "2026-01-15",
+      "id": "EVT-010",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "absence"
+    },
+    "EVT-011": {
+      "date": "2026-04-18",
+      "end_date": "2026-05-09",
+      "id": "EVT-011",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "absence"
+    },
+    "EVT-012": {
+      "comment": "Good progress since the last review. Attention point: documenting decisions more consistently.",
+      "date": "2026-06-30",
+      "id": "EVT-012",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Exceeds expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    },
+    "EVT-013": {
+      "date": "2026-08-02",
+      "id": "EVT-013",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    }
+  }
+}

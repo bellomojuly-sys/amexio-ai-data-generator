@@ -1,0 +1,119 @@
+{
+  "documents": {
+    "DOC-001": {
+      "event_id": "EVT-001",
+      "id": "DOC-001",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2021-03-11",
+        "document_type": "employment_contract",
+        "employee_id": "100104",
+        "tags": [
+          "contract",
+          "legal"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "employment_contract"
+    },
+    "DOC-002": {
+      "event_id": "EVT-004",
+      "id": "DOC-002",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2023-01-01",
+        "document_type": "contract_amendment",
+        "employee_id": "100104",
+        "tags": [
+          "contract",
+          "amendment"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "contract_amendment"
+    },
+    "DOC-003": {
+      "event_id": "EVT-007",
+      "id": "DOC-003",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2024-01-01",
+        "document_type": "contract_amendment",
+        "employee_id": "100104",
+        "tags": [
+          "contract",
+          "amendment"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "contract_amendment"
+    },
+    "DOC-004": {
+      "event_id": "EVT-008",
+      "id": "DOC-004",
+      "metadata": {
+        "confidential": false,
+        "document_date": "2024-06-30",
+        "document_type": "performance_appraisal",
+        "employee_id": "100104",
+        "tags": [
+          "appraisal",
+          "review"
+        ]
+      },
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "text": null,
+      "type": "performance_appraisal"
+    },
+    "DOC-005": {
+      "event_id": "EVT-009",
+      "id": "DOC-005",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2024-06-30",
+        "document_type": "termination_letter",
+        "employee_id": "100104",
+        "tags": [
+          "termination",
+          "legal"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "termination_letter"
+    },
+    "DOC-006": {
+      "event_id": null,
+      "id": "DOC-006",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-01-31",
+        "document_type": "annual_income_statement",
+        "employee_id": "100104",
+        "tags": [
+          "payroll",
+          "tax"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "annual_income_statement"
+    }
+  }
+}

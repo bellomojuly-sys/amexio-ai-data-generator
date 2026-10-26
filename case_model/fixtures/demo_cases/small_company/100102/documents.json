@@ -1,0 +1,654 @@
+{
+  "documents": {
+    "DOC-001": {
+      "event_id": "EVT-001",
+      "id": "DOC-001",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2020-05-15",
+        "document_type": "employment_contract",
+        "employee_id": "100102",
+        "tags": [
+          "contract",
+          "legal"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "employment_contract"
+    },
+    "DOC-002": {
+      "event_id": "EVT-007",
+      "id": "DOC-002",
+      "metadata": {
+        "confidential": false,
+        "document_date": "2024-06-30",
+        "document_type": "performance_appraisal",
+        "employee_id": "100102",
+        "tags": [
+          "appraisal",
+          "review"
+        ]
+      },
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "text": null,
+      "type": "performance_appraisal"
+    },
+    "DOC-003": {
+      "event_id": null,
+      "id": "DOC-003",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2024-09-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-004": {
+      "event_id": null,
+      "id": "DOC-004",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2024-10-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-005": {
+      "event_id": null,
+      "id": "DOC-005",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2024-11-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-006": {
+      "event_id": null,
+      "id": "DOC-006",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2024-12-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-007": {
+      "event_id": null,
+      "id": "DOC-007",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-01-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-008": {
+      "event_id": null,
+      "id": "DOC-008",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-01-31",
+        "document_type": "annual_income_statement",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "tax"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "annual_income_statement"
+    },
+    "DOC-009": {
+      "event_id": null,
+      "id": "DOC-009",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-02-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-010": {
+      "event_id": null,
+      "id": "DOC-010",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-03-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-011": {
+      "event_id": null,
+      "id": "DOC-011",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-04-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-012": {
+      "event_id": null,
+      "id": "DOC-012",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-05-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-013": {
+      "event_id": null,
+      "id": "DOC-013",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-06-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-014": {
+      "event_id": "EVT-008",
+      "id": "DOC-014",
+      "metadata": {
+        "confidential": false,
+        "document_date": "2025-06-30",
+        "document_type": "performance_appraisal",
+        "employee_id": "100102",
+        "tags": [
+          "appraisal",
+          "review"
+        ]
+      },
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "text": null,
+      "type": "performance_appraisal"
+    },
+    "DOC-015": {
+      "event_id": "EVT-009",
+      "id": "DOC-015",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-07-01",
+        "document_type": "contract_amendment",
+        "employee_id": "100102",
+        "tags": [
+          "contract",
+          "amendment"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "contract_amendment"
+    },
+    "DOC-016": {
+      "event_id": null,
+      "id": "DOC-016",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-07-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-017": {
+      "event_id": null,
+      "id": "DOC-017",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-08-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-018": {
+      "event_id": null,
+      "id": "DOC-018",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-09-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-019": {
+      "event_id": null,
+      "id": "DOC-019",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-10-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-020": {
+      "event_id": null,
+      "id": "DOC-020",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-11-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-021": {
+      "event_id": null,
+      "id": "DOC-021",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2025-12-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-022": {
+      "event_id": "EVT-010",
+      "id": "DOC-022",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-01-01",
+        "document_type": "contract_amendment",
+        "employee_id": "100102",
+        "tags": [
+          "contract",
+          "amendment"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "contract_amendment"
+    },
+    "DOC-023": {
+      "event_id": null,
+      "id": "DOC-023",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-01-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-024": {
+      "event_id": null,
+      "id": "DOC-024",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-01-31",
+        "document_type": "annual_income_statement",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "tax"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "annual_income_statement"
+    },
+    "DOC-025": {
+      "event_id": null,
+      "id": "DOC-025",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-02-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-026": {
+      "event_id": null,
+      "id": "DOC-026",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-03-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-027": {
+      "event_id": null,
+      "id": "DOC-027",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-04-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-028": {
+      "event_id": null,
+      "id": "DOC-028",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-05-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-029": {
+      "event_id": "EVT-011",
+      "id": "DOC-029",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-06-21",
+        "document_type": "medical_check",
+        "employee_id": "100102",
+        "tags": [
+          "medical",
+          "health"
+        ]
+      },
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "text": null,
+      "type": "medical_check"
+    },
+    "DOC-030": {
+      "event_id": null,
+      "id": "DOC-030",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-06-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-031": {
+      "event_id": "EVT-012",
+      "id": "DOC-031",
+      "metadata": {
+        "confidential": false,
+        "document_date": "2026-06-30",
+        "document_type": "performance_appraisal",
+        "employee_id": "100102",
+        "tags": [
+          "appraisal",
+          "review"
+        ]
+      },
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "text": null,
+      "type": "performance_appraisal"
+    },
+    "DOC-032": {
+      "event_id": null,
+      "id": "DOC-032",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-07-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-033": {
+      "event_id": null,
+      "id": "DOC-033",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-08-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    },
+    "DOC-034": {
+      "event_id": null,
+      "id": "DOC-034",
+      "metadata": {
+        "confidential": true,
+        "document_date": "2026-09-25",
+        "document_type": "payslip",
+        "employee_id": "100102",
+        "tags": [
+          "payroll",
+          "salary"
+        ]
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "text": null,
+      "type": "payslip"
+    }
+  }
+}

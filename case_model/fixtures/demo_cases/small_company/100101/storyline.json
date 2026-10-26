@@ -1,0 +1,237 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2017-06-26",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "date": "2017-10-04",
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-003": {
+      "date": "2019-01-01",
+      "id": "EVT-003",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "4050.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-004": {
+      "date": "2019-10-04",
+      "id": "EVT-004",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-005": {
+      "course": "First Aid at Work",
+      "date": "2019-11-25",
+      "duration_days": 2,
+      "id": "EVT-005",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-006": {
+      "date": "2021-07-01",
+      "id": "EVT-006",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": "Financial Controller",
+      "new_salary": {
+        "amount": "4950.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Promotion",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-007": {
+      "date": "2021-10-04",
+      "id": "EVT-007",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-008": {
+      "date": "2022-07-01",
+      "id": "EVT-008",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "5050.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-009": {
+      "date": "2023-01-01",
+      "id": "EVT-009",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": "Senior Financial Controller",
+      "new_salary": {
+        "amount": "5750.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Promotion",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-010": {
+      "date": "2023-10-04",
+      "id": "EVT-010",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-011": {
+      "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge.",
+      "date": "2024-06-30",
+      "id": "EVT-011",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2024
+    },
+    "EVT-012": {
+      "date": "2025-04-01",
+      "id": "EVT-012",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "5850.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-013": {
+      "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge.",
+      "date": "2025-06-30",
+      "id": "EVT-013",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2025
+    },
+    "EVT-014": {
+      "date": "2025-10-04",
+      "id": "EVT-014",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work with adjustments",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-015": {
+      "date": "2026-04-01",
+      "id": "EVT-015",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "6100.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-016": {
+      "comment": "Good progress since the last review. Attention point: documenting decisions more consistently.",
+      "date": "2026-06-30",
+      "id": "EVT-016",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    }
+  }
+}

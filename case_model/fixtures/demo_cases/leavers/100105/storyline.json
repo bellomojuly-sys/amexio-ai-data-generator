@@ -1,0 +1,121 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2024-11-15",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "date": "2025-01-11",
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work with adjustments",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-003": {
+      "course": "Complaint Handling",
+      "date": "2025-02-25",
+      "duration_days": 1,
+      "id": "EVT-003",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-004": {
+      "comment": "Strong technical work this period. Could share knowledge with colleagues more often.",
+      "date": "2025-06-30",
+      "id": "EVT-004",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2025
+    },
+    "EVT-005": {
+      "date": "2025-07-26",
+      "end_date": "2025-08-25",
+      "id": "EVT-005",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "absence"
+    },
+    "EVT-006": {
+      "course": "BHV Emergency Response",
+      "date": "2025-11-14",
+      "duration_days": 2,
+      "id": "EVT-006",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-007": {
+      "date": "2026-04-01",
+      "id": "EVT-007",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": null,
+      "new_salary": {
+        "amount": "2450.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Annual salary review",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-008": {
+      "date": "2026-06-30",
+      "id": "EVT-008",
+      "label": null,
+      "notice_date": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "End of temporary contract",
+      "summary": null,
+      "type": "termination"
+    },
+    "EVT-009": {
+      "comment": "Strong technical work this period. Could share knowledge with colleagues more often.",
+      "date": "2026-06-30",
+      "id": "EVT-009",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    }
+  }
+}

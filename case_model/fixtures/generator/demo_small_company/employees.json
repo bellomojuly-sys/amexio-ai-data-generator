@@ -1,0 +1,107 @@
+{
+  "company": {
+    "employerName": "Acme Logistics B.V. (fictional)",
+    "trainingProvider": "Training Academy (fictional)",
+    "examiner": "Occupational physician (fictional)",
+    "absenceService": "Occupational health service (fictional)",
+    "directorName": "H. de Wit (fictional)"
+  },
+  "employees": [
+    {
+      "firstName": "Gijs",
+      "lastName": "Bos",
+      "department": "Finance",
+      "position": "Accountant",
+      "isManager": false,
+      "hireDate": "2017-06-26",
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "startSalary": 3950,
+      "managerName": "H. de Wit (fictional)"
+    },
+    {
+      "firstName": "Anna",
+      "lastName": "Smit",
+      "department": "IT",
+      "position": "Junior Software Developer",
+      "isManager": false,
+      "hireDate": "2020-05-15",
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "startSalary": 3000,
+      "managerName": "H. de Wit (fictional)"
+    },
+    {
+      "firstName": "Rizky",
+      "lastName": "van der Linden",
+      "department": "Logistics",
+      "position": "Logistics Planner",
+      "isManager": false,
+      "hireDate": "2021-01-18",
+      "contractType": "Permanent",
+      "hoursPerWeek": 38,
+      "startSalary": 3250,
+      "managerName": "H. de Wit (fictional)"
+    },
+    {
+      "firstName": "Emma",
+      "lastName": "Kaya",
+      "department": "Human Resources",
+      "position": "HR Assistant",
+      "isManager": false,
+      "hireDate": "2021-03-11",
+      "contractType": "Permanent",
+      "hoursPerWeek": 38,
+      "startSalary": 2600,
+      "managerName": "H. de Wit (fictional)"
+    },
+    {
+      "firstName": "Anna",
+      "lastName": "Boateng",
+      "department": "Finance",
+      "position": "Accountant",
+      "isManager": false,
+      "hireDate": "2022-12-12",
+      "contractType": "Permanent",
+      "hoursPerWeek": 40,
+      "startSalary": 3950,
+      "managerName": "H. de Wit (fictional)"
+    },
+    {
+      "firstName": "Jesse",
+      "lastName": "Rossi",
+      "department": "Human Resources",
+      "position": "HR Assistant",
+      "isManager": false,
+      "hireDate": "2023-05-29",
+      "contractType": "Permanent",
+      "hoursPerWeek": 36,
+      "startSalary": 2850,
+      "managerName": "H. de Wit (fictional)"
+    },
+    {
+      "firstName": "Rizky",
+      "lastName": "Kowalski",
+      "department": "Logistics",
+      "position": "Logistics Planner",
+      "isManager": false,
+      "hireDate": "2024-07-15",
+      "contractType": "Permanent",
+      "hoursPerWeek": 32,
+      "startSalary": 3000,
+      "managerName": "H. de Wit (fictional)"
+    },
+    {
+      "firstName": "Ilse",
+      "lastName": "Schouten",
+      "department": "IT",
+      "position": "Senior Software Developer",
+      "isManager": false,
+      "hireDate": "2025-02-02",
+      "contractType": "Temporary",
+      "hoursPerWeek": 40,
+      "startSalary": 5700,
+      "managerName": "H. de Wit (fictional)"
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2020-06-01",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "course": "IFRS Reporting Essentials",
+      "date": "2026-02-20",
+      "duration_days": 2,
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-003": {
+      "date": "2026-04-14",
+      "id": "EVT-003",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-004": {
+      "comment": null,
+      "date": "2026-06-30",
+      "id": "EVT-004",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Exceeds expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2026
+    }
+  }
+}

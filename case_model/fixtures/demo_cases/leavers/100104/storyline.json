@@ -1,0 +1,94 @@
+{
+  "events": {
+    "EVT-001": {
+      "date": "2024-08-04",
+      "id": "EVT-001",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "hire"
+    },
+    "EVT-002": {
+      "date": "2024-09-21",
+      "id": "EVT-002",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P003"
+      ],
+      "result": "Fit for work",
+      "summary": null,
+      "type": "medical_check"
+    },
+    "EVT-003": {
+      "course": "Forklift Certification",
+      "date": "2025-01-05",
+      "duration_days": 3,
+      "id": "EVT-003",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "provider_id": "ORG-02",
+      "summary": null,
+      "type": "training"
+    },
+    "EVT-004": {
+      "date": "2025-03-19",
+      "end_date": "2025-05-03",
+      "id": "EVT-004",
+      "label": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "summary": null,
+      "type": "absence"
+    },
+    "EVT-005": {
+      "date": "2025-04-01",
+      "id": "EVT-005",
+      "label": null,
+      "new_contract_type": null,
+      "new_hours": null,
+      "new_position": "Warehouse Supervisor",
+      "new_salary": {
+        "amount": "3400.00",
+        "currency": "EUR"
+      },
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "Promotion",
+      "summary": null,
+      "type": "contract_change"
+    },
+    "EVT-006": {
+      "comment": "Meets the agreed goals. Would benefit from a course to deepen specialist knowledge.",
+      "date": "2025-06-30",
+      "id": "EVT-006",
+      "label": null,
+      "participant_ids": [
+        "P001",
+        "P002"
+      ],
+      "rating": "Meets expectations",
+      "summary": null,
+      "type": "appraisal",
+      "year": 2025
+    },
+    "EVT-007": {
+      "date": "2026-05-31",
+      "id": "EVT-007",
+      "label": null,
+      "notice_date": null,
+      "participant_ids": [
+        "P001"
+      ],
+      "reason": "End of temporary contract",
+      "summary": null,
+      "type": "termination"
+    }
+  }
+}
