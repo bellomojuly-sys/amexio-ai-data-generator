@@ -47,11 +47,33 @@ never by the LLM.
 - **Crossing between owners is validated JSON** matching a committed JSON Schema
   (next to the case-model schemas). In-process the stages pass pydantic objects.
 
+## Placeholder syntax (AX-021)
+
+Agreed with Valentin (Fill placeholder) and Robin, 5 Nov. A document template
+holds placeholders `{{ path }}`; the Fill stage reads each `path` from the case
+with the case model's `get_fact(case, path)` (AX-022). An unknown path raises —
+no silent blank.
+
+`path` is `collection.id.field…`:
+
+| Collection | Key | Example path | Value on 100101 |
+|---|---|---|---|
+| `dossier` | — | `dossier.employee_number` | `"100101"` |
+| `personas` | persona id | `personas.P001.name` | `"Jan de Vries"` |
+| `organisations` | org id | `organisations.ORG-01.name` | the employer |
+| `events` | event id | `events.EVT-001.date` | `2021-03-01` |
+| `documents` | document id | `documents.DOC-001.metadata.document_date` | the date |
+| `employments` | **persona id** | `employments.P001.salary.amount` | `4350.00` |
+
+`employments` is a list, so it is addressed by the employee's persona id — one
+employment per persona; more than one makes the path ambiguous and raises.
+Formatting (long dates, amount + currency) is the Fill stage's job (AX-025); the
+case model returns the stored value.
+
 ## What is NOT in this contract yet
 
 Error handling and retries per stage (BE-10), the run ID and per-stage trace
-(BE-19), the real-model run (BE-11), and the placeholder **syntax** itself
-(AX-021, agreed with Valentin and Robin). Those come in later microphases and
+(BE-19), and the real-model run (BE-11). Those come in later microphases and
 extend this contract with a new version number.
 
 ## Sign-off
