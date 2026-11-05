@@ -1,9 +1,9 @@
 # Backend pipeline contract (v0.1 — draft)
 
-Status: **draft**, 5 November 2026 (BE-02). Every owner confirms their row
-before it becomes v1.0 (gate B1, Fri 30 Oct target — now catching up). Runtime
-decided in BE-01: **one Python service hosts the case model; each stage is a
-Python function; stages talk in-process with validated objects** (see
+Status: **v1.0 — confirmed**, 5 November 2026 (BE-02). Every owner has confirmed
+their row (sign-off below). A change from here needs a new version number.
+Runtime decided in BE-01: **one Python service hosts the case model; each stage
+is a Python function; stages talk in-process with validated objects** (see
 `docs/decisions/BE-01-backend-runtime.md`).
 
 ## The chain
@@ -58,8 +58,8 @@ extend this contract with a new version number.
 
 | Owner | Stage(s) | Confirmed |
 |---|---|---|
-| Daniel | Analysis | ☐ |
-| Giulia | CM ID, Plot | ☐ |
-| Valentin | Date & participants, Fill placeholder | ☐ |
-| Robin | LLM client used by stages | ☐ |
-| Mike | orchestration (one Python process) | ☐ |
+| Daniel | Analysis | ✅ 5 Nov |
+| Giulia | CM ID, Plot | ✅ 5 Nov |
+| Valentin | Date & participants, Fill placeholder | ✅ 5 Nov |
+| Robin | LLM client used by stages | ✅ 5 Nov |
+| Mike | orchestration (one Python process) | ✅ 5 Nov |
