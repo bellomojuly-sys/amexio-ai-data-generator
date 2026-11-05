@@ -242,10 +242,30 @@ assert load_case("runs/100101") == case
 | Reference dossier = AMEXIO's 100101, through ingest | D1 | `test_reference_dossier.py` |
 | JSON Schemas; fixtures test | the browser demo builds its types from them (BR-10, BR-11) | `test_fixtures.py` |
 
+## Fact lookup (AX-022)
+
+Read one stored fact from a built `Case` by a dotted path, the same path a
+document template names in a `{{ … }}` placeholder (AX-021, see
+`docs/PIPELINE_CONTRACT.md`):
+
+```python
+from case_model import get_fact
+get_fact(case, "personas.P001.name")            # "Jan de Vries"
+get_fact(case, "employments.P001.salary.amount")  # Decimal("4350.00")
+```
+
+Path grammar is `collection.id.field…`: `dossier.<field>`, `personas.<id>.…`,
+`organisations.<id>.…`, `events.<id>.…`, `documents.<id>.…`, and
+`employments.<persona_id>.…` (the list is addressed by persona id; one
+employment per persona). An unknown collection, id or field raises `UnknownPath`
+with a clear message — never a silent blank. Traversal only reaches declared
+case-model fields, so a path cannot read a method or a value's attribute.
+
 ## Not built yet
 
-Fact lookup and placeholders, change propagation, versioned run storage, run
-configuration and the review interface. Planned for sprint 3 onward (M04+).
+Placeholder resolution over a whole document, change propagation, versioned run
+storage, run configuration and the review interface. Planned for sprint 3 onward
+(M04+).
 
 ## Tests
 
