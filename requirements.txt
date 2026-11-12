@@ -1,2 +1,4 @@
-pydantic==2.13.5  # pinned: the committed JSON Schemas depend on the exact version
-pytest
+streamlit>=1.36
+PyMuPDF>=1.24
+openai>=1.40
+pandas>=2.0
