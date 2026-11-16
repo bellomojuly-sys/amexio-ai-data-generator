@@ -32,6 +32,7 @@ from .format_rules import (
     reject_caller_id,
     validate_id,
 )
+from .lookup import UnknownPath, get_fact
 
 __all__ = [
     "AbsenceEvent",
@@ -56,4 +57,6 @@ __all__ = [
     "next_id",
     "reject_caller_id",
     "validate_id",
+    "get_fact",
+    "UnknownPath",
 ]
