@@ -1,4 +1,4 @@
-# Backend pipeline contract (v0.1 — draft)
+# Backend pipeline contract (v1.0)
 
 Status: **v1.0 — confirmed**, 5 November 2026 (BE-02). Every owner has confirmed
 their row (sign-off below). A change from here needs a new version number.
@@ -73,7 +73,12 @@ case model returns the stored value.
 ## What is NOT in this contract yet
 
 Error handling and retries per stage (BE-10), the run ID and per-stage trace
-(BE-19), and the real-model run (BE-11). Those come in later microphases and
+(BE-19), the real-model run (BE-11), and the Plot output model (BE-13).
+
+**Stub phase (BE-05).** While Plot, Date & participants and Fill are stubs,
+`run_chain` checks only the *type* of each stage's output (`ChainError` names
+the stage). Full re-validation at every boundary arrives with the real stages
+(CM ID in BE-09, Plot in BE-16). Those come in later microphases and
 extend this contract with a new version number.
 
 ## Sign-off

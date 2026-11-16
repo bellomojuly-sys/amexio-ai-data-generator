@@ -17,6 +17,8 @@ team repo, folder `pipeline/`.
 | LLM client interface + offline fake | `pipeline/llm.py` (`LLMClient`, `FakeLLM`) | BE-04 |
 | Stub chain, stages wired in order | `pipeline/chain.py` (`run_chain`) | BE-05 |
 | Analysis → ingest mapping | `pipeline/mapping.py` (`map_analysis`) | BE-07 |
+| Placeholder syntax `{{ path }}` | `docs/PIPELINE_CONTRACT.md`, section "Placeholder syntax" | AX-021 |
+| Fact lookup for the Fill stage | `case_model/lookup.py` (`get_fact`) | AX-022 |
 
 ## How to run it
 
@@ -42,19 +44,26 @@ python3 -m pytest pipeline/ -v
   `employees.json`, Option A). Send it as JSON matching
   `pipeline/schema/analysis.schema.json`. No `id` fields: the case model assigns
   every ID.
+  *Update 16 Nov:* the `MockToTemplate` branch (PDF Template Studio) is still
+  deterministic and does not produce an `Analysis` yet; with the API key released
+  on 14 Nov the analysis call can now be built. Its `{{EMPLOYEE_NAME}}`-style
+  placeholders differ from the agreed `{{ path }}` syntax (AX-021): to align at
+  the next team meeting (a mapping table, or the templates switch to `{{ path }}`).
 - **Robin** — implement `LLMClient.generate(prompt, output_model) -> validated
   object` for the real model (`pipeline/llm.py`). The stages already run against
   `FakeLLM`, so nothing else blocks on you.
 - **Valentin** — your two stages (Date & participants, Fill placeholder) are the
   `dates` and `fill` steps in `pipeline/chain.py`, currently pass-through stubs.
-  Date & participants returns events for `ingest_storylines`; Fill placeholder
-  uses the fact lookup (AX-022, coming next).
+  **Fill placeholder can start now:** `get_fact(case, path)` (AX-022) reads any
+  fact of the reference case 100101. **Date & participants waits for the Plot
+  output model (BE-13, Giulia)**; it returns events for `ingest_storylines`.
 - **Mike** — orchestration is one Python process calling `run_chain`. A stage
   that returns the wrong shape raises `ChainError` and names the stage.
 
 ## Not here yet (later microphases)
 
-Real CM ID stage with retry and the corrections list (BE-09, BE-10), the real
-Plot output model (BE-13), the run ID and per-stage trace (BE-19), the real-model
-run (BE-11), and the placeholder syntax (AX-021). Each extends the contract with
-a new version number.
+Real CM ID stage with retry and the corrections list (BE-08 … BE-10), the real
+Plot output model (BE-13), the run ID and per-stage trace (BE-19) and the
+real-model run (BE-11). Each extends the contract with a new version number.
+While the later stages are stubs, `run_chain` checks only the type of each
+stage's output; full re-validation comes with the real stages.

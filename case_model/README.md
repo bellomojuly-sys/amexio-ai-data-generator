@@ -1,6 +1,6 @@
 # Case model — module contract (version 1.1)
 
-Owner: Giulia Bellomo. Status: v1.1 on `main` (merged 24 October 2026,
+Owner: Giulia Bellomo. Status: v1.1 on `main` (merged 25 October 2026, PR #1,
 tag `v1.1`); v1 is tag `v1`. What changed and why: [v1 → v1.1](#v1--v11).
 
 ## What it is for
