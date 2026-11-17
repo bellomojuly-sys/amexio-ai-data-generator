@@ -91,8 +91,9 @@ def test_cm_id_output_corrections_default_to_empty():
 
 # --- The committed JSON Schema matches the model (no drift) -----------------
 
-def test_analysis_schema_matches_the_model():
-    committed = (schema.SCHEMA_DIR / "analysis.schema.json").read_text(encoding="utf-8")
-    assert committed == schema.render("analysis.schema.json"), (
-        "pipeline/schema/analysis.schema.json is stale; run python3 -m pipeline.schema"
+@pytest.mark.parametrize("name", sorted(schema.SCHEMAS))
+def test_committed_schema_matches_the_model(name):
+    committed = (schema.SCHEMA_DIR / name).read_text(encoding="utf-8")
+    assert committed == schema.render(name), (
+        f"pipeline/schema/{name} is stale; run python3 -m pipeline.schema"
     )

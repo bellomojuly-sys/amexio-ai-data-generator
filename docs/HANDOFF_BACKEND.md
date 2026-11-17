@@ -22,14 +22,15 @@ team repo, folder `pipeline/`.
 
 ## How to run it
 
+*Updated 17 Nov: contract v1.1, eight steps (see `docs/PIPELINE_CONTRACT.md` §11b).*
+
 ```python
 import json
-from pipeline import Analysis, run_chain
+from pipeline import RunRequest, run_chain
 
-analysis = Analysis.model_validate(json.load(open(
-    "case_model/fixtures/generator/amexio_example/employees.json")))
-out = run_chain(analysis, "runs/demo")      # writes one case folder per employee
-# out.cases -> 4 cases with code-assigned IDs; load them with case_model.load_case
+request = RunRequest.model_validate(json.load(open("pipeline/fixtures/run_request.json")))
+result = run_chain(request, out_dir="runs/demo")   # options.fake_llm: offline, no API key
+# result.cases -> 10 cases with code-assigned IDs; result.trace -> one line per step / LLM call
 ```
 
 Run the tests (offline, no API key):
@@ -49,11 +50,15 @@ python3 -m pytest pipeline/ -v
   on 14 Nov the analysis call can now be built. Its `{{EMPLOYEE_NAME}}`-style
   placeholders differ from the agreed `{{ path }}` syntax (AX-021): to align at
   the next team meeting (a mapping table, or the templates switch to `{{ path }}`).
-- **Robin** — implement `LLMClient.generate(prompt, output_model) -> validated
-  object` for the real model (`pipeline/llm.py`). The stages already run against
-  `FakeLLM`, so nothing else blocks on you.
+- **Robin** — *(17 Nov, v1.1)* write a provider as a subclass of
+  `BaseLLMClient` that implements only `complete(prompt) -> Completion`
+  (`complete_as` with the one retry is inherited), and replace the bodies of the
+  three functions in `pipeline/generation.py` with your Python port. Their
+  signatures and checks are the contract; the tests in
+  `pipeline/test_generation.py` and `test_chain.py` must stay green.
 - **Valentin** — your two stages (Date & participants, Fill placeholder) are the
-  `dates` and `fill` steps in `pipeline/chain.py`, currently pass-through stubs.
+  `dates` and `fill` steps in `pipeline/chain.py`, stubs in `pipeline/valentin_stubs.py` (17 Nov: the Plot output model,
+  `PlotOutline`, exists; replace `dates_and_participants_stub` and `fill_stub`).
   **Fill placeholder can start now:** `get_fact(case, path)` (AX-022) reads any
   fact of the reference case 100101. **Date & participants waits for the Plot
   output model (BE-13, Giulia)**; it returns events for `ingest_storylines`.
