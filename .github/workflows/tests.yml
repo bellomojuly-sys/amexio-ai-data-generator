@@ -33,3 +33,18 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+
+  # Daniel's PDF Template Studio (mock PDFs -> templates). Separate app, own
+  # requirements; its regression script checks the wizard without a browser.
+  template-studio:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pdf_template_studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements.txt
+      - run: python test_wizard.py
