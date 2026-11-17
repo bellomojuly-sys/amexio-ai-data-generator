@@ -88,7 +88,7 @@ SQLite has no date type. Every date column is `TEXT` with
 | `persona` | `salutation`; rename `birth_date` → `date_of_birth`; `role` with `CHECK (role IN ('employee','manager','hr_officer','examiner'))` |
 | `organisation` | `kind`, `address` |
 | `employment` | `contract_type` with `CHECK (IN ('Permanent','Temporary'))`; `hours` as REAL |
-| `template_field` (new, `rules.db`) | one row per template field: `template_id`, `version`, `document_type`, `placeholder`, `kind`, `type`, `binding` or `generator` (JSON), `required` — see `docs/TEMPLATE_CONTRACT.md` |
+| `template_field` (new, `rules.db`) | one row per template field: `template_id`, `version`, `document_type`, `placeholder`, `kind` (`catalogue` / `custom`), `field` (catalogue key) or `label` + `format` + `origin` + `params` (JSON), `optional` — formats and origins are Robin's `FieldFormat` and `ValueOrigin`, see `docs/TEMPLATE_CONTRACT.md` |
 | `case_field_value` (new, `case.db`) | values of **custom** template fields per case: `case_id`, `document_id`, `placeholder`, `value` (JSON, validated against the field's type) |
 | `document` | `employee_id` (metadata), `tags` as JSON array; `type` with `CHECK` on the nine document types |
 | `event` | `signed_by` (persona ID, NULL) — only once case model v1.2 is agreed |
@@ -102,8 +102,8 @@ agreement, or (b) keep them as **storage-only** columns outside `Case`
 
 | Column | Proposal |
 |---|---|
-| `document.title` | (a) v1.2 — AMEXIO's `import.xml` has a title |
-| `document.restricted`, `document.access_group` | (a) v1.2, with Stylianos (OpenText metadata) |
+| `document.title` | (a) v1.2 — AMEXIO's `import.xml` has a title; Robin's spec already makes it (`titlePattern`) |
+| `document.restricted`, `document.access_group` | (a) v1.2, with Stylianos; Robin's spec already has them per document type (`confidential`, `acl`) |
 | `document.data_type` (`SYNTHETIC`) | (b) storage-only, always `SYNTHETIC`, set by code |
 | `document.pdf_path` | (b) storage-only, written by export |
 | `event_participant.role_in_event` | (b) for now; the case model only stores `participant_ids` |
@@ -128,11 +128,17 @@ agreement, or (b) keep them as **storage-only** columns outside `Case`
 - `review.decision` and `upload.status`: `CHECK` on the listed values.
 - `domain.attribute_list` → table `domain_attribute`, or JSON validated in code.
 
-## 5. Questions for the team
+## 5. Decided by Giulia (17 Nov)
+
+- The database **is** the store the pipeline and monitoring read. The four
+  JSON files per case stay only as an export/exchange format (Robin's generator
+  writes and reads them; `load_case` stays the check).
+- Columns the monitoring needs are stored; those that are dossier facts go into
+  the case model as **v1.2** (proposal to the team).
+- Only the backend writes `rules.db`.
+- `sqlite3` from the standard library; no new dependency.
+
+## 6. Questions for the team
 
 1. Event facts: one table + JSON `details` (proposal) or one table per type?
 2. Section 3: which columns go into case model v1.2, which stay storage-only?
-3. Does the database **replace** the four files per case or sit **next to**
-   them? Proposal: next to them; `save_case`/`load_case` stay the module
-   contract, so nobody else changes code.
-4. Who writes `rules.db`: only the backend (proposal), or Daniel's studio too?

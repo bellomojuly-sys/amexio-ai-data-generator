@@ -1,132 +1,119 @@
-# Template contract: from Daniel's Template Studio to the backend (v0.1)
+# Template contract: from Daniel's Template Studio to the backend (v0.2)
 
-Version **0.1**, 17 November 2026 · from: Giulia (backend, case model) · to:
-Daniel (PDF Template Studio, branch `MockToTemplate`) · Status: **proposed**,
-to agree with Daniel, then it changes only with a new version number.
+Version **0.2**, 17 November 2026 · from: Giulia (backend, case model) · to:
+Daniel (PDF Template Studio, `pdf_template_studio/`) · cc: Robin (document-type
+spec) · Status: **proposed**, to agree with Daniel and Robin; then it changes
+only with a new version number.
 
-Related: `docs/PIPELINE_CONTRACT.md` (v1.1), `docs/DB_SCHEMA_CHANGES.md`.
+Related: `docs/PIPELINE_CONTRACT.md` (v1.1), `docs/DB_SCHEMA_CHANGES.md`,
+`docs/TEAM_CODE_ANALYSIS.md`.
+
+| Version | What |
+|---|---|
+| 0.1 | First draft: invented its own field types and generator rules |
+| **0.2** | **Reuses what exists:** Robin's document-type spec (`generator/demo_dossier_generator/src/spec/`) is the field catalogue; its `FieldFormat` and `ValueOrigin` are the closed lists. Nothing new is invented on the backend side |
 
 ## The problem this contract solves
 
 Today the studio's AI step invents the placeholder names
 (`"placeholder": "UPPERCASE_SNAKE_CASE"`), so the backend receives names it has
-never seen, e.g. `{{GROSS_MONTHLY_SALARY}}` or `{{BONUS_TARGET}}`. The backend
-cannot know what such a field means, which type it has, or how to make a value
-for it. It would have to guess, and then a fact in a document comes from nowhere.
+never seen. It cannot know what such a field means, its format, or how to make
+a value for it, and would have to guess. Then a fact in a document comes from
+nowhere.
 
 The rule, as in the pipeline contract: **AI proposes, code decides the
 structure.** The LLM never chooses the format of the data. The backend
-publishes the list of fields it knows and the types it accepts; the studio
-maps every placeholder onto that list; whatever does not fit is declared
-explicitly, checked by the backend, and approved by a person before it is
-used. A field the backend has not accepted is never used in a run.
+publishes the fields it knows; the studio maps every placeholder onto them;
+whatever does not fit is declared from closed lists, checked by the backend and
+approved by a person. A field the backend has not accepted is never used in a
+run.
+
+## 0. What already exists (and is reused, not rebuilt)
+
+| What | Where | Used as |
+|---|---|---|
+| Nine document types, each with its fields (`key`, `label`, `format`, `origin`, `rule`), title pattern, tags, confidentiality, ACL | Robin, `src/spec/doctypes/*.ts`, exported as `format-spec.json` (`src/spec/exportSpec.ts`) | **The field catalogue** |
+| `FieldFormat`: `text`, `date`, `dateRange`, `monthYear`, `eurGrouped`, `eurPlain`, `days`, `number` | Robin, `src/spec/types.ts` | Closed list of formats |
+| `ValueOrigin`: `persona`, `storyline`, `rule`, `constant`, `ai-text` | Robin, `src/spec/types.ts` | Closed list of where a value comes from |
+| `LABEL_KEYS` (Employee, Department, Gross salary, Examined by, …) | Daniel, `pdf_template_studio/app.py` | Same labels as Robin's fields: both come from AMEXIO's PDFs, so a placeholder maps to a catalogue field **by its label** |
+| Nine document type IDs | case model, `format_rules.DocumentType` (= Robin's `DocTypeId`) | Closed list of document types |
 
 ## 1. Every placeholder is one of two kinds
 
-### 1.1 Bound field: a fact the case model already has
+### 1.1 Catalogue field: the backend already knows it
 
-The placeholder points to a path in the case model (the same paths as
-`get_fact`, pipeline contract §7). The backend publishes the catalogue of
-paths it accepts (`field_catalogue.json`, see §4). Examples:
+The placeholder points to a field of Robin's spec for that document type:
+`documentType` + `field` (the spec's `key`). Format and origin come from the
+spec; the studio does not repeat or change them.
 
-| Placeholder in the PDF | `binding` | Type |
-|---|---|---|
-| `EMPLOYEE_NAME` | `personas.$employee.name` | `text` |
-| `EMPLOYEE_ID` | `dossier.employee_number` | `text` |
-| `DEPARTMENT` | `employments.$employee.department` | `text` |
-| `POSITION` | `employments.$employee.position` | `text` |
-| `START_DATE` | `employments.$employee.start_date` | `date` |
-| `CONTRACT_TYPE` | `employments.$employee.contract_type` | `enum` |
-| `HOURS_PER_WEEK` | `employments.$employee.hours` | `decimal` |
-| `GROSS_MONTHLY_SALARY` | `employments.$employee.salary` | `money` |
-| `MANAGER` | `personas.$manager.name` | `text` |
-| `REVIEW_DATE` | `events.$event.date` | `date` |
-| `OVERALL_RATING` | `events.$event.rating` | `enum` |
-| `COURSE` | `events.$event.course` | `text` |
+| Daniel's placeholder | Document type | Catalogue field (`key`) | Format | Origin |
+|---|---|---|---|---|
+| `GROSS_SALARY` | `payslip` | `gross` | `eurPlain` | `rule` |
+| `WAGE_TAX` | `payslip` | `tax` | `eurPlain` | `rule` |
+| `NET_SALARY` | `payslip` | `net` | `eurPlain` | `rule` |
+| `PAYMENT_DATE` | `payslip` | `paymentDate` | `date` | `rule` |
+| `EXAMINATION_DATE` | `medical_check` | `examDate` | `date` | `storyline` |
+| `EXAMINED_BY` | `medical_check` | `examiner` | `text` | `constant` |
+| `OVERALL_RATING` | `performance_appraisal` | `rating` | `text` | `storyline` |
+| `COURSE` | `training_certificate` | `course` | `text` | `storyline` |
+| `HOURS_PER_WEEK` | `employment_contract` | `hoursPerWeek` | `number` | `persona` |
 
-`$employee`, `$manager` and `$event` are **roles**, not IDs: the template does
-not know which persona is `P001` in a case. The backend replaces the role with
-the real ID when it fills one document (`$event` = the event the document
-records). The template never contains a case ID (rule 1 of the pipeline
-contract).
+The identity block on every page (Employee, Employee ID, Department) is part
+of the spec's `wrapper` and maps to `wrapper.fullName`, `wrapper.employeeId`,
+`wrapper.department`.
 
-The studio keeps its short names in the PDF (`{{EMPLOYEE_NAME}}`): they fit
-the layout. The binding lives in `_fields.json`, not in the PDF.
+Matching rule: the studio's detected label, compared case-insensitively with
+the spec's `label` for that document type. A match is proposed automatically;
+the user confirms it. The short names stay in the PDF (`{{GROSS_SALARY}}`): they
+fit the layout. The mapping lives in `_fields.json`.
 
-### 1.2 Custom field: a new field the case model does not have
+### 1.2 Custom field: not in the catalogue
 
-Allowed, but **declared**, never free. The declaration says what the field is
-and how code makes its value. The LLM may suggest a declaration; the backend
-validates it; a person approves it in the studio.
+Allowed, but **declared** from the closed lists, never free:
 
 ```json
 {
   "placeholder": "BONUS_TARGET",
   "kind": "custom",
-  "type": "money",
-  "required": true,
-  "generator": {"rule": "range", "min": 500, "max": 3000, "currency": "EUR"},
-  "description": "Yearly bonus target printed on the appraisal"
+  "label": "Bonus target",
+  "format": "eurGrouped",
+  "origin": "constant",
+  "value": 1500,
+  "optional": false
 }
 ```
 
-The backend accepts a custom field only if:
+Which origins a custom field may have, and what it must then carry:
 
-1. `type` is one of the closed types (§2);
-2. `generator.rule` is one of the closed rules (§3), with the parameters that
-   rule needs, valid for that type;
-3. the name is not already a bound field (no `GROSS_SALARY` declared as custom
-   when the catalogue already has it);
-4. the name matches `^[A-Z][A-Z0-9_]{1,40}$` and is unique in its document type.
+| `origin` | Allowed for custom? | Must carry | Who makes the value |
+|---|---|---|---|
+| `constant` | yes | `value` (one fixed value for every document) | code |
+| `rule` | yes | `rule`: the **name** of a rule the backend already has (list published with the catalogue, e.g. `wageTax`, `netSalary`, `nextCheck`) | code |
+| `ai-text` | yes, `format: "text"` only | `maxLength` | LLM, placeholders only (pipeline contract rule 3) |
+| `persona`, `storyline` | **no** | — | these are case-model facts: a new one is a case-model change (new version, group agreement) |
 
-Then the field is stored in `rules.db` (`template_field`) with the template
-version. From then on the backend validates every value of that field against
-the declaration, makes it with the declared rule, and stores it with the case.
-Only code makes the value; the LLM never writes it (rule 2).
+The backend accepts a custom field only if: the `format` and `origin` are in the
+lists above; the parameters for that origin are present and valid for that
+format (a `constant` with format `date` must be an ISO date; with `eurPlain` or
+`eurGrouped` a number); the label does not match a catalogue field of the same
+document type (no `GROSS_SALARY` declared as custom); the placeholder matches
+`^[A-Z][A-Z0-9_]{1,40}$` and is unique in its document type.
 
-## 2. Closed field types
+So the backend never has to "know" a new field in advance: it knows the
+**formats** and the **origins**, and a new field is valid exactly when it is
+built from them.
 
-| Type | Stored as | Example |
-|---|---|---|
-| `text` | string, max length optional | `"Software Developer"` |
-| `date` | ISO 8601 `YYYY-MM-DD` | `"2026-03-12"` |
-| `money` | `{"amount": number, "currency": "EUR"}` | `{"amount": 4350.0, "currency": "EUR"}` |
-| `integer` | integer, `min`/`max` optional | `2` |
-| `decimal` | number, `min`/`max` optional | `38.0` |
-| `boolean` | `true`/`false` | `true` |
-| `enum` | one of `values` | `"Meets expectations"` |
-| `person` | a persona role (`$employee`, `$manager`, …) | name printed at fill time |
+## 2. What the backend gives the studio
 
-Formatting (long dates, `€ 4.350,00`) happens only when the PDF is filled
-(AX-025). The template never stores a formatted value.
-
-## 3. Closed generator rules (custom fields only)
-
-| Rule | Types | Parameters |
-|---|---|---|
-| `fixed` | all | `value` |
-| `choice` | `text`, `enum` | `values` (list), optional `weights` |
-| `range` | `integer`, `decimal`, `money` | `min`, `max` (+ `currency` for money) |
-| `date_offset` | `date` | `from` (a bound date path), `days_min`, `days_max` |
-| `derived` | `decimal`, `money` | `formula` from the backend's list (e.g. `net_from_gross`) |
-| `llm_text` | `text` only | `max_length`; written by the LLM with placeholders only (rule 3) |
-
-A rule outside this list is refused. A new rule is a backend change and a new
-version of this contract.
-
-## 4. What the backend gives the studio
-
-- `field_catalogue.json` — every bound path with its type and the document
-  types where it makes sense. Generated from the case model by code
-  (`python -m pipeline.catalogue`), committed next to the schemas.
+- `format-spec.json` (Robin's, committed by the generator) — the catalogue.
 - `template.schema.json` — JSON Schema of the export below. The studio's AI
-  call should use it as the structured output format, so the model can only
-  answer in this shape.
-- A validation function (later `POST /templates/validate`): template in →
-  per field `accepted` or `refused` with the reason. The studio shows the
-  refusals to the user before Finish.
+  call should use it as the structured output format (OpenAI `response_format`
+  with a JSON Schema), so the model can only answer in this shape.
+- A validation function (later `POST /templates/validate`): template in → per
+  field `accepted` or `refused` with the reason. The studio shows refusals
+  before Finish.
 
-## 5. What the studio gives the backend (the export ZIP)
+## 3. What the studio gives the backend (the export ZIP)
 
 The ZIP keeps its layout; `manifest.json` and `_fields.json` gain fields.
 
@@ -134,82 +121,75 @@ The ZIP keeps its layout; `manifest.json` and `_fields.json` gain fields.
 
 ```json
 {
-  "contract": "template/0.1",
+  "contract": "template/0.2",
   "domain": "HR",
   "documents": [
-    {"source": "100101_contract.pdf",
-     "documentType": "employment_contract",
-     "template": "employment_contract/0001_100101_contract_template.pdf",
-     "fields": "employment_contract/0001_100101_contract_fields.json",
+    {"source": "100101_payslip_2026-09.pdf",
+     "documentType": "payslip",
+     "template": "payslip/0001_100101_payslip_2026-09_template.pdf",
+     "fields": "payslip/0001_100101_payslip_2026-09_fields.json",
      "warnings": []}
   ]
 }
 ```
 
-- `documentType` is one of the nine case-model types: `employment_contract`,
-  `payslip`, `medical_check`, `performance_appraisal`, `training_certificate`,
-  `contract_amendment`, `annual_income_statement`, `absence_report`,
-  `termination_letter`. The studio's free-text group name maps to one of them;
-  a group that maps to none is refused (a new document type is a case-model
-  change, by group agreement).
+`documentType` is one of the nine IDs. The studio's free-text group name maps
+to one of them (a dropdown instead of free text); a group that maps to none is
+refused.
 
-`*_fields.json`, one entry per placeholder that is used (`replace: true`):
+`*_fields.json`, one entry per placeholder in use (`replace: true`):
 
 ```json
 [
-  {"placeholder": "EMPLOYEE_NAME", "kind": "bound",
-   "binding": "personas.$employee.name", "type": "text",
-   "original": "Jan de Vries"},
-  {"placeholder": "BONUS_TARGET", "kind": "custom", "type": "money",
-   "required": true,
-   "generator": {"rule": "range", "min": 500, "max": 3000, "currency": "EUR"},
-   "original": "€ 1.500,00"}
+  {"placeholder": "GROSS_SALARY", "kind": "catalogue", "field": "gross",
+   "original": "EUR 4350"},
+  {"placeholder": "BONUS_TARGET", "kind": "custom", "label": "Bonus target",
+   "format": "eurGrouped", "origin": "constant", "value": 1500,
+   "original": "EUR 1.500"}
 ]
 ```
 
-- `original` stays for the preview only. The backend **never** stores it as a
-  fact: it is the mock's real-looking value, not a generated one.
-- Positioned fields keep their rectangle as today; the same two kinds apply.
+`original` is for the studio's preview only. The backend **never** stores it
+as a fact: it is the mock's value, not a generated one. Positioned fields keep
+their rectangle as today; the same two kinds apply.
 
-## 6. What the backend does with it
+## 4. What the backend does with it
 
 1. Validate the ZIP against `template.schema.json`; unknown keys are refused.
-2. Check every bound path against the catalogue and every custom field against
-   §1.2–§3. One refusal names the document, the placeholder and the reason.
-3. Only if everything is accepted and the user approved (human check 1): save a
-   **new template version** in `rules.db` (`template`, one row per field in
-   `template_field`). A version is never changed afterwards.
-4. A run pins `template_id` + `version`. Fill (Valentin) resolves bound fields
-   with `get_fact` and custom fields from the values code made for that case.
-   A placeholder in the PDF without a field definition stops the run (AX-024).
+2. Check every catalogue field against `format-spec.json` and every custom
+   field against §1.2. A refusal names the document, the placeholder and the
+   reason.
+3. Only if everything is accepted and the user approved (human check 1): the
+   **backend** writes a new template version in `rules.db` (`template`,
+   `template_field`). Only the backend writes `rules.db`; a version is never
+   changed afterwards.
+4. A run pins `template_id` + `version`. Catalogue fields get their values as
+   the generator makes them today; custom fields from their declaration. A
+   placeholder in a template PDF without a field definition stops the run.
 
-## 7. Example: the new-field question, end to end
+## 5. Example: a new field, end to end
 
 The user adds "Bonus target" to the appraisal template.
 
 1. The studio's AI suggests `{"placeholder": "BONUS_TARGET", "kind": "custom",
-   "type": "money", "generator": {"rule": "range", …}}` — in the shape of
-   `template.schema.json`, so it cannot invent another shape.
-2. The backend checks it: type and rule known, parameters valid, name free →
-   accepted. Had the AI written `"type": "currency"` or `"rule": "guess"`, it
-   would be refused with that reason, and the user fixes it in the studio.
-3. The user approves; template v2 is saved with the field.
-4. At run time code draws a value between 500 and 3000 EUR, validates it as
-   `money`, stores it with the case, and Fill prints it.
+   "format": "eurGrouped", "origin": "constant", "value": 1500}` in the shape of
+   `template.schema.json`; it cannot answer in another shape.
+2. The backend checks it: format and origin known, `value` is a number, label
+   free → accepted. Had the AI written `"format": "currency"` or
+   `"origin": "storyline"`, it would be refused with that reason.
+3. The user approves; the backend saves template v2 with the field.
+4. Every appraisal of the run prints `EUR 1.500`, made by code.
 
-The backend never has to "know" the field in advance: it knows the **types**
-and the **rules**, and a new field is valid exactly when it is built from them.
+## 6. Questions for Daniel (and Robin)
 
-## 8. Questions for Daniel
-
-1. Can the studio's AI call use structured output with `template.schema.json`
-   (OpenAI `response_format` with a JSON Schema) instead of free JSON?
-2. Can the type-assignment table offer the nine document types as a dropdown
-   instead of free text?
-3. Where should the user choose `bound` vs `custom` and fill in the generator
-   rule: in the fields table, as two new columns?
-4. Do you want to keep the short names (`{{EMPLOYEE_NAME}}`) in the PDFs
-   (proposal), or write paths in the PDF?
-5. Which document types and fields does the studio see in AMEXIO's mock
-   package that the catalogue does not cover yet? Those are the first custom
-   fields to test, or candidates for case model v1.2.
+1. Daniel: can the studio's AI call use structured output with
+   `template.schema.json`?
+2. Daniel: can the type-assignment table offer the nine document types as a
+   dropdown?
+3. Daniel: in the fields table, two new columns — `kind` (catalogue / custom)
+   and, for custom, `format` + `origin` + its parameter?
+4. Daniel: which labels in AMEXIO's mock PDFs did not match a catalogue field?
+   Those are the first custom fields, or candidates for Robin's spec.
+5. Robin: can `npm run spec` write `format-spec.json` to a committed path
+   (e.g. `pipeline/schema/format-spec.json`) so the Python backend reads it
+   without Node?
