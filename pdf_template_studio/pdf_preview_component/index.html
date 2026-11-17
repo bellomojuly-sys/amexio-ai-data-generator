@@ -19,8 +19,10 @@
     .pdf-page { position: relative; }
     .pdf-page img { display: block; width: 100%; }
     .pdf-page svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-    .field-hitbox { fill: transparent; cursor: pointer; pointer-events: all; }
-    .field-hitbox:hover { fill: #ffdc6740; stroke: #ad7b00; stroke-width: 1; }
+    .field-hitbox { fill: transparent; stroke: none; cursor: pointer; pointer-events: all; }
+    .field-hitbox:focus { outline: none; }
+    .field-hitbox:focus-visible { fill: #ffdc6740; stroke: #ad7b00; stroke-width: 1; }
+    .field-hitbox:hover { fill: #ffdc6740; }
     #menu {
       display: none;
       position: absolute;
@@ -98,7 +100,7 @@
     function showMenu(name, event) {
       selectedName = name;
       title.textContent = "{{" + name + "}}";
-      customValue.value = "";
+      customValue.value = (args.values || {})[name] || "";
       suggestions.replaceChildren();
       const options = (args.recommendations || {})[name] || [];
       const keepTemplate = document.createElement("button");
@@ -121,8 +123,10 @@
       });
 
       const bounds = root.getBoundingClientRect();
-      const left = Math.min(event.clientX - bounds.left, bounds.width - 292);
-      const top = Math.min(event.clientY - bounds.top + root.scrollTop, 410);
+      const anchor = event.currentTarget.getBoundingClientRect();
+      const pointer = Number.isFinite(event.clientX) && event.type !== "keydown";
+      const left = Math.min((pointer ? event.clientX : anchor.left) - bounds.left, bounds.width - 292);
+      const top = Math.min((pointer ? event.clientY : anchor.bottom) - bounds.top, 410);
       menu.style.left = Math.max(4, left) + "px";
       menu.style.top = Math.max(4, top) + "px";
       menu.style.display = "block";
@@ -154,6 +158,7 @@
     }
 
     function drawPages() {
+      const scrollPosition = viewer.scrollTop;
       viewer.replaceChildren();
       (args.pages || []).forEach((page, pageNo) => {
         const svg = document.createElementNS(svgNS, "svg");
@@ -164,6 +169,7 @@
         const wrapper = document.createElement("div");
         wrapper.className = "pdf-page";
         wrapper.style.maxWidth = page.width * 1.5 + "px";
+        wrapper.style.aspectRatio = page.width + " / " + page.height;
         const img = document.createElement("img");
         img.src = page.image;
         img.alt = "PDF page " + (pageNo + 1);
@@ -174,6 +180,7 @@
           .filter((target) => target.page === pageNo)
           .forEach((target) => addTarget(svg, target));
       });
+      viewer.scrollTop = scrollPosition;
     }
 
     applyCustom.addEventListener("click", () => {

@@ -1,4 +1,4 @@
-﻿# PDF Template Studio
+# PDF Template Studio
 
 Streamlit application for converting example PDFs into reusable PDF templates with `{{PLACEHOLDER}}` fields. It creates, edits, previews, and exports templates; it does not generate mock data.
 
@@ -21,7 +21,7 @@ Open the local URL printed by Streamlit (usually http://localhost:8501).
 
 Use **Back** to revisit earlier stages. Existing fields remain intact when re-confirming unchanged documents. Removing a document and confirming the batch deletes that document's edits. Re-running detection replaces its text replacement suggestions while preserving positioned fields.
 
-The image preview supports clickable placeholders: choose sample values collected from documents in the same corrected group or enter a custom value. These values affect the preview only; template exports retain placeholders.
+The image preview supports clickable placeholders: choose sample values collected from documents in the same corrected group or enter a custom value. Selected values are included in both the preview and exported PDFs. Fields left as Keep as template retain their placeholders.
 
 ## State and performance
 
@@ -49,7 +49,33 @@ Partial-word and overlapping matches are silently skipped by the renderer.
 
 
 
-Sync also copies explicitly selected preview values (recommended or custom) alongside Use settings. Fields with no source preview selection retain their existing target selection. Choosing Keep as template, or clearing selected preview values, explicitly resets those selections and can be synced. Preview edits clear reviewed status. Template PDF and ZIP exports retain placeholders; selected values remain available in the preview.
+Sync also copies explicitly selected preview values (recommended or custom) alongside Use settings. Fields with no source preview selection retain their existing target selection. Choosing Keep as template, or clearing selected preview values, explicitly resets those selections and can be synced. Preview edits clear reviewed status. ZIP exports include selected values exactly as rendered in the edited preview. Unselected fields retain placeholders.
 
 
 The enlarged review controls sit beside Save & Continue. Check Reviewed and complete for the current document to enable Reviewed and complete for all documents of this type. The second checkbox marks valid, successfully rendered peers reviewed without copying their fields. Unchecking it clears peer review while keeping the current document checked. Editing a document still clears its own completion status. Step transitions request a scroll to the top of the page.
+
+## Portkey / Fontys models
+
+In Detection settings, choose **Portkey**, enter your **Portkey API key** in the password field, and select a **Model slug**:
+
+- `fontys-haiku-5-5`
+- `claude-opus-5-5`
+- `fontys-claude-sonnet-5-5`
+- **Custom slug** to enter another exact alias available to your account.
+
+The provided slugs are sent unchanged; availability is determined by your Portkey account/routing configuration. Under **Portkey routing (optional)**, enter a config ID if required by your institution. The integration uses `https://api.portkey.ai/v1/chat/completions` with `x-portkey-api-key` and optional `x-portkey-config`, following the chat contract in https://github.com/r-huijts/portkeytester.
+
+You can instead set `PORTKEY_API_KEY` and optionally `PORTKEY_CONFIG_ID` in the environment before starting Streamlit. Keys are not written to project files or exports. Do not paste a real key into source code or commit it to GitHub.
+
+After selecting the model, use **Select and organize PDFs** for new documents or **Detect fields again** for an existing document. Re-running detection replaces existing text-field choices and clears review. Simply switching the model does not automatically reprocess an already processed batch. The detected-with caption records the selected provider and slug. Offline detection and direct OpenAI remain available.
+
+Portkey requests rely on the prompt for JSON rather than OpenAI-specific JSON-mode parameters, then validate the returned field list. HTTP authentication, access, routing, and quota errors are shown without exposing request headers. No extra Python packages are needed for Portkey.
+
+Run `python -m unittest test_ai_gateway` for mocked gateway tests and `python test_wizard.py` for wizard regression checks. These checks do not call paid model APIs; live model access requires your key.
+
+Generated placeholders use standard fonts with reliable braces and text extraction rather than reusing embedded PDF subsets. Preview values use an embedded fallback font when the standard font lacks a character. Hitboxes follow page rotation and grow to include longer filled values. Clickable regions highlight on hover or keyboard focus without persistent outlines; preview updates preserve the viewer scroll position. Unsupported glyphs in the original source PDF or characters outside the fallback font still require inspection. Run python -m unittest test_pdf_rendering to check embedded-font sources, Unicode replacements, rotation, and target bounds.
+
+Completed PDFs use the same rendering function as the Template preview, including chosen values, custom text, Unicode fallback fonts, and Use choices. The review step validates this final output before export.
+
+
+Text replacement removes the old characters without painting white background rectangles or leaving redaction annotations. This preserves existing colored backgrounds and avoids box artifacts in the exported PDF.
