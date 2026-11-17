@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    html, body { margin: 0; font-family: sans-serif; color: #222; }
+    #root { position: relative; }
+    #viewer {
+      height: 760px;
+      overflow: auto;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #f3f4f6;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    .pdf-page { margin: 0 auto 12px; max-width: 100%; background: white; box-shadow: 0 1px 5px #0002; }
+    .pdf-page svg { display: block; width: 100%; height: auto; }
+    .pdf-page { position: relative; }
+    .pdf-page img { display: block; width: 100%; }
+    .pdf-page svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .field-hitbox { fill: transparent; cursor: pointer; pointer-events: all; }
+    .field-hitbox:hover { fill: #ffdc6740; stroke: #ad7b00; stroke-width: 1; }
+    #menu {
+      display: none;
+      position: absolute;
+      z-index: 20;
+      width: 280px;
+      max-height: 340px;
+      overflow: auto;
+      padding: 12px;
+      box-sizing: border-box;
+      border: 1px solid #bbb;
+      border-radius: 8px;
+      background: white;
+      box-shadow: 0 4px 16px #0003;
+    }
+    #menu-title { font-weight: 600; margin-bottom: 8px; }
+    #suggestions { display: grid; gap: 5px; }
+    #suggestions button, #apply-custom {
+      width: 100%;
+      text-align: left;
+      padding: 7px 9px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background: #fff;
+      cursor: pointer;
+    }
+    #suggestions button:hover, #apply-custom:hover { background: #f2f5fa; }
+    #menu label { display: block; margin: 10px 0 4px; font-size: 13px; }
+    #custom-value { width: 100%; box-sizing: border-box; padding: 7px; }
+    #apply-custom { margin-top: 6px; background: #f7f7f7; }
+    #no-suggestions { color: #666; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div id="viewer" aria-label="Interactive PDF template preview"></div>
+    <div id="menu" role="dialog" aria-label="Choose placeholder value">
+      <div id="menu-title"></div>
+      <div id="suggestions"></div>
+      <label for="custom-value">Or enter a custom value</label>
+      <input id="custom-value" type="text">
+      <button id="apply-custom" type="button">Use custom value</button>
+    </div>
+  </div>
+  <script>
+    const root = document.getElementById("root");
+    const viewer = document.getElementById("viewer");
+    const menu = document.getElementById("menu");
+    const title = document.getElementById("menu-title");
+    const suggestions = document.getElementById("suggestions");
+    const customValue = document.getElementById("custom-value");
+    const applyCustom = document.getElementById("apply-custom");
+    const svgNS = "http://www.w3.org/2000/svg";
+    let args = {};
+    let selectedName = "";
+
+    function setFrameHeight() {
+      window.parent.postMessage(
+        { isStreamlitMessage: true, type: "streamlit:setFrameHeight", height: 780 },
+        "*"
+      );
+    }
+
+    function updateValue(name, value) {
+      const next = Object.assign({}, args.values || {});
+      next[name] = value;
+      args.values = next;
+      menu.style.display = "none";
+      drawPages();
+      window.parent.postMessage(
+        { isStreamlitMessage: true, type: "streamlit:setComponentValue", value: next },
+        "*"
+      );
+    }
+
+    function showMenu(name, event) {
+      selectedName = name;
+      title.textContent = "{{" + name + "}}";
+      customValue.value = "";
+      suggestions.replaceChildren();
+      const options = (args.recommendations || {})[name] || [];
+      const keepTemplate = document.createElement("button");
+      keepTemplate.type = "button";
+      keepTemplate.textContent = "Keep as template";
+      keepTemplate.addEventListener("click", () => updateValue(name, ""));
+      suggestions.appendChild(keepTemplate);
+      if (!options.length) {
+        const empty = document.createElement("div");
+        empty.id = "no-suggestions";
+        empty.textContent = "No recommended input values";
+        suggestions.appendChild(empty);
+      }
+      options.forEach((value) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = value;
+        button.addEventListener("click", () => updateValue(name, value));
+        suggestions.appendChild(button);
+      });
+
+      const bounds = root.getBoundingClientRect();
+      const left = Math.min(event.clientX - bounds.left, bounds.width - 292);
+      const top = Math.min(event.clientY - bounds.top + root.scrollTop, 410);
+      menu.style.left = Math.max(4, left) + "px";
+      menu.style.top = Math.max(4, top) + "px";
+      menu.style.display = "block";
+      customValue.focus();
+    }
+
+    function addTarget(svg, target) {
+      const [x0, y0, x1, y1] = target.rect;
+      const hitbox = document.createElementNS(svgNS, "rect");
+      hitbox.setAttribute("class", "field-hitbox");
+      hitbox.setAttribute("role", "button");
+      hitbox.setAttribute("tabindex", "0");
+      hitbox.setAttribute("aria-label", "Choose a value for {{" + target.name + "}}");
+      hitbox.setAttribute("x", x0 - 2);
+      hitbox.setAttribute("y", y0 - 3);
+      hitbox.setAttribute("width", Math.max(12, x1 - x0 + 4));
+      hitbox.setAttribute("height", y1 - y0 + 6);
+      hitbox.addEventListener("click", (event) => {
+        event.stopPropagation();
+        showMenu(target.name, event);
+      });
+      hitbox.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          showMenu(target.name, event);
+        }
+      });
+      svg.appendChild(hitbox);
+    }
+
+    function drawPages() {
+      viewer.replaceChildren();
+      (args.pages || []).forEach((page, pageNo) => {
+        const svg = document.createElementNS(svgNS, "svg");
+        svg.setAttribute("viewBox", "0 0 " + page.width + " " + page.height);
+        svg.setAttribute("preserveAspectRatio", "xMinYMin meet");
+        svg.setAttribute("role", "group");
+        svg.setAttribute("aria-label", "PDF page " + (pageNo + 1) + " with interactive placeholders");
+        const wrapper = document.createElement("div");
+        wrapper.className = "pdf-page";
+        wrapper.style.maxWidth = page.width * 1.5 + "px";
+        const img = document.createElement("img");
+        img.src = page.image;
+        img.alt = "PDF page " + (pageNo + 1);
+        wrapper.appendChild(img);
+        wrapper.appendChild(svg);
+        viewer.appendChild(wrapper);
+        (args.targets || [])
+          .filter((target) => target.page === pageNo)
+          .forEach((target) => addTarget(svg, target));
+      });
+    }
+
+    applyCustom.addEventListener("click", () => {
+      const value = customValue.value.trim();
+      if (selectedName && value) updateValue(selectedName, value);
+    });
+    customValue.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") applyCustom.click();
+    });
+    document.addEventListener("click", (event) => {
+      if (!menu.contains(event.target) && !event.target.classList.contains("field-hitbox")) {
+        menu.style.display = "none";
+      }
+    });
+    window.addEventListener("message", (event) => {
+      if (!event.data || event.data.type !== "streamlit:render") return;
+      args = event.data.args || {};
+      drawPages();
+      setFrameHeight();
+    });
+    window.parent.postMessage(
+      { isStreamlitMessage: true, type: "streamlit:componentReady", apiVersion: 1 },
+      "*"
+    );
+    setFrameHeight();
+  </script>
+</body>
+</html>
