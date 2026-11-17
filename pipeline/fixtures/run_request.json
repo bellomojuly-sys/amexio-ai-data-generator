@@ -1,0 +1,31 @@
+{
+  "config": {
+    "company": {
+      "employerName": "Acme Logistics B.V. (fictional)",
+      "trainingProvider": "Training Academy (fictional)",
+      "examiner": "Occupational physician (fictional)",
+      "absenceService": "Occupational health service (fictional)",
+      "directorName": "H. de Wit (fictional)"
+    },
+    "departments": [
+      {"name": "IT",
+       "positions": [
+         {"title": "Software Developer", "salaryMin": 3800, "salaryMax": 5200},
+         {"title": "Senior Software Developer", "salaryMin": 4800, "salaryMax": 6200},
+         {"title": "IT Manager", "salaryMin": 5500, "salaryMax": 7000, "isManagerRole": true}
+       ]},
+      {"name": "Human Resources",
+       "positions": [
+         {"title": "HR Advisor", "salaryMin": 3400, "salaryMax": 4600},
+         {"title": "HR Manager", "salaryMin": 5000, "salaryMax": 6500, "isManagerRole": true}
+       ]}
+    ],
+    "employeeCount": 10,
+    "temporaryShare": 0.2,
+    "partTimeShare": 0.3,
+    "asOfDate": "2026-10-31",
+    "notes": "Logistics company, mostly office staff."
+  },
+  "seedEmployees": null,
+  "options": {"fake_llm": true}
+}

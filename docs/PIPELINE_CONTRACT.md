@@ -339,6 +339,11 @@ For 10 employees: 13 calls, at most 26 with retries.
 | A second human review after Fill | Daniel |
 | Exact shape of `RunConfig` and the review screen that edits it | Daniel, Giulia |
 | Case model v1.2 (`signed_by`) agreed by the team | all |
+| `RunConfig` has no leaver share, so Plot plans no termination yet. Add `leaverShare`? | Daniel, Giulia |
+| Salary range of a position: for 40 hours (as in the generator's prompt, scaled for part time) or for any hours (as §4 reads now)? CM ID follows §4 | Robin, Giulia |
+| Hire dates: the config has no earliest hire date; CM ID uses the 10 years before `asOfDate` | Daniel, Giulia |
+| The slot `summary` (§5) has no field in `input.storylines.schema.json`, so `ingest_storylines` drops it | Valentin, Giulia |
+| Who creates the `Document` records (IDs `DOC-…`) that Fill writes `Document.text` into | Valentin, Giulia, Stylianos |
 
 ## 11. Sign-off
 
@@ -350,6 +355,19 @@ For 10 employees: 13 calls, at most 26 with retries.
 | Valentin | Dates & participants, Fill | ⬜ |
 | Mike | orchestration (`run_chain`), trace | ⬜ |
 | Stylianos | Export | ⬜ |
+
+## 11b. Where it is in the code (17 Nov)
+
+| Step | Module | State |
+|---|---|---|
+| Boundary models §3–§8 | `pipeline/contracts.py`, schemas in `pipeline/schema/` | done |
+| LLM client §8 | `pipeline/llm.py` (`complete`, `complete_as` + one retry, `FakeLLM`) | interface done; real providers: Robin |
+| 1 Personas, 4 Event content, 7 Document text | `pipeline/generation.py` | reference version on the contract's signatures; Robin replaces the bodies |
+| 2 CM ID | `pipeline/cm_id.py` | done |
+| 3 Plot | `pipeline/plot.py` | done (no termination: see §10) |
+| 5 Dates & participants, 8 Fill | `pipeline/valentin_stubs.py` | stubs with the right shapes; Valentin replaces them |
+| 6 Document plan | `pipeline/document_plan.py` | done |
+| Chain, trace, error shape | `pipeline/chain.py` | done; `run_chain(request)` runs offline with `options.fake_llm` |
 
 ## 12. Robin's four points (3 Nov) and how 1.1 answers them
 
