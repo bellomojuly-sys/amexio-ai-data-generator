@@ -190,9 +190,10 @@ def test_the_bundle_holds_every_module_the_demo_imports():
     files = build_bundle.bundle_files()
     for path in ("pipeline/chain.py", "pipeline/generation.py", "pipeline/placeholders.py",
                  "case_model/lookup.py", "generator/Second_demo_generator/demo_bridge.py",
-                 "pipeline/fixtures/run_request.json"):
+                 "pipeline/fixtures/run_request.json",
+                 "generator/Second_demo_generator/studio_bridge.py", "pdf_template_studio/app.py"):
         assert path in files
-    assert not any(p.startswith("pdf_template_studio") for p in files)
+    assert [p for p in files if p.startswith("pdf_template_studio")] == ["pdf_template_studio/app.py"]
 
 
 def test_pyodide_is_copied_with_pydantic_and_its_dependencies_only(tmp_path):
@@ -212,7 +213,7 @@ def test_pyodide_is_copied_with_pydantic_and_its_dependencies_only(tmp_path):
     for name in build_bundle.PYODIDE_CORE:
         (source / name).write_bytes(b"core")
     out = tmp_path / "site"
-    written = build_bundle.fetch_pyodide(str(source), out)
+    written = build_bundle.fetch_pyodide(str(source), out, packages=["pydantic"])
     assert "python_stdlib.zip.wasm" in written                # the host serves no .zip
     assert (out / "pydantic_core-1.0-py3-none-any.whl.wasm").exists()
     assert not any("numpy" in name for name in written)
@@ -228,4 +229,4 @@ def test_a_wheel_that_does_not_match_its_sha256_is_refused(tmp_path):
     for name in build_bundle.PYODIDE_CORE:
         (tmp_path / name).write_bytes(b"core")
     with pytest.raises(SystemExit, match="sha256"):
-        build_bundle.fetch_pyodide(str(tmp_path), tmp_path / "out")
+        build_bundle.fetch_pyodide(str(tmp_path), tmp_path / "out", packages=["pydantic"])
