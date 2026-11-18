@@ -262,7 +262,25 @@ needs no API key.
 
 Every LLM call shows its **prompt**, its **answer**, the **corrections** (what
 code refused and sent back for the retry) and its **trace line**, with tokens,
-an API cost estimate and retries. **Fake model** answers with
+an API cost estimate and retries.
+
+**Step by step.** A step that has run offers **Next**, which goes to the next
+step and runs it if it has not run yet. In Claude mode it also offers **Ask
+Claude again** for that step, as long as the next step has not run: the page
+forgets Claude's answers for this step's LLM call (and its retry) and runs the
+chain again, so the earlier steps replay their answers and only this step gets
+new ones. Once the next step has run on these answers, a step keeps its
+answers; **Start over** on the Result step asks Claude again for everything. A
+step that stopped with an error can be asked again the same way.
+
+**Export.** **Export files (ZIP)**, in the top bar and on the Result step,
+saves the run up to the last step that finished: one folder per case in the
+case model's own files, the run request, the corrections, the trace, every LLM
+call with its prompts and answers, each step's output in the contract's shape
+(`steps/`) and the document texts with their filled preview. The v1 demo opens
+this ZIP (Configure, *Open exported ZIP*) and makes AMEXIO's PDFs and
+`import.xml` from it: checked with a 5-employee run, which gave 241 PDFs and
+`import.xml` with no validation errors. **Fake model** answers with
 `pipeline/fake_answers.py` (`options.fake_llm`); **Claude** asks
 `claude-sonnet-5-5` through the page, on the viewer's account. The page opens
 with a fake run of the default request (100101 plus four generated employees)
@@ -332,6 +350,15 @@ git ignores them (`.gitignore` in this folder); `site/index.html` is the page.
   The real Fill and its formats (AX-025) replace it.
 - **Downloads** use the page's `downloads` capability; the viewer confirms
   each one.
+- **Stand-in, labelled in the ZIP's README: the events' texts are filled in the
+  exported case folders.** Part 2's comments and reasons are saved on the events
+  with their placeholders, and no step fills them yet (open point 1 in the team
+  list). v1's own check refuses such texts ("the AI comment contains numbers",
+  from the digits in `{{personas.P001.name}}`), so the export fills them the
+  way the filled preview does (`demo_bridge.filled_case`). The chain's own texts
+  stay in `steps/event_content_in.json`.
+- **Why the page showed "nullnull".** `replaceChildren` turns a missing part
+  into the text "null"; the page now leaves missing parts out.
 
 ### For later
 

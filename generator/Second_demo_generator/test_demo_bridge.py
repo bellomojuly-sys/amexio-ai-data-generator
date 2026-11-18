@@ -4,13 +4,16 @@ needs a new one; errors that name the step and the field; and the bundle the
 page loads."""
 
 import hashlib
+import io
 import json
+import zipfile
 
 import pytest
 
 import build_bundle
 import demo_bridge
-from demo_bridge import key_of, run
+from case_model.storage import load_case
+from demo_bridge import RUN_ID, export_zip, key_of, run
 from pipeline import fake_answers
 
 
@@ -132,6 +135,53 @@ def test_a_bad_request_is_refused_with_the_field():
     data["config"]["id"] = "X"
     out = json.loads(run(json.dumps(data), "fake", "personas"))
     assert out["status"] == "error" and out["error"]["kind"] == "validation"
+
+
+# --- export: the files of a run ----------------------------------------------
+
+def _unzip(data):
+    with zipfile.ZipFile(io.BytesIO(data)) as archive:
+        return {name: archive.read(name).decode("utf-8") for name in archive.namelist()}
+
+
+def test_the_export_holds_case_folders_that_load_and_every_record_of_the_run(tmp_path):
+    req = request()
+    files = _unzip(export_zip(req, "fake", "documents"))
+    for name in ("README.txt", "run_request.json", "corrections.json", "trace.json",
+                 "llm_calls.json", "document_texts.json", "steps/plot_outline.json",
+                 "steps/event_content_in.json", "steps/document_plan.json"):
+        assert f"{RUN_ID}/{name}" in files
+    result = json.loads(run(req, "fake", "documents"))["result"]
+    for case in result["cases"]:
+        folder = tmp_path / case["case_number"]
+        folder.mkdir()
+        for part in ("case.json", "cast.json", "storyline.json", "documents.json"):
+            (folder / part).write_text(files[f"{RUN_ID}/cases/{case['case_number']}/{part}"],
+                                       encoding="utf-8")
+        loaded = load_case(folder)                       # a valid case model case
+        assert set(loaded.events) == set(case["events"]) and loaded.personas.keys() == case["personas"].keys()
+        for event_id, event in loaded.events.items():    # event texts filled, the rest unchanged
+            raw = case["events"][event_id]
+            assert "{{" not in (getattr(event, "comment", None) or "")
+            assert str(event.date) == raw["date"] and event.type == raw["type"]
+    jan = next(c for c in result["cases"] if c["case_number"] == "100101")
+    raw_comment = next(e["comment"] for e in jan["events"].values() if e["type"] == "appraisal")
+    assert "{{personas.P001.name}}" in raw_comment                # the chain's own text keeps it
+    calls = json.loads(files[f"{RUN_ID}/llm_calls.json"])
+    assert calls and all(c["attempts"][0]["prompt"] for c in calls)
+
+
+def test_an_export_after_one_step_has_what_ran_so_far():
+    files = _unzip(export_zip(request(), "fake", "personas"))
+    assert f"{RUN_ID}/cases/100101/case.json" in files
+    assert f"{RUN_ID}/steps/personas_in.json" in files
+    assert f"{RUN_ID}/document_texts.json" not in files
+    assert "1-2 (Personas, CM ID)" in files[f"{RUN_ID}/README.txt"]
+
+
+def test_an_unfinished_run_cannot_be_exported():
+    with pytest.raises(ValueError, match="nothing to export"):
+        export_zip(request(), "claude", "personas", "{}")
 
 
 # --- the bundle the page loads ------------------------------------------------

@@ -33,13 +33,17 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import io
 import json
+import tempfile
+import zipfile
 from decimal import Decimal
 from pathlib import Path
 
 from pydantic import BaseModel
 
 from case_model.lookup import UnknownPath, get_fact
+from case_model.storage import save_case
 from pipeline import fake_answers
 from pipeline.chain import STAGES, ChainError, Stage, run_chain
 from pipeline.contracts import RunRequest
@@ -120,37 +124,150 @@ def defaults() -> str:
 
 def run(request_json: str, mode: str, step: str, answers_json: str = "{}", seed: int = 0) -> str:
     """Run the chain up to ``step`` and say what happened, as JSON."""
+    o = _execute(request_json, mode, step, answers_json, seed)
+    if o["status"] == "invalid":
+        return _dumps({"status": "error", "outputs": {}, "calls": [], "trace": [],
+                       "error": {"kind": "validation", "stage": "request",
+                                 "message": o["message"], "field": None}})
+    calls = _calls(o["llm"], o["trace"], o["answers"], o["marks"])
+    if o["status"] == "need_answer":
+        return _dumps({"status": "need_answer", "key": o["need"].key, "prompt": o["need"].prompt,
+                       "stage": o["stage"], "outputs": _views(o["outputs"]), "calls": calls,
+                       "trace": []})
+    trace = [t.model_dump() for t in o["trace"]]
+    if o["status"] == "error":
+        return _dumps({"status": "error", "error": o["error"].body().error.model_dump(),
+                       "outputs": _views(o["outputs"]), "calls": calls, "trace": trace})
+    return _dumps({"status": "ok", "outputs": _views(o["outputs"]), "calls": calls,
+                   "trace": trace, "result": o["result"].model_dump(mode="json")})
+
+
+def _execute(request_json: str, mode: str, step: str, answers_json: str, seed: int) -> dict:
+    """One run of the chain up to ``step``, with every Python object kept."""
     try:
         request = RunRequest.model_validate_json(request_json)
     except ValueError as exc:
-        return _dumps({"status": "error", "outputs": {}, "calls": [], "trace": [],
-                       "error": {"kind": "validation", "stage": "request",
-                                 "message": str(exc), "field": None}})
+        return {"status": "invalid", "message": str(exc)}
     answers = json.loads(answers_json or "{}")
     llm = FakeLLM(fake_answers.answer) if mode == "fake" else ReplayLLM(answers)
-    outputs: dict = {}
+    o = {"request": request, "answers": answers, "llm": llm, "outputs": {}, "trace": [],
+         "marks": [], "stage": None, "result": None, "error": None, "need": None}
     current = {"stage": None}
-    marks: list[tuple[str, int]] = []        # (stage, number of LLM calls before it)
     stages = []
-    for stage in STAGES:
-        stages.append(Stage(stage.name, stage.kind, _capture(stage, outputs, current, marks, llm),
+    for stage in STAGES:          # marks: (stage, number of LLM calls before it)
+        stages.append(Stage(stage.name, stage.kind,
+                            _capture(stage, o["outputs"], current, o["marks"], llm),
                             stage.output_type))
         if stage.name == STEPS[step]:
             break
     try:
-        result = run_chain(request, llm=llm, stages=stages, run_id=RUN_ID, seed=seed)
+        o["result"] = run_chain(request, llm=llm, stages=stages, run_id=RUN_ID, seed=seed)
+        o["status"], o["trace"] = "ok", o["result"].trace
     except NeedAnswer as need:
-        return _dumps({"status": "need_answer", "key": need.key, "prompt": need.prompt,
-                       "stage": current["stage"], "outputs": _views(outputs),
-                       "calls": _calls(llm, None, answers, marks), "trace": []})
+        o["status"], o["need"] = "need_answer", need
     except ChainError as error:
-        return _dumps({"status": "error", "error": error.body().error.model_dump(),
-                       "outputs": _views(outputs), "calls": _calls(llm, error.trace, answers, marks),
-                       "trace": [t.model_dump() for t in error.trace]})
-    return _dumps({"status": "ok", "outputs": _views(outputs),
-                   "calls": _calls(llm, result.trace, answers, marks),
-                   "trace": [t.model_dump() for t in result.trace],
-                   "result": result.model_dump(mode="json")})
+        o["status"], o["error"], o["trace"] = "error", error, error.trace
+    o["stage"] = current["stage"]
+    return o
+
+
+# --- Export: the files of a run, as one ZIP -------------------------------------
+
+def export_zip(request_json: str, mode: str, step: str, answers_json: str = "{}",
+               seed: int = 0, model: str = MODEL) -> bytes:
+    """The files of a run up to ``step``, as a ZIP. Runs the chain again with
+    the same answers, so it sends nothing new to Claude.
+
+    One folder per case in the case model's own format (``save_case``), which
+    the v1 demo opens (Configure, "Open case ZIP") to make AMEXIO's PDFs and
+    ``import.xml``; plus the run request, the corrections, the trace, every LLM
+    call with its prompts and answers, the steps' outputs and the document
+    texts with their filled preview."""
+    o = _execute(request_json, mode, step, answers_json, seed)
+    if o["status"] != "ok":
+        reason = o.get("message") or (str(o["error"]) if o["error"] else "a prompt has no answer yet")
+        raise ValueError(f"nothing to export: the run did not finish ({reason})")
+    result = o["result"]
+    files: dict[str, str] = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        for case in result.cases:
+            folder = Path(tmp) / case.case_number
+            save_case(filled_case(case), folder)
+            for path in sorted(folder.iterdir()):
+                files[f"cases/{case.case_number}/{path.name}"] = path.read_text(encoding="utf-8")
+
+    def as_json(value) -> str:
+        return json.dumps(value, indent=2, ensure_ascii=False, default=str) + "\n"
+
+    files["run_request.json"] = as_json(json.loads(request_json))
+    files["corrections.json"] = as_json([c.model_dump() for c in result.corrections])
+    files["trace.json"] = as_json([t.model_dump() for t in result.trace])
+    files["llm_calls.json"] = as_json(_calls(o["llm"], result.trace, o["answers"], o["marks"]))
+    names = {"personas": "personas_in", "plot": "plot_outline", "event_content": "event_content_in",
+             "document_plan": "document_plan"}
+    for stage, name in names.items():
+        if o["outputs"].get(stage) is not None:
+            files[f"steps/{name}.json"] = as_json(_dump(o["outputs"][stage]))
+    if "document_text" in o["outputs"]:
+        files["document_texts.json"] = as_json(_texts(o["outputs"]))
+    files["README.txt"] = _readme(result, mode, model, step, seed, sorted(files))
+
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for path, text in sorted(files.items()):
+            archive.writestr(f"{RUN_ID}/{path}", text)
+    return buffer.getvalue()
+
+
+EVENT_TEXTS = ("summary", "label", "comment", "reason")
+
+
+def filled_case(case):
+    """**Demo stand-in for Fill (Valentin), on the events.** Part 2's texts
+    (summary, comment, reason) are saved on the events with their placeholders,
+    and no step fills them yet (open point 1). The exported case folders get
+    them filled, as ``fill_preview`` does, so a reader such as the v1 demo gets
+    plain text. The chain's own texts stay in ``steps/event_content_in.json``."""
+    data = case.model_dump(mode="json")
+    for event in data["events"].values():
+        for name in EVENT_TEXTS:
+            if isinstance(event.get(name), str):
+                event[name] = fill_preview(case, event[name])
+    return type(case).model_validate(data)
+
+
+def _readme(result, mode: str, model: str, step: str, seed: int, paths: list[str]) -> str:
+    made_by = f"Claude ({model}) on the viewer's Claude account" if mode == "claude" else \
+        "the fake model (pipeline/fake_answers.py, options.fake_llm)"
+    reached = {"personas": "1-2 (Personas, CM ID)", "events": "1-5 (up to Dates & participants)",
+               "documents": "1-8 (all)"}[step]
+    lines = [
+        f"{RUN_ID}: a run of the AMEXIO dossier generator v2 (pipeline contract v1.1)",
+        "",
+        f"Exported: {dt.datetime.now().isoformat(timespec='seconds')}",
+        f"LLM: {made_by}",
+        f"Chain steps run: {reached}; seed {seed}; {len(result.cases)} cases",
+        "",
+        "cases/NNNNNN/        one folder per case, as case_model.storage.save_case writes it",
+        "                     (case.json, cast.json, storyline.json, documents.json), with the",
+        "                     placeholders in the events' texts filled (demo stand-in for Fill).",
+        "                     Open this ZIP in the v1 demo (Configure, Open case ZIP) to make",
+        "                     AMEXIO's PDFs and import.xml from these cases.",
+        "run_request.json     the request the chain ran (POST /runs, contract section 3)",
+        "corrections.json     values the case model corrected on the way in",
+        "trace.json           one line per code step and per LLM call (contract section 8)",
+        "llm_calls.json       every LLM call: each attempt's prompt, answer and refusal",
+        "steps/               each step's output at its boundary (the contract's JSON shapes)",
+        "document_texts.json  the document texts with their placeholders, and a filled preview",
+        "",
+        "Stand-ins: Dates & participants and Fill are Valentin's stubs; the filled preview is",
+        "the demo's own (dates as 1 March 2021, amounts as 4,350.00). In Claude mode the",
+        "tokens in trace.json are estimates (characters / 4): the page's Claude call reports none.",
+        "",
+        "Files:",
+        *[f"  {p}" for p in paths + ["README.txt"]],
+    ]
+    return "\n".join(lines) + "\n"
 
 
 def _capture(stage: Stage, outputs: dict, current: dict, marks: list, llm: BaseLLMClient):

@@ -146,6 +146,7 @@ pre.box { margin: 0; padding: 10px 12px; background: var(--code-bg); border: 1px
 .notice.err { background: var(--err-soft); border-color: transparent; color: var(--err); }
 .notice.err pre { color: var(--ink); }
 .notice.live { border-color: var(--accent); background: var(--accent-soft); }
+.notice.ok { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
 .notice .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
 .doc { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
@@ -176,6 +177,7 @@ mark { background: var(--mark); color: var(--mark-ink); padding: 0 2px; border-r
 <header class="top">
   <div class="brand"><span class="brand-name">Dossier Generator</span><span class="brand-sub">v2 · pipeline contract v1.1 · runs the backend's Python in your browser</span></div>
   <span class="spacer"></span>
+  <button class="btn small" id="exportTop" type="button" disabled>Export files (ZIP)</button>
   <span class="chip" id="modeChip"><span class="dot"></span><span>Fake model</span></span>
   <span class="chip warn" id="pyChip"><span class="dot"></span><span>Loading Python…</span></span>
 </header>
@@ -228,6 +230,9 @@ const CHAIN = {
   document_text: { n: 7, name: "Document text", kind: "LLM", owner: "Robin" },
   fill: { n: 8, name: "Fill", kind: "code", owner: "Valentin", stub: true },
 };
+const ORDER = STEPS.map((s) => s.id);
+const FINAL = { personas: "cm_id", events: "dates_participants", documents: "fill" };   // where run_chain can stop
+const LLM_STAGE = { personas: "personas", events: "event_content", documents: "document_text" };
 // v1's messages for the Claude page call (src/ai/providers.ts), with v1's kinds.
 const SAMPLE_ERRORS = {
   not_granted: ["You (or your organisation) have not allowed this page to use Claude. Allow it, or use the fake model.", "setup"],
@@ -256,6 +261,7 @@ const state = {
   live: null,              // {stage, text} while Claude answers
   abort: null,
   example: false,          // the shown run is the fake example made on load
+  notice: null,            // {kind, text}: the last export's outcome
 };
 let py = null, bridge = null, sample = null, downloads = null;
 
@@ -421,7 +427,7 @@ async function runTo(step, opts = {}) {
     state.last = { status: "error", error: { kind: "validation", stage: "request", message: `With Claude, the demo makes at most ${MAX_EMPLOYEES_WITH_CLAUDE} employees per run (v1's limit). Lower the number, or use the fake model.` }, outputs: {}, calls: [], trace: [] };
     render(); return;
   }
-  state.busy = true; state.example = !!opts.example; state.abort = new AbortController();
+  state.busy = true; state.example = !!opts.example; state.abort = new AbortController(); state.notice = null;
   render();
   try {
     for (let i = 0; i < MAX_RUNS; i++) {
@@ -432,7 +438,7 @@ async function runTo(step, opts = {}) {
       render();
       const entry = await ask(out.prompt);
       state.live = null;
-      state.answers[out.key] = entry;
+      state.answers[out.key] = { ...entry, stage: out.stage };   // the stage: to ask again for one step
       if (entry.error) {                 // show the stop as the chain reports it, then forget it
         state.last = JSON.parse(bridge.run(request, state.mode, step, JSON.stringify(state.answers), state.seed));
         delete state.answers[out.key];
@@ -482,6 +488,10 @@ function renderRail() {
       h("span", { class: "num", text: String(i + 1) }), h("span", { class: "label", text: s.label }),
       h("span", { class: "state " + st, text: st === "ok" ? "done" : st === "err" ? "stopped" : "" }));
   }), h("p", { class: "rail-note", text: "Each step runs the chain from the start up to that step. In Claude mode the answers Claude already gave are replayed, so only new prompts are sent." }));
+  const exp = document.getElementById("exportTop");
+  exp.disabled = state.busy || !bridge || !furthest();
+  exp.textContent = isDone("documents") || !furthest() ? "Export files (ZIP)" : "Export so far (ZIP)";
+  exp.onclick = exportRun;
   const chip = document.getElementById("modeChip");
   chip.className = "chip " + (state.mode === "claude" ? "accent" : "");
   chip.lastChild.textContent = state.mode === "claude" ? `Claude · ${MODEL} · your account` : "Fake model · offline";
@@ -496,7 +506,8 @@ function render() {
   }
   if (!state.form) { panel.replaceChildren(h("div", { class: "card" }, h("h2", { text: "Loading" }), h("p", { class: "lede", text: "Starting Python in your browser and loading the pipeline (about ten seconds the first time)." }), h("p", { class: "muted", text: state.loadStep || "" }))); return; }
   const view = { configure: viewConfigure, personas: viewPersonas, events: viewEvents, documents: viewDocuments, result: viewResult }[state.view];
-  panel.replaceChildren(...view());
+  // replaceChildren turns a null into the text "null": leave the empty parts out.
+  panel.replaceChildren(...[noticeLine(), ...view()].filter(Boolean));
 }
 function renderLive() {
   const box = document.getElementById("liveText");
@@ -509,14 +520,92 @@ function chainChips(ids) {
       h("b", { text: `${c.n} ${c.name}` }), ` · ${c.kind} · ${c.owner}${c.stub ? " · stub" : ""}`);
   }));
 }
-function runBar(step, label) {
-  const last = state.last;
-  const bar = h("div", { class: "card-head" },
-    h("button", { class: "btn primary", disabled: state.busy || !bridge, onclick: () => runTo(step), text: state.busy ? "Running…" : label }),
-    state.mode === "claude" && Object.keys(state.answers).length ? h("button", { class: "btn", disabled: state.busy, onclick: () => { state.answers = {}; runTo(step); }, text: "Ask Claude again from the start" }) : null,
-    h("span", { class: "spacer" }),
+// --- Step controls: run a step, ask Claude again for it, go to the next one -----
+const labelOf = (id) => STEPS.find((s) => s.id === id).label;
+const nextOf = (id) => ORDER[ORDER.indexOf(id) + 1];
+const isDone = (id) => !!(FINAL[id] && state.last?.outputs?.[FINAL[id]]);
+const stoppedIn = (id) => state.last?.status === "error" && !!STEPS.find((s) => s.id === id)?.chain?.includes(state.last.error.stage);
+const hasCalls = (id) => (state.last?.calls || []).some((c) => c.stage === LLM_STAGE[id]);
+const furthest = () => ["documents", "events", "personas"].find(isDone) || null;
+async function goNext(id) {
+  const next = nextOf(id);
+  state.view = next; render();
+  if (FINAL[next] && !isDone(next)) await runTo(next);
+}
+// Forget Claude's answers for this step's LLM call (and its retry), then run up to it again.
+// The answers of the steps before it are replayed, so only this step gets new answers.
+async function askAgain(id) {
+  for (const [key, entry] of Object.entries(state.answers)) if (entry.stage === LLM_STAGE[id]) delete state.answers[key];
+  await runTo(id);
+}
+function stepBar(id) {
+  const label = labelOf(id), next = nextOf(id), nextLabel = labelOf(next);
+  const done = isDone(id), nextDone = isDone(next), stopped = stoppedIn(id), claude = state.mode === "claude";
+  const off = state.busy || !bridge;
+  const buttons = [];
+  if (!done) {
+    buttons.push(h("button", { class: "btn primary", disabled: off, onclick: () => (stopped && claude ? askAgain(id) : runTo(id)),
+      text: state.busy ? "Running…" : stopped ? (claude ? `Ask Claude again for ${label}` : `Run ${label} again`) : `Run ${label}` }));
+  } else {
+    buttons.push(h("button", { class: "btn primary", disabled: off, onclick: () => goNext(id),
+      text: state.busy ? "Running…" : FINAL[next] && !nextDone ? `Next: run ${nextLabel}` : `Next: ${nextLabel}` }));
+    if (claude && hasCalls(id) && !nextDone)
+      buttons.push(h("button", { class: "btn", disabled: off, onclick: () => askAgain(id), text: `Ask Claude again for ${label}` }));
+  }
+  const bar = h("div", { class: "card-head" }, buttons, h("span", { class: "spacer" }),
     state.example ? h("span", { class: "chip warn", text: "Example: fake model, made on load" }) : null);
   const parts = [bar];
+  if (done && claude && hasCalls(id) && nextDone)
+    parts.push(h("p", { class: "muted", text: `${nextLabel} has already run on these answers, so this step's answers stay. To ask Claude again for everything, use Start over on the Result step.` }));
+  if (done && !claude && hasCalls(id))
+    parts.push(h("p", { class: "muted", text: "The fake model gives the same answers every time. Choose Claude on the Configure step to ask for new ones." }));
+  return parts.concat(runNotices());
+}
+function resultBar() {
+  const off = state.busy || !bridge, full = isDone("documents"), claude = state.mode === "claude";
+  const bar = h("div", { class: "card-head" },
+    full ? h("button", { class: "btn primary", disabled: off, onclick: exportRun, text: "Export files (ZIP)" })
+         : h("button", { class: "btn primary", disabled: off, onclick: () => runTo("documents"), text: state.busy ? "Running…" : "Run all steps" }),
+    !full && furthest() ? h("button", { class: "btn", disabled: off, onclick: exportRun, text: "Export what has run so far" }) : null,
+    full && claude ? h("button", { class: "btn", disabled: off, onclick: () => { state.answers = {}; runTo("documents"); }, text: "Start over: ask Claude again for every step" }) : null,
+    h("span", { class: "spacer" }),
+    state.example ? h("span", { class: "chip warn", text: "Example: fake model, made on load" }) : null);
+  return [bar, ...runNotices()];
+}
+function noticeLine() {
+  if (!state.notice) return null;
+  return h("div", { class: "notice " + state.notice.kind, role: "status" }, h("span", { text: state.notice.text }));
+}
+// The files of the run, as a ZIP: case folders (v1 opens them), the request, corrections, trace,
+// LLM calls, each step's output and the document texts. Python builds it from the same answers.
+async function exportRun() {
+  const step = furthest();
+  if (!step || !bridge || state.busy) return;
+  let bytes;
+  try {
+    const proxy = bridge.export_zip(JSON.stringify(buildRequest()), state.mode, step, JSON.stringify(state.answers), state.seed);
+    bytes = proxy.toJs(); proxy.destroy();
+  } catch (e) {
+    state.notice = { kind: "err", text: "The export failed: " + String(e && e.message ? e.message : e).split("\n").slice(-2).join(" ") };
+    render(); return;
+  }
+  if (!downloads) {
+    state.notice = { kind: "err", text: "Downloads are not available in this view of the page. Open the page itself on claude.ai and export again." };
+    render(); return;
+  }
+  try {
+    await downloads.save({ filename: "GEN-2026-0001.zip", data: new Blob([bytes], { type: "application/zip" }) });
+    state.notice = { kind: "ok", text: `Saved GEN-2026-0001.zip: the run up to ${labelOf(step)}.` };
+  } catch (e) {
+    const declined = /declin|cancel/i.test(String(e && (e.code || e.message)));
+    state.notice = declined ? { kind: "", text: "Not saved: the download was cancelled." }
+                            : { kind: "err", text: "The ZIP was not saved" + (e && e.message ? `: ${e.message}` : ".") };
+  }
+  render();
+}
+function runNotices() {
+  const last = state.last;
+  const parts = [];
   if (state.live) {
     parts.push(h("div", { class: "notice live" },
       h("div", { class: "row" }, h("b", { text: `Asking Claude: ${CHAIN[state.live.stage]?.name || state.live.stage}, call ${state.live.calls}` }),
@@ -622,7 +711,7 @@ function viewConfigure() {
         h("div", {}, h("span", { class: "big", text: `≤ ${b.calls}` }), h("span", { class: "what", text: "LLM calls (contract §9)" })),
         h("div", {}, h("span", { class: "big", text: `≤ ${b.withRetries}` }), h("span", { class: "what", text: "with one retry each" }))),
       h("div", { class: "card-head" },
-        h("button", { class: "btn primary", disabled: state.busy || !bridge, onclick: async () => { state.view = "personas"; render(); await runTo("personas"); }, text: "Run step 2: Personas" }),
+        h("button", { class: "btn primary", disabled: state.busy || !bridge, onclick: async () => { state.view = "personas"; render(); await runTo("personas"); }, text: "Next: run Personas" }),
         h("button", { class: "btn", disabled: state.busy || !bridge, onclick: async () => { state.view = "result"; render(); await runTo("documents"); }, text: "Run all steps" }))),
     h("details", { class: "call" }, h("summary", {}, h("b", { text: "The run request sent to run_chain" })),
       h("div", { class: "call-body" }, h("pre", { class: "box", text: (() => { try { return JSON.stringify(buildRequest(), null, 2); } catch (e) { return e.message; } })() }))),
@@ -636,7 +725,7 @@ function viewPersonas() {
   return [
     h("div", { class: "card" }, h("h2", { text: "Personas" }),
       h("p", { class: "lede", text: "The LLM proposes names, a department and a position only. CM ID then decides contract type, hours, hire date and salary by the HR template's rules, and the case model assigns the personnel numbers and IDs." }),
-      chainChips(STEPS[1].chain), ...runBar("personas", "Run personas")),
+      chainChips(STEPS[1].chain), ...stepBar("personas")),
     h("div", { class: "card" }, h("h3", { text: "LLM calls" }),
       o.cm_id && !o.personas ? h("p", { class: "muted", text: "No Personas call: every employee is a seed." }) : null,
       callsFor(["personas"])),
@@ -671,7 +760,7 @@ function viewEvents() {
   return [
     h("div", { class: "card" }, h("h2", { text: "Event content" }),
       h("p", { class: "lede", text: "Plot picks each employee's events and their closed-list values. The LLM writes only text for each slot, by echoing its key; Dates & participants then dates them and adds who took part." }),
-      chainChips(STEPS[2].chain), ...runBar("events", "Run event content")),
+      chainChips(STEPS[2].chain), ...stepBar("events")),
     h("div", { class: "card" }, h("h3", { text: "The plot, as code decided it" }),
       o.plot ? table([{ label: "Employee", get: (r) => r.employeeNumber },
         { label: "Slots", get: (r) => h("div", { class: "slots" }, r.slots.map((s) => h("span", { class: "slot", text: slotLabel(s) }))) }], o.plot.outlines)
@@ -700,7 +789,7 @@ function viewDocuments() {
   return [
     h("div", { class: "card" }, h("h2", { text: "Document text" }),
       h("p", { class: "lede", text: "Document plan picks the documents that get LLM text. One call per dossier writes all its sections, with every name, date and amount as a placeholder; the placeholder check sends anything typed out back for the one retry." }),
-      chainChips(STEPS[3].chain), ...runBar("documents", "Run document text")),
+      chainChips(STEPS[3].chain), ...stepBar("documents")),
     h("div", { class: "card" }, h("h3", { text: "The document plan" }),
       o.document_plan ? table([{ label: "Employee", get: (r) => r.n }, { label: "Key", get: (r) => r.doc }, { label: "Type", get: (r) => r.type.replace(/_/g, " ") },
         { label: "Event", get: (r) => r.eventId }, { label: "Sections", get: (r) => r.sections.join(", ") }], plans)
@@ -722,14 +811,12 @@ function viewResult() {
   const last = state.last, result = last?.result;
   const calls = last?.calls || [];
   const tok = calls.reduce((a, c) => { const t = callTokens(c); return { input: a.input + t.input, output: a.output + t.output, usd: a.usd + t.usd }; }, { input: 0, output: 0, usd: 0 });
-  const save = async (name, data) => {
-    try { await downloads.save({ filename: name, data: JSON.stringify(data, null, 2) }); } catch (e) { /* the viewer declined */ }
-  };
   const copy = async (data) => { try { await navigator.clipboard.writeText(JSON.stringify(data, null, 2)); } catch (e) { /* not allowed here */ } };
   return [
     h("div", { class: "card" }, h("h2", { text: "Result" }),
       h("p", { class: "lede", text: "The cases after all eight steps, in the case model's own shape (case.schema.json), the corrections and the trace: one line per code step and per LLM call (contract §8)." }),
-      ...runBar("documents", "Run all steps")),
+      ...resultBar(),
+      h("p", { class: "muted", text: "The ZIP holds one folder per case in the case model's own files (case.json, cast.json, storyline.json, documents.json), the run request, the corrections, the trace, every LLM call with its prompts and answers, each step's output and the document texts. Open it in the v1 demo (Configure, Open exported ZIP) to make AMEXIO's PDFs and import.xml from these cases." })),
     result ? h("div", { class: "tiles" },
       [["cases", result.cases.length], ["events", result.cases.reduce((a, c) => a + Object.keys(c.events).length, 0)],
        ["LLM calls", calls.length], ["retries", calls.reduce((a, c) => a + c.retries, 0)],
@@ -737,13 +824,11 @@ function viewResult() {
         .map(([what, v]) => h("div", { class: "tile" }, h("div", { class: "big", text: String(v) }), h("div", { class: "what", text: what }))))
       : h("div", { class: "card" }, h("p", { class: "empty", text: "Run all steps to see the result." })),
     result ? h("div", { class: "card" }, h("div", { class: "card-head" }, h("h3", { text: "The cases" }), h("span", { class: "spacer" }),
-        downloads ? h("button", { class: "btn small", onclick: () => save("cases.json", result.cases), text: "Download cases.json" }) : null,
         h("button", { class: "btn small", onclick: () => copy(result.cases), text: "Copy cases" })),
       h("pre", { class: "box", text: JSON.stringify(result.cases[0], null, 2) }),
-      h("p", { class: "muted", text: `The first of ${result.cases.length} cases; download or copy them all.` }),
+      h("p", { class: "muted", text: `The first of ${result.cases.length} cases, as the chain made them; Export files has them all.` }),
       correctionsList(result.corrections)) : null,
     last && last.trace?.length ? h("div", { class: "card" }, h("div", { class: "card-head" }, h("h3", { text: "The trace" }), h("span", { class: "spacer" }),
-        downloads ? h("button", { class: "btn small", onclick: () => save("trace.json", last.trace), text: "Download trace.json" }) : null,
         h("button", { class: "btn small", onclick: () => copy(last.trace), text: "Copy trace" })),
       table([{ label: "Stage", get: (t) => t.stage }, { label: "Kind", get: (t) => t.kind },
         { label: "OK", get: (t) => h("span", { class: "chip " + (t.ok ? "ok" : "err"), text: t.ok ? "ok" : "failed" }) },
