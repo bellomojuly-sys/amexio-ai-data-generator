@@ -18,7 +18,7 @@ are below, so they can be checked and defended.
 | 1 | A real LLM provider behind the one client (contract §8, rule 6) | `pipeline/llm.py`, tests in `pipeline/test_llm_providers.py` | done |
 | 2 | v1's prompts ported to the three generation calls, cut to what v1.1 lets the LLM write | `pipeline/generation.py`, tests in `pipeline/test_generation_prompts.py` | done |
 | 3 | The placeholder check for Parts 2 and 3 (contract §7, rule 3) | `pipeline/placeholders.py`, tests in `pipeline/test_placeholders.py` | done |
-| 4 | The demo app: an artifact page on the viewer's Claude account, like v1 | this folder | next |
+| 4 | The demo app: an artifact page on the viewer's Claude account, like v1 | this folder: `site/index.html`, `demo_bridge.py`, `build_bundle.py`, tests in `test_demo_bridge.py` | done |
 
 ## 1 · The LLM provider
 
@@ -242,3 +242,101 @@ What a list check cannot catch: a name the case does not hold (a colleague the
 model invents), and a number written in words (other than "percent"). The
 prompts forbid both. A first name that is also a common word at the start of a
 sentence ("Will") can raise a false alarm; the retry then rewrites it.
+
+## 4 · The demo app
+
+**Where:** the artifact *Dossier Generator v2* on claude.ai
+(https://claude.ai/artifact/GwBjuLfHmwTwWM4pV5tR2Z), private to Robin until he
+shares it. Like v1, it runs on the Claude account of whoever opens it, so it
+needs no API key.
+
+**What it does.** v1's flow, on contract v1.1's chain:
+
+| Demo step | Chain steps it runs (owner) | Shows |
+|---|---|---|
+| 1 Configure | — | the run request of `POST /runs`: model, employees and shares, AMEXIO's reference employee 100101 as a seed, company, departments, notes; the number of LLM calls (contract §9) |
+| 2 Personas | 1 Personas (Robin), 2 CM ID (Giulia) | the LLM calls; the employees as CM ID decided them; the case model's corrections |
+| 3 Event content | 3 Plot (Giulia), 4 Event content (Robin), 5 Dates & participants (Valentin, stub) | Plot's slots; the LLM calls; the text per slot; the dated events |
+| 4 Document text | 6 Document plan (Giulia), 7 Document text (Robin), 8 Fill (Valentin, stub) | the plan; the LLM calls; each section as written, with its placeholders marked, and a filled preview |
+| 5 Result | — | the cases (`case.schema.json`), the corrections and the trace; download or copy them |
+
+Every LLM call shows its **prompt**, its **answer**, the **corrections** (what
+code refused and sent back for the retry) and its **trace line**, with tokens,
+an API cost estimate and retries. **Fake model** answers with
+`pipeline/fake_answers.py` (`options.fake_llm`); **Claude** asks
+`claude-sonnet-5-5` through the page, on the viewer's account. The page opens
+with a fake run of the default request (100101 plus four generated employees)
+marked as an example, so every step shows real output from the start.
+
+### How it works
+
+- **The browser runs the backend's own Python.** `site/index.html` loads
+  Pyodide (CPython 3.13 compiled to WebAssembly) and writes the repo's
+  `pipeline/` and `case_model/` files into it, unchanged, from
+  `site/python_bundle.json`. `demo_bridge.py` then calls `run_chain` with the
+  first steps only (its `stages` argument), up to a step that returns cases.
+  Nothing is ported to JavaScript, so the demo cannot drift from the backend.
+- **Claude through the page, replayed.** The LLM client's `complete(prompt)`
+  waits for its answer, but the page's call to Claude (`claude.use("sample")`)
+  is asynchronous. So `ReplayLLM` answers from the answers the page has
+  collected; at a prompt it has no answer for, the run stops and returns the
+  prompt. The page asks Claude, stores the answer under the prompt's hash and
+  runs again. With the same request, seed and answers the chain sends the same
+  prompts, so each run replays up to the first new one. The one retry, the
+  placeholder check and the trace all work as in the backend, and nothing in
+  `pipeline/` changed for it.
+- **Errors keep v1's kinds.** A refused permission, a usage limit, a stop or a
+  cut-off answer becomes a `ProviderError` with v1's kind (`setup`, `retry`,
+  `refused`, `cancelled`), and the chain stops the run naming the step. Nothing
+  is saved: each run starts from the request again.
+
+### Build and publish
+
+```
+python generator/Second_demo_generator/build_bundle.py             # after a change in pipeline/ or case_model/
+python generator/Second_demo_generator/build_bundle.py --pyodide   # once: Pyodide into site/pyodide/
+```
+
+Then publish the files of `site/` to the artifact (Claude does this with its
+artifact tool). `site/python_bundle.json` and `site/pyodide/` are generated, so
+git ignores them (`.gitignore` in this folder); `site/index.html` is the page.
+
+### Choices
+
+- **Pyodide, not a JavaScript port.** The point of v2 is that the demo shows
+  the backend's chain; running the same files is the only way to be sure it
+  does. Pyodide 0.29.3 ships pydantic 2.12.5, an older minor version than the
+  2.13.5 the repo pins. The whole test suite passes on 2.12.5 too.
+- **Pyodide is served from the page's own files.** An artifact page may load a
+  script from Pyodide's CDN, but it may not *fetch* from it, and Pyodide
+  fetches its WebAssembly, standard library and packages. The first version
+  hung there; a probe in the page showed "fetch from cdn.jsdelivr.net: blocked,
+  WebAssembly: allowed, own files: allowed". So `build_bundle.py --pyodide`
+  copies Pyodide and the five wheels pydantic needs (about 14 MB), checked
+  against the sha256 in Pyodide's lock file, into `site/pyodide/`.
+- **`.zip` and `.whl` are stored as `.wasm`.** The artifact host does not serve
+  those two file types. The page wraps `fetch` so Pyodide's requests for them
+  get the renamed files; nothing else is touched.
+- **Tokens and cost are estimates in Claude mode.** The page's call to Claude
+  returns text only, no token counts. Tokens are the characters divided by
+  four, and the cost uses the Model Selection document's prices ($2 and $10
+  per million input and output tokens); both are labelled as estimates.
+  `cost_eur` in the trace stays empty until the trace has a price table (open
+  point 6 in the team list).
+- **At most 25 employees with Claude**, v1's limit, so one click cannot use up
+  the viewer's Claude usage. The fake model has no limit.
+- **Stand-in, labelled in the page: the filled preview.** Fill (Valentin) is
+  still a stub that only checks the placeholders. To show what a filled text
+  will look like, `demo_bridge.fill_preview` replaces each placeholder with its
+  fact from `get_fact`, dates as "1 March 2021" and amounts as "4,350.00".
+  The real Fill and its formats (AX-025) replace it.
+- **Downloads** use the page's `downloads` capability; the viewer confirms
+  each one.
+
+### For later
+
+- Merging with Daniel's PDF Template Studio (Streamlit, server-side): stlite
+  runs Streamlit apps on the same Pyodide in the browser, which may let the
+  studio join this page. PyMuPDF in Pyodide still needs checking.
+- When the school key arrives, the backend's `AnthropicLLM` (step 1) serves
+  `POST /runs`; this page can then also call the backend over HTTP.
