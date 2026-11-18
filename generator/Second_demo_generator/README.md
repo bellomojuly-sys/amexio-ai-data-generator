@@ -19,6 +19,7 @@ are below, so they can be checked and defended.
 | 2 | v1's prompts ported to the three generation calls, cut to what v1.1 lets the LLM write | `pipeline/generation.py`, tests in `pipeline/test_generation_prompts.py` | done |
 | 3 | The placeholder check for Parts 2 and 3 (contract §7, rule 3) | `pipeline/placeholders.py`, tests in `pipeline/test_placeholders.py` | done |
 | 4 | The demo app: an artifact page on the viewer's Claude account, like v1 | this folder: `site/index.html`, `demo_bridge.py`, `build_bundle.py`, tests in `test_demo_bridge.py` | done |
+| 5 | Daniel's PDF Template Studio, offline, as the first step of the page | this folder: `studio_bridge.py`, tests in `test_studio_bridge.py`; the step in `site/index.html` | done |
 
 ## 1 · The LLM provider
 
@@ -254,11 +255,12 @@ needs no API key.
 
 | Demo step | Chain steps it runs (owner) | Shows |
 |---|---|---|
-| 1 Configure | — | the run request of `POST /runs`: model, employees and shares, AMEXIO's reference employee 100101 as a seed, company, departments, notes; the number of LLM calls (contract §9) |
-| 2 Personas | 1 Personas (Robin), 2 CM ID (Giulia) | the LLM calls; the employees as CM ID decided them; the case model's corrections |
-| 3 Event content | 3 Plot (Giulia), 4 Event content (Robin), 5 Dates & participants (Valentin, stub) | Plot's slots; the LLM calls; the text per slot; the dated events |
-| 4 Document text | 6 Document plan (Giulia), 7 Document text (Robin), 8 Fill (Valentin, stub) | the plan; the LLM calls; each section as written, with its placeholders marked, and a filled preview |
-| 5 Result | — | the cases (`case.schema.json`), the corrections and the trace; download or copy them |
+| 1 Example documents | Daniel's studio, offline; 0 Create analysis (Daniel, stand-in) | optional: example PDFs, their fields and templates, and a proposed run request (section 5) |
+| 2 Configure | — | the run request of `POST /runs`: model, employees and shares, the seed employees (AMEXIO's reference employee 100101, the example documents' employees, or none), company, departments, notes; the number of LLM calls (contract §9) |
+| 3 Personas | 1 Personas (Robin), 2 CM ID (Giulia) | the LLM calls; the employees as CM ID decided them; the case model's corrections |
+| 4 Event content | 3 Plot (Giulia), 4 Event content (Robin), 5 Dates & participants (Valentin, stub) | Plot's slots; the LLM calls; the text per slot; the dated events |
+| 5 Document text | 6 Document plan (Giulia), 7 Document text (Robin), 8 Fill (Valentin, stub) | the plan; the LLM calls; each section as written, with its placeholders marked, and a filled preview |
+| 6 Result | — | the cases (`case.schema.json`), the corrections and the trace; download or copy them |
 
 Every LLM call shows its **prompt**, its **answer**, the **corrections** (what
 code refused and sent back for the retry) and its **trace line**, with tokens,
@@ -330,7 +332,8 @@ git ignores them (`.gitignore` in this folder); `site/index.html` is the page.
   fetches its WebAssembly, standard library and packages. The first version
   hung there; a probe in the page showed "fetch from cdn.jsdelivr.net: blocked,
   WebAssembly: allowed, own files: allowed". So `build_bundle.py --pyodide`
-  copies Pyodide and the five wheels pydantic needs (about 14 MB), checked
+  copies Pyodide and the five wheels pydantic needs (about 14 MB), plus
+  PyMuPDF for the Example documents step (17 MB, loaded only there), checked
   against the sha256 in Pyodide's lock file, into `site/pyodide/`.
 - **`.zip` and `.whl` are stored as `.wasm`.** The artifact host does not serve
   those two file types. The page wraps `fetch` so Pyodide's requests for them
@@ -360,10 +363,81 @@ git ignores them (`.gitignore` in this folder); `site/index.html` is the page.
 - **Why the page showed "nullnull".** `replaceChildren` turns a missing part
   into the text "null"; the page now leaves missing parts out.
 
+## 5 · Example documents: Daniel's PDF Template Studio, offline
+
+**What it does.** A new first step in the page, before Configure. It is
+optional: the run works without it.
+
+1. **Upload PDFs** (choose or drop them). They stay in the browser: nothing is
+   uploaded and nothing goes to Claude.
+2. **Detect and organize.** The studio's offline rules (`detect_rules`, the
+   `LABEL_KEYS` table) find the fields; its type guess (the file name, then its
+   keyword signatures) names the type. Each type maps to one of the case
+   model's nine document types, as template contract v0.2 asks; the user can
+   change it in a dropdown. A PDF without text gets Daniel's own message, and
+   the batch goes on.
+3. **Fields and preview.** Per document the fields with Daniel's **Use**
+   toggle and an editable placeholder, next to the page as the original or as
+   the template his `render_template` makes, drawn by his `build_preview`.
+4. **Use for the run** (stand-in for Daniel's step 0, Create analysis, labelled
+   in the page). Code reads the values in use and proposes the run request:
+   the employer, training provider and examiner; the departments and positions
+   (with salary ranges that cover the documents); the as-of date (the end of
+   the month of the latest dated document); and one seed employee per
+   employment contract, with the manager of their appraisal. It is shown next
+   to what Configure has now, with the document each value came from.
+   **Apply** puts it into Configure; Configure then offers the documents'
+   employees as the seed employees.
+5. **Export templates (ZIP)** in Daniel's layout
+   (`<type>/<nnnn>_<name>_template.pdf`, `_fields.json`) with template
+   contract v0.2's `manifest.json` (`contract`, `domain`, `documentType`).
+
+Checked on AMEXIO's 20 mock PDFs: all 20 get the right type, and the four
+employment contracts give the seed employees of
+`case_model/fixtures/generator/amexio_example/employees.json` exactly (a test,
+skipped when the mock package is not on disk). A fake run with those seeds goes
+through every step.
+
+**Where:** `studio_bridge.py`, tests in `test_studio_bridge.py`; the step in
+`site/index.html`. `pdf_template_studio/app.py` is not changed.
+
+### Choices
+
+- **Daniel's functions run unchanged, read out of `app.py`.** `app.py` builds
+  its Streamlit screens when it is loaded, so it cannot be imported as a
+  library. `studio_bridge.studio()` parses the file and runs only the functions
+  in `STUDIO_FUNCTIONS`, the `LABEL_KEYS` table and the type signatures, with
+  PyMuPDF as `fitz`. The demo follows every change Daniel makes to them; if he
+  renames one, it fails loudly. A logic module split from the screens would be
+  cleaner (a point for the team list).
+- **PyMuPDF in Pyodide.** Pyodide 0.29.3 ships PyMuPDF 1.26.3 (17 MB), with no
+  other dependencies. The page loads it only at the first upload, so the other
+  steps start as fast as before.
+- **The analysis is code, not an LLM.** The offline studio needs no key, and
+  step 0 is Daniel's to design; a stand-in that only reads what the rules found
+  proposes nothing it cannot point to in a document. What PDFs cannot say (the
+  shares, the notes, the director, the absence service, how many employees to
+  generate) stays as Configure has it.
+- **Positions:** for a department v1 knows, v1's position list, manager flag
+  and salary range (from `src/generate/vocab.ts`), widened to cover the salary
+  in the documents; for another department, the documents' positions with
+  ±10 % around their salaries.
+- **Employee numbers are not kept.** The case model numbers employees from
+  100101 in their order (AX-012); the page says so when the PDFs use other
+  numbers.
+- **A field switched off is not read**, so a wrongly detected value can be
+  left out of the proposal as well as out of the template.
+- **Licence.** PyMuPDF is AGPL-3.0 (or Artifex's commercial licence). The
+  studio already depends on it; serving it in a page is distribution, so it is
+  a point for the team list before AMEXIO uses this outside the course.
+
+Left out on purpose: the studio's AI detection, positioned fields, applying
+one document's settings to all documents of its type, review gating, and
+filling the templates with generated cases.
+
 ### For later
 
-- Merging with Daniel's PDF Template Studio (Streamlit, server-side): stlite
-  runs Streamlit apps on the same Pyodide in the browser, which may let the
-  studio join this page. PyMuPDF in Pyodide still needs checking.
+- The rest of Daniel's studio (section 5 lists what is left out), and filling
+  his templates with the generated cases once Fill is built.
 - When the school key arrives, the backend's `AnthropicLLM` (step 1) serves
   `POST /runs`; this page can then also call the backend over HTTP.
