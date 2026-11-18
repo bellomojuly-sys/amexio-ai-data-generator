@@ -559,6 +559,7 @@ function chainChips(ids) {
 }
 // --- Step controls: run a step, ask Claude again for it, go to the next one -----
 const labelOf = (id) => STEPS.find((s) => s.id === id).label;
+const chainOf = (id) => STEPS.find((s) => s.id === id).chain;   // by id: a new step must not shift them
 const nextOf = (id) => ORDER[ORDER.indexOf(id) + 1];
 const isDone = (id) => !!(FINAL[id] && state.last?.outputs?.[FINAL[id]]);
 const stoppedIn = (id) => state.last?.status === "error" && !!STEPS.find((s) => s.id === id)?.chain?.includes(state.last.error.stage);
@@ -1026,7 +1027,7 @@ function viewPersonas() {
   return [
     h("div", { class: "card" }, h("h2", { text: "Personas" }),
       h("p", { class: "lede", text: "The LLM proposes names, a department and a position only. CM ID then decides contract type, hours, hire date and salary by the HR template's rules, and the case model assigns the personnel numbers and IDs." }),
-      chainChips(STEPS[1].chain), ...stepBar("personas")),
+      chainChips(chainOf("personas")), ...stepBar("personas")),
     h("div", { class: "card" }, h("h3", { text: "LLM calls" }),
       o.cm_id && !o.personas ? h("p", { class: "muted", text: "No Personas call: every employee is a seed." }) : null,
       callsFor(["personas"])),
@@ -1061,7 +1062,7 @@ function viewEvents() {
   return [
     h("div", { class: "card" }, h("h2", { text: "Event content" }),
       h("p", { class: "lede", text: "Plot picks each employee's events and their closed-list values. The LLM writes only text for each slot, by echoing its key; Dates & participants then dates them and adds who took part." }),
-      chainChips(STEPS[2].chain), ...stepBar("events")),
+      chainChips(chainOf("events")), ...stepBar("events")),
     h("div", { class: "card" }, h("h3", { text: "The plot, as code decided it" }),
       o.plot ? table([{ label: "Employee", get: (r) => r.employeeNumber },
         { label: "Slots", get: (r) => h("div", { class: "slots" }, r.slots.map((s) => h("span", { class: "slot", text: slotLabel(s) }))) }], o.plot.outlines)
@@ -1090,7 +1091,7 @@ function viewDocuments() {
   return [
     h("div", { class: "card" }, h("h2", { text: "Document text" }),
       h("p", { class: "lede", text: "Document plan picks the documents that get LLM text. One call per dossier writes all its sections, with every name, date and amount as a placeholder; the placeholder check sends anything typed out back for the one retry." }),
-      chainChips(STEPS[3].chain), ...stepBar("documents")),
+      chainChips(chainOf("documents")), ...stepBar("documents")),
     h("div", { class: "card" }, h("h3", { text: "The document plan" }),
       o.document_plan ? table([{ label: "Employee", get: (r) => r.n }, { label: "Key", get: (r) => r.doc }, { label: "Type", get: (r) => r.type.replace(/_/g, " ") },
         { label: "Event", get: (r) => r.eventId }, { label: "Sections", get: (r) => r.sections.join(", ") }], plans)
