@@ -42,6 +42,7 @@ from .contracts import (
     check_event_content,
 )
 from .llm import LLMClient, LLMError
+from .placeholders import check_document_placeholders, check_event_placeholders
 
 PERSONAS_BATCH = 25        # contract §9
 EVENT_CONTENT_BATCH = 5    # contract §9
@@ -269,10 +270,16 @@ def write_event_content(cases: list[Case], outline: PlotOutline, llm: LLMClient)
         answer = llm.complete_as(
             _prompt("event_content", request, EVENT_TASK, EVENT_SHAPE),
             EventContentIn,
-            check=lambda a, part=part: check_event_content(part, a),
+            check=lambda a, part=part: _check_event_answer(part, by_number, a),
         )
         content.extend(answer.content)
     return EventContentIn(content=content)
+
+
+def _check_event_answer(part: PlotOutline, cases: dict[str, Case], answer: EventContentIn) -> None:
+    """Part 2's check: the contract's shape check, then rule 3 (``placeholders``)."""
+    check_event_content(part, answer)
+    check_event_placeholders(cases, answer)
 
 
 # --- Part 3 · Document text --------------------------------------------------
@@ -404,5 +411,11 @@ def write_document_text(case: Case, plan: CaseDocumentPlan, llm: LLMClient) -> D
     return llm.complete_as(
         _prompt("document_text", request, DOCUMENT_TASK, DOCUMENT_SHAPE),
         DocumentTextsIn,
-        check=lambda a: check_document_texts(plan, a),
+        check=lambda a: _check_document_answer(plan, case, a),
     )
+
+
+def _check_document_answer(plan: CaseDocumentPlan, case: Case, answer: DocumentTextsIn) -> None:
+    """Part 3's check: the contract's shape check, then rule 3 (``placeholders``)."""
+    check_document_texts(plan, answer)
+    check_document_placeholders(case, answer)

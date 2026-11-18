@@ -223,7 +223,8 @@ def _detail(exc: Exception) -> tuple[str, str | None]:
         first = exc.errors()[0]
         where = ".".join(str(p) for p in first.get("loc", ())) or None
         return f"{where or '(root)'}: {first.get('msg', 'invalid')}", where
-    return str(exc), None
+    # A check may name the field itself (PlaceholderError, CmIdError).
+    return str(exc), getattr(exc, "field", None)
 
 
 class FakeLLM(BaseLLMClient):

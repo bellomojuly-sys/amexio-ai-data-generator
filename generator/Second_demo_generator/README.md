@@ -17,8 +17,8 @@ are below, so they can be checked and defended.
 |---|---|---|---|
 | 1 | A real LLM provider behind the one client (contract §8, rule 6) | `pipeline/llm.py`, tests in `pipeline/test_llm_providers.py` | done |
 | 2 | v1's prompts ported to the three generation calls, cut to what v1.1 lets the LLM write | `pipeline/generation.py`, tests in `pipeline/test_generation_prompts.py` | done |
-| 3 | The placeholder check for Parts 2 and 3 (contract §7, rule 3) | `pipeline/` | next |
-| 4 | The Streamlit demo app | this folder | — |
+| 3 | The placeholder check for Parts 2 and 3 (contract §7, rule 3) | `pipeline/placeholders.py`, tests in `pipeline/test_placeholders.py` | done |
+| 4 | The demo app: an artifact page on the viewer's Claude account, like v1 | this folder | next |
 
 ## 1 · The LLM provider
 
@@ -184,3 +184,61 @@ Step 3 adds the placeholder check to Parts 2 and 3.
 Prompt sizes in an offline run of the 10-employee fixture: Part 1 about 2,000
 characters, Part 2 about 8,000 to 9,000 per five employees, Part 3 about 4,000
 to 8,000 per dossier.
+
+## 3 · The placeholder check (`pipeline/placeholders.py`)
+
+Rule 3 of the contract: generation never types out a name, a date or an
+amount; every fact in a text is a placeholder `{{collection.key.field}}` that
+Fill reads with `get_fact`. The check runs inside `complete_as`, in the
+`check=` of Part 2 and Part 3, after the contract's own shape check. So a bad
+text gets the one retry with every problem named, and a second bad answer
+stops the run with an `LLMError` that names the field
+(`content.0.slots.2.comment`, `documents.0.sections.feedback`); the chain
+passes it on as `ChainError.field`.
+
+Checked: a slot's `summary`, `comment` and `reason` (Part 2) and every
+planned section (Part 3). Not checked: a training's `course`, which is the
+fact itself.
+
+| Fails | Example | The retry is told |
+|---|---|---|
+| unknown collection, key or field | `{{projects.X1.name}}`, `{{personas.P999.name}}`, `{{personas.P001.nickname}}` | `{{personas.P999.name}} does not resolve: … no persona 'P999'` |
+| a whole object, not one fact | `{{personas.P001}}` | `… is a whole Persona, not one fact: add the field` |
+| a fact the case does not hold | `{{personas.P001.date_of_birth}}` | `… is empty in this case` |
+| a brace missing or left over | `{personas.P001.name}` | `… is not written as {{collection.key.field}}` |
+| a name of the case typed out | `Jan de Vries`, `Jan`, `Vries`, `Acme Logistics` | `'Jan' is a name typed out; write {{personas.P001.name}} instead` |
+| a date | `2024-03-12`, `12/03/2024`, `12 March 2024`, `March`, `maart` | `… is a date typed out` |
+| an amount or percentage | `EUR 4.500`, `€4350`, `3%`, `percent` | `… is an amount or percentage typed out` |
+| any other number | `3 courses` | `… is a number typed out` |
+
+### Choices
+
+- **The placeholder is resolved with `get_fact` itself**, the function Fill
+  uses, so the check and Fill cannot disagree about what resolves. On top of
+  that the value must be one fact: `get_fact` also returns whole objects,
+  lists and empty fields (open point 8 in the team list).
+- **Names come from the case**, not from a list of first names: every person
+  and organisation the case holds. A person is caught by the whole name and
+  by each word of it of three letters or more, except particles such as *de*
+  and *van*; a word is matched with its capital, so "Janssen" is not "Jan".
+  An organisation is caught by its whole name, also without its legal form
+  ("Acme Logistics" for "Acme Logistics B.V."), not by one word of it, since
+  "Logistics" is also a department. A name that reads as a description
+  ("Occupational physician (fictional)") is skipped, so "the occupational
+  physician" may be written.
+- **Any digit fails.** Rule 2 says generation never writes numbers, and
+  checking every digit is simpler and stricter than recognising every way to
+  write an amount or a date. The model rewrites it on the retry.
+- **The retry gets every problem at once** (up to five in the message), and for
+  a typed-out name the placeholder to use instead.
+- **Shared with Fill**: `text_problems(text, case)` and the `PLACEHOLDER`
+  pattern (the same as `fill_stub`'s) are public, so Fill and the demo can
+  apply the same rule.
+- `pipeline/llm.py`: a check's error may now name its field
+  (`PlaceholderError.field`), and `complete_as` passes it on to the
+  `LLMError`.
+
+What a list check cannot catch: a name the case does not hold (a colleague the
+model invents), and a number written in words (other than "percent"). The
+prompts forbid both. A first name that is also a common word at the start of a
+sentence ("Will") can raise a false alarm; the retry then rewrites it.
