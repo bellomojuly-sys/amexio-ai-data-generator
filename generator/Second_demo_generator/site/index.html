@@ -164,6 +164,22 @@ mark { background: var(--mark); color: var(--mark-ink); padding: 0 2px; border-r
 .empty { color: var(--faint); font-style: italic; }
 .foot { color: var(--faint); font-size: 12px; padding: 0 20px 24px; max-width: 1400px; margin: 0 auto; }
 
+/* Example documents (Daniel's studio): the drop zone, the document list and the page preview. */
+.drop { border: 1.5px dashed var(--line-strong); border-radius: var(--radius); padding: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: var(--surface-2); }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop .spacer { flex: 1; }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: var(--surface-2); }
+tr.sel td, tr.sel:hover td { background: var(--accent-soft); }
+tr.changed td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+td input[type="text"], td select { padding: 4px 6px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface); width: 100%; min-width: 140px; }
+td input[type="text"] { font-family: var(--font-mono); font-size: 12px; }
+.studio-doc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.studio-doc > div { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.page-img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.pager { display: flex; gap: 8px; align-items: center; }
+@media (max-width: 1000px) { .studio-doc { grid-template-columns: 1fr; } }
+
 @media (max-width: 760px) {
   .shell { grid-template-columns: 1fr; padding: 16px; }
   .rail { position: static; flex-direction: row; overflow-x: auto; }
@@ -212,8 +228,10 @@ const PRICE_USD_PER_MTOK = { input: 2, output: 10 };  // same document; an estim
 const CHARS_PER_TOKEN = 4;
 const MAX_EMPLOYEES_WITH_CLAUDE = 25;                // v1's limit for a run with a model
 const MAX_RUNS = 200;                                // never loop: at most this many replays per click
+const MAX_PDF_MB = 25;                               // per example PDF (the studio reads it in memory)
 
 const STEPS = [
+  { id: "studio", label: "Example documents", title: "Example documents" },
   { id: "configure", label: "Configure", title: "Configure the run" },
   { id: "personas", label: "Personas", title: "Personas", chain: ["personas", "cm_id"] },
   { id: "events", label: "Event content", title: "Event content", chain: ["plot", "event_content", "dates_participants"] },
@@ -249,7 +267,7 @@ const SAMPLE_ERRORS = {
 // State
 // ---------------------------------------------------------------------------
 const state = {
-  view: "configure",
+  view: "studio",
   mode: "fake",            // "fake" | "claude"
   seed: 0,
   form: null,              // the config screen's values
@@ -262,8 +280,17 @@ const state = {
   abort: null,
   example: false,          // the shown run is the fake example made on load
   notice: null,            // {kind, text}: the last export's outcome
+  docSeeds: null,          // seed employees from the example documents, once applied
+  docTypes: [],            // the case model's nine document types
+  studio: {                // Example documents: Daniel's studio, offline
+    ready: false,          // PyMuPDF loaded
+    docs: [],              // per PDF: {id, name, path, fields, error, group, documentType, pageCount}
+    selected: null, view: "template", page: 0, preview: null,
+    loading: null, note: null, error: null, applied: false, nextId: 1,
+  },
 };
-let py = null, bridge = null, sample = null, downloads = null;
+let py = null, bridge = null, studioBridge = null, sample = null, downloads = null;
+const errText = (e) => String(e && e.message ? e.message : e).trim().split("\n").filter(Boolean).slice(-1)[0];
 
 // ---------------------------------------------------------------------------
 // Small DOM helper: text always goes in as text, never as HTML.
@@ -342,6 +369,8 @@ async function loadPython() {
     py.globals.set("ENTRY", "/app/" + bundle.entry);
     py.runPython("import sys; sys.path[:0] = ['/app', ENTRY]");
     bridge = py.pyimport("demo_bridge");
+    studioBridge = py.pyimport("studio_bridge");   // PyMuPDF is loaded on the first upload
+    state.docTypes = JSON.parse(py.runPython("import json, studio_bridge; json.dumps(list(studio_bridge.DOCUMENT_TYPES))"));
     const d = JSON.parse(bridge.defaults());
     state.reference = d.reference;
     state.form = formFrom(d.request);
@@ -386,8 +415,13 @@ function formFrom(req) {
     directorName: c.company.directorName || "",
     departments: JSON.stringify(c.departments, null, 2),
     employeeCount: 5, temporaryShare: c.temporaryShare, partTimeShare: c.partTimeShare,
-    asOfDate: c.asOfDate, notes: c.notes || "", useReference: true,
+    asOfDate: c.asOfDate, notes: c.notes || "", seedSource: "reference",   // "reference" | "documents" | "none"
   };
+}
+function seedsOf(f) {
+  if (f.seedSource === "reference") return [state.reference];
+  if (f.seedSource === "documents") return state.docSeeds && state.docSeeds.length ? state.docSeeds : null;
+  return null;
 }
 function buildRequest() {
   const f = state.form;
@@ -402,12 +436,12 @@ function buildRequest() {
       employeeCount: Number(f.employeeCount), temporaryShare: Number(f.temporaryShare),
       partTimeShare: Number(f.partTimeShare), asOfDate: f.asOfDate, notes: f.notes.trim() || null,
     },
-    seedEmployees: f.useReference ? [state.reference] : null,
+    seedEmployees: seedsOf(f),
     options: { fake_llm: state.mode === "fake" },
   };
 }
 function budget() {
-  const f = state.form, n = Number(f.employeeCount) || 0, seeds = f.useReference ? 1 : 0;
+  const f = state.form, n = Number(f.employeeCount) || 0, seeds = (seedsOf(f) || []).length;
   const calls = Math.ceil(Math.max(0, n - seeds) / 25) + Math.ceil(n / 5) + n;
   return { n, calls, withRetries: calls * 2 };
 }
@@ -473,6 +507,7 @@ async function ask(prompt) {
 // Rendering
 // ---------------------------------------------------------------------------
 function stepState(id) {
+  if (id === "studio") return state.studio.applied ? "ok" : "";
   const last = state.last;
   if (!last || !["personas", "events", "documents", "result"].includes(id)) return "";
   const need = { personas: "cm_id", events: "dates_participants", documents: "fill", result: "fill" }[id];
@@ -483,10 +518,12 @@ function stepState(id) {
 function renderRail() {
   const rail = document.getElementById("rail");
   rail.replaceChildren(...STEPS.map((s, i) => {
-    const st = stepState(s.id);
+    const st = stepState(s.id), n = state.studio.docs.length;
+    const text = s.id === "studio" ? (st === "ok" ? "applied" : n ? `${n} PDF${n === 1 ? "" : "s"}` : "optional")
+                                   : st === "ok" ? "done" : st === "err" ? "stopped" : "";
     return h("button", { "aria-current": state.view === s.id ? "step" : null, onclick: () => { state.view = s.id; render(); } },
       h("span", { class: "num", text: String(i + 1) }), h("span", { class: "label", text: s.label }),
-      h("span", { class: "state " + st, text: st === "ok" ? "done" : st === "err" ? "stopped" : "" }));
+      h("span", { class: "state " + st, text }));
   }), h("p", { class: "rail-note", text: "Each step runs the chain from the start up to that step. In Claude mode the answers Claude already gave are replayed, so only new prompts are sent." }));
   const exp = document.getElementById("exportTop");
   exp.disabled = state.busy || !bridge || !furthest();
@@ -505,7 +542,7 @@ function render() {
     return;
   }
   if (!state.form) { panel.replaceChildren(h("div", { class: "card" }, h("h2", { text: "Loading" }), h("p", { class: "lede", text: "Starting Python in your browser and loading the pipeline (about ten seconds the first time)." }), h("p", { class: "muted", text: state.loadStep || "" }))); return; }
-  const view = { configure: viewConfigure, personas: viewPersonas, events: viewEvents, documents: viewDocuments, result: viewResult }[state.view];
+  const view = { studio: viewStudio, configure: viewConfigure, personas: viewPersonas, events: viewEvents, documents: viewDocuments, result: viewResult }[state.view];
   // replaceChildren turns a null into the text "null": leave the empty parts out.
   panel.replaceChildren(...[noticeLine(), ...view()].filter(Boolean));
 }
@@ -589,13 +626,17 @@ async function exportRun() {
     state.notice = { kind: "err", text: "The export failed: " + String(e && e.message ? e.message : e).split("\n").slice(-2).join(" ") };
     render(); return;
   }
+  await saveZip("GEN-2026-0001.zip", bytes, `Saved GEN-2026-0001.zip: the run up to ${labelOf(step)}.`);
+}
+// Offer a ZIP to the viewer; Claude asks them to confirm the download.
+async function saveZip(filename, bytes, okText) {
   if (!downloads) {
     state.notice = { kind: "err", text: "Downloads are not available in this view of the page. Open the page itself on claude.ai and export again." };
     render(); return;
   }
   try {
-    await downloads.save({ filename: "GEN-2026-0001.zip", data: new Blob([bytes], { type: "application/zip" }) });
-    state.notice = { kind: "ok", text: `Saved GEN-2026-0001.zip: the run up to ${labelOf(step)}.` };
+    await downloads.save({ filename, data: new Blob([bytes], { type: "application/zip" }) });
+    state.notice = { kind: "ok", text: okText };
   } catch (e) {
     const declined = /declin|cancel/i.test(String(e && (e.code || e.message)));
     state.notice = declined ? { kind: "", text: "Not saved: the download was cancelled." }
@@ -665,12 +706,268 @@ function callCard(call, i) {
     body);
 }
 
+// --- 0 · Example documents: Daniel's PDF Template Studio, offline ---------------
+// The studio's own functions (pdf_template_studio/app.py) run in Python here, through
+// studio_bridge.py: detection by its label rules, its templates and previews. "Use for the
+// run" is the demo's stand-in for Daniel's step 0, Create analysis (contract §3).
+const typeLabel = (id) => (id ? id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, " ") : "Not one of the nine");
+const byType = (a, b) => (a.documentType || "~").localeCompare(b.documentType || "~") || a.name.localeCompare(b.name);
+const studioBusy = () => !studioBridge || !!state.studio.loading || state.busy;
+async function loadStudio() {
+  const s = state.studio;
+  if (s.ready) return;
+  s.loading = "Loading PyMuPDF for the studio (about 17 MB, once)…"; render();
+  const problems = [];
+  await withTimeout(py.loadPackage(["pymupdf"], { messageCallback: () => {}, errorCallback: (m) => problems.push(m) }), 120, "Loading PyMuPDF");
+  if (problems.length) throw new Error(problems.join("\n"));
+  py.runPython("import studio_bridge; studio_bridge.studio()");   // reads Daniel's functions out of app.py now
+  s.ready = true;
+}
+async function addFiles(list) {
+  const s = state.studio;
+  if (studioBusy()) return;
+  const all = [...list];
+  const pdfs = all.filter((f) => /\.pdf$/i.test(f.name) || f.type === "application/pdf");
+  const big = pdfs.filter((f) => f.size > MAX_PDF_MB * 1e6);
+  const take = pdfs.filter((f) => f.size <= MAX_PDF_MB * 1e6);
+  s.error = null;
+  s.note = [all.length > pdfs.length ? `${all.length - pdfs.length} file(s) left out: not a PDF.` : "",
+            big.length ? `${big.map((f) => f.name).join(", ")}: larger than ${MAX_PDF_MB} MB, left out.` : ""].filter(Boolean).join(" ") || null;
+  if (!take.length) { render(); return; }
+  try {
+    await loadStudio();
+    s.loading = `Reading ${take.length} PDF${take.length === 1 ? "" : "s"} with the studio's rules…`; render();
+    py.FS.mkdirTree("/uploads");
+    const batch = [];
+    for (const file of take) {
+      const id = String(s.nextId++), path = `/uploads/${id}.pdf`;
+      py.FS.writeFile(path, new Uint8Array(await file.arrayBuffer()));
+      batch.push({ id, name: file.name, path });
+    }
+    await new Promise((r) => setTimeout(r, 30));      // let the notice paint: Python holds the page while it reads
+    const found = JSON.parse(studioBridge.detect(JSON.stringify(batch))).documents;
+    s.docs.push(...found);
+    s.docs.sort(byType);
+    if (!s.docs.some((d) => d.id === s.selected)) selectDoc((found.find((d) => !d.error) || found[0]).id, false);
+  } catch (e) {
+    s.error = errText(e);
+  } finally {
+    s.loading = null; render();
+  }
+}
+function selectDoc(id, draw = true) {
+  const s = state.studio;
+  s.selected = id; s.page = 0;
+  refreshPreview();
+  if (draw) render();
+}
+function refreshPreview() {
+  const s = state.studio, d = s.docs.find((x) => x.id === s.selected);
+  s.preview = null;
+  if (!d || d.error || !s.ready) return;
+  try { s.preview = JSON.parse(studioBridge.preview(d.path, JSON.stringify(d.fields), s.view, s.page)); }
+  catch (e) { s.preview = { error: errText(e) }; }
+}
+function removeDoc(id) {
+  const s = state.studio, d = s.docs.find((x) => x.id === id);
+  if (!d) return;
+  try { py.FS.unlink(d.path); } catch (e) { /* already gone */ }
+  s.docs = s.docs.filter((x) => x.id !== id);
+  if (s.selected === id) {
+    s.selected = null; s.preview = null;
+    const next = s.docs.find((x) => !x.error) || s.docs[0];
+    if (next) selectDoc(next.id, false);
+  }
+  render();
+}
+function clearDocs() {
+  const s = state.studio;
+  for (const d of s.docs) { try { py.FS.unlink(d.path); } catch (e) { /* already gone */ } }
+  Object.assign(s, { docs: [], selected: null, preview: null, note: null, error: null, applied: false });
+  render();
+}
+function fieldsChanged() { refreshPreview(); render(); }
+
+function viewStudio() {
+  const s = state.studio, off = studioBusy();
+  const pick = h("input", { type: "file", accept: ".pdf,application/pdf", multiple: true, hidden: true,
+    onchange: (e) => { addFiles(e.target.files); e.target.value = ""; } });
+  const drop = h("div", { class: "drop",
+      ondragover: (e) => { e.preventDefault(); e.currentTarget.classList.add("over"); },
+      ondragleave: (e) => e.currentTarget.classList.remove("over"),
+      ondrop: (e) => { e.preventDefault(); e.currentTarget.classList.remove("over"); addFiles(e.dataTransfer.files); } },
+    pick,
+    h("button", { class: "btn primary", disabled: off, onclick: () => pick.click(), text: s.docs.length ? "Add PDFs…" : "Choose PDFs…" }),
+    h("span", { class: "muted", text: "or drop them here. PDFs with text only (no OCR). They stay in this browser: nothing is uploaded, and nothing goes to Claude." }),
+    h("span", { class: "spacer" }),
+    s.docs.length ? h("button", { class: "btn small", disabled: off, onclick: clearDocs, text: "Remove all" }) : null);
+  const intro = h("div", { class: "card" },
+    h("h2", { text: "Example documents" }),
+    h("p", { class: "lede", text: "Optional. Upload example PDFs of the documents the run should make, such as AMEXIO's mock dossier. Daniel's PDF Template Studio finds their fields with its offline rules (no API, no AI), makes a template of each, and proposes run settings and seed employees for Configure." }),
+    h("div", { class: "steps-run" },
+      h("span", { class: "owner" }, h("b", { text: "Template Studio" }), " · offline rules · Daniel"),
+      h("span", { class: "owner stub" }, h("b", { text: "0 Create analysis" }), " · code · Daniel · stand-in")),
+    drop,
+    s.loading ? h("div", { class: "notice live", role: "status" }, h("b", { text: s.loading })) : null,
+    s.note ? h("p", { class: "muted", text: s.note }) : null,
+    s.error ? h("div", { class: "notice err" }, h("b", { text: "The studio stopped." }), h("pre", { class: "box", text: s.error })) : null,
+    s.docs.length ? null : h("div", { class: "card-head" },
+      h("button", { class: "btn", disabled: state.busy, onclick: () => { state.view = "configure"; render(); }, text: "Skip: go to Configure" })));
+  if (!s.docs.length) return [intro];
+  return [intro, studioDocs(), studioDoc(), studioUse(), studioExport()];
+}
+function studioDocs() {
+  const s = state.studio, off = studioBusy();
+  const ready = s.docs.filter((d) => !d.error), untyped = ready.filter((d) => !d.documentType).length;
+  const types = new Set(ready.map((d) => d.documentType).filter(Boolean)).size;
+  const rows = s.docs.map((d) => {
+    const used = d.fields.filter((f) => f.replace).length;
+    const type = h("select", { "aria-label": `Document type of ${d.name}`, disabled: off || !!d.error,
+        onclick: (e) => e.stopPropagation(),
+        onchange: (e) => { d.documentType = e.target.value || null; s.docs.sort(byType); render(); } },
+      h("option", { value: "", text: typeLabel(null), selected: !d.documentType }),
+      state.docTypes.map((t) => h("option", { value: t, text: typeLabel(t), selected: d.documentType === t })));
+    const status = d.error ? h("span", { class: "chip err", text: "no text" })
+      : d.documentType ? h("span", { class: "chip ok", text: "ready" }) : h("span", { class: "chip warn", text: "no type" });
+    return h("tr", { class: "click" + (d.id === s.selected ? " sel" : ""), onclick: () => selectDoc(d.id) },
+      h("td", {}, h("b", { text: d.name })),
+      h("td", { text: d.error ? "—" : d.group }),
+      h("td", {}, type),
+      h("td", { class: "num", text: d.error ? "—" : `${used} of ${d.fields.length}` }),
+      h("td", { class: "num", text: d.error ? "—" : String(d.pageCount) }),
+      h("td", {}, status),
+      h("td", {}, h("button", { class: "btn small", disabled: off, onclick: (e) => { e.stopPropagation(); removeDoc(d.id); }, text: "Remove" })));
+  });
+  const head = ["Document", "The studio's type", "Document type", "Fields in use", "Pages", "", ""];
+  return h("div", { class: "card" },
+    h("div", { class: "card-head" }, h("h3", { text: "Documents" }), h("span", { class: "spacer" }),
+      h("span", { class: "muted", text: `${s.docs.length} PDF${s.docs.length === 1 ? "" : "s"} · ${types} document type${types === 1 ? "" : "s"}${untyped ? ` · ${untyped} without a type` : ""}` })),
+    h("p", { class: "muted", text: "The studio names a type from the file name, else from keywords in the text (its signatures). Each type maps to one of the case model's nine document types, as template contract v0.2 asks; change it where it is wrong. Select a row to see its fields." }),
+    h("div", { class: "table-wrap" }, h("table", {},
+      h("thead", {}, h("tr", {}, head.map((t, i) => h("th", { class: i === 3 || i === 4 ? "num" : null, text: t })))),
+      h("tbody", {}, rows))));
+}
+function studioDoc() {
+  const s = state.studio, d = s.docs.find((x) => x.id === s.selected);
+  if (!d) return null;
+  if (d.error) return h("div", { class: "card" }, h("h3", { text: d.name }),
+    h("div", { class: "notice err" }, h("b", { text: "The studio cannot read this PDF." }), h("span", { text: d.error })));
+  const off = studioBusy(), pv = s.preview;
+  const fields = d.fields.length ? h("div", { class: "table-wrap" }, h("table", {},
+    h("thead", {}, h("tr", {}, ["Use", "Placeholder", "Value in the PDF"].map((t) => h("th", { text: t })))),
+    h("tbody", {}, d.fields.map((f) => h("tr", {},
+      h("td", {}, h("input", { type: "checkbox", "aria-label": `Use ${f.placeholder}`, checked: !!f.replace, disabled: off,
+        onchange: (e) => { f.replace = e.target.checked; fieldsChanged(); } })),
+      h("td", {}, h("input", { type: "text", "aria-label": `Placeholder for ${f.original}`, value: f.placeholder, disabled: off,
+        onchange: (e) => { const v = e.target.value.trim().replace(/[{}]/g, "").replace(/\s+/g, "_"); if (v) f.placeholder = v; fieldsChanged(); } })),
+      h("td", { text: f.original })))))) : h("p", { class: "empty", text: "The rules found no field in this PDF." });
+  const tabs = h("div", { class: "tabs", role: "tablist" }, [["template", "Template"], ["original", "Original"]].map(([v, label]) =>
+    h("button", { role: "tab", "aria-selected": s.view === v ? "true" : "false", onclick: () => { s.view = v; fieldsChanged(); }, text: label })));
+  const pager = d.pageCount > 1 ? h("div", { class: "pager" },
+    h("button", { class: "btn small", disabled: s.page === 0, onclick: () => { s.page--; fieldsChanged(); }, text: "Previous page" }),
+    h("span", { class: "muted", text: `Page ${s.page + 1} of ${d.pageCount}` }),
+    h("button", { class: "btn small", disabled: s.page >= d.pageCount - 1, onclick: () => { s.page++; fieldsChanged(); }, text: "Next page" })) : null;
+  const image = !pv ? h("p", { class: "empty", text: "No preview." })
+    : pv.error ? h("div", { class: "notice err" }, h("span", { text: pv.error }))
+    : h("img", { class: "page-img", src: pv.image, alt: `${s.view === "template" ? "Template" : "Original"} of ${d.name}, page ${s.page + 1}` });
+  return h("div", { class: "card" },
+    h("div", { class: "card-head" }, h("h3", { text: d.name }),
+      h("span", { class: "chip " + (d.documentType ? "ok" : "warn"), text: typeLabel(d.documentType) })),
+    h("div", { class: "studio-doc" },
+      h("div", {},
+        h("p", { class: "muted", text: "The fields the rules found. A field in use becomes {{PLACEHOLDER}} in the template, and Use for the run reads its value. Switch off a value that is wrong." }),
+        fields),
+      h("div", {}, tabs, pager, image,
+        pv && pv.warnings && pv.warnings.length ? h("div", { class: "fix", text: pv.warnings.join(" ") } ) : null)));
+}
+// The stand-in for step 0: what the documents say, next to what Configure has now.
+function studioUse() {
+  const s = state.studio;
+  const card = (...children) => h("div", { class: "card" }, h("h3", { text: "Use for the run" }), ...children);
+  if (!s.docs.some((d) => !d.error && d.documentType)) return card(h("p", { class: "empty", text: "No document with a document type yet." }));
+  let now, a;
+  try { now = buildRequest(); }
+  catch (e) { return card(h("div", { class: "notice err" }, h("span", { text: "Fix Configure first: " + e.message }))); }
+  try { a = JSON.parse(studioBridge.analysis(JSON.stringify(s.docs), JSON.stringify(now))); }
+  catch (e) { a = { error: errText(e) }; }
+  if (a.error) return card(h("div", { class: "notice err" }, h("span", { text: a.error })));
+  const prop = a.request, same = (x, y) => JSON.stringify(x ?? null) === JSON.stringify(y ?? null);
+  const deps = (list) => (list || []).map((d) => `${d.name} (${d.positions.length})`).join(", ") || "—";
+  const people = (list) => (list && list.length ? list.map((e) => `${e.firstName} ${e.lastName}`).join(", ") : "none");
+  const pc = prop.config, nc = now.config;
+  const rows = [
+    ["Employer", pc.company.employerName, nc.company.employerName],
+    ["Training provider", pc.company.trainingProvider, nc.company.trainingProvider],
+    ["Examiner", pc.company.examiner, nc.company.examiner],
+    ["Data as of", pc.asOfDate, nc.asOfDate],
+    ["Departments (positions)", deps(pc.departments), deps(nc.departments), same(pc.departments, nc.departments)],
+    ["Seed employees", people(prop.seedEmployees), people(now.seedEmployees), same(prop.seedEmployees, now.seedEmployees)],
+    ["Number of employees", a.seedCount ? `${pc.employeeCount}: ${a.seedCount} from the documents, ${pc.employeeCount - a.seedCount} generated` : String(pc.employeeCount),
+      String(nc.employeeCount), pc.employeeCount === nc.employeeCount],
+  ].map(([what, p, n, eq]) => ({ what, p: p ?? "—", n: n ?? "—", eq: eq ?? (p ?? null) === (n ?? null) }));
+  const changes = rows.filter((r) => !r.eq).length;
+  const compare = h("div", { class: "table-wrap" }, h("table", {},
+    h("thead", {}, h("tr", {}, ["Setting", "From the documents", "In Configure now"].map((t) => h("th", { text: t })))),
+    h("tbody", {}, rows.map((r) => h("tr", { class: r.eq ? null : "changed" },
+      h("td", {}, r.eq ? r.what : h("b", { text: r.what })), h("td", { text: r.p }), h("td", { class: r.eq ? null : "muted", text: r.n }))))));
+  const seeds = a.seedCount ? table([
+    { label: "Name", get: (e) => `${e.firstName} ${e.lastName}` }, { label: "Department", get: (e) => e.department },
+    { label: "Position", get: (e) => e.position }, { label: "Hired", get: (e) => e.hireDate },
+    { label: "Contract", get: (e) => e.contractType }, { label: "Hours", num: true, get: (e) => e.hoursPerWeek },
+    { label: "Salary (EUR)", num: true, get: (e) => fmt(e.startSalary) }, { label: "Manager", get: (e) => e.managerName },
+  ], prop.seedEmployees) : null;
+  const sources = table([{ label: "What", get: (f) => f.what }, { label: "Value", get: (f) => f.value }, { label: "From", get: (f) => f.from }], a.facts);
+  return card(
+    h("p", { class: "muted", text: "Demo stand-in for Daniel's step 0, Create analysis (contract §3): code reads the values the studio found, without an LLM, and proposes the run request. What PDFs cannot say stays as Configure has it. Apply puts it into Configure; nothing changes until you do." }),
+    compare,
+    a.warnings.length ? h("div", { class: "panel" }, a.warnings.map((w) => h("div", { class: "fix", text: w }))) : null,
+    seeds ? h("h3", { text: `Seed employees from the employment contracts (${a.seedCount})` }) : null, seeds,
+    h("details", { class: "call" }, h("summary", {}, h("b", { text: "Where each value comes from" })), h("div", { class: "call-body" }, sources,
+      h("p", { class: "muted", text: "Kept from Configure: " + a.kept.join(", ") + "." }))),
+    h("div", { class: "card-head" },
+      h("button", { class: "btn primary", disabled: state.busy || !changes, onclick: () => applyProposal(prop, a.seedCount),
+        text: changes ? `Apply to Configure (${changes} change${changes === 1 ? "" : "s"})` : "Configure uses these values" }),
+      h("button", { class: "btn", disabled: state.busy, onclick: () => { state.view = "configure"; render(); }, text: "Next: Configure" })));
+}
+function applyProposal(prop, seedCount) {
+  const f = state.form, c = prop.config;
+  Object.assign(f, {
+    employerName: c.company.employerName, trainingProvider: c.company.trainingProvider || "",
+    examiner: c.company.examiner || "", departments: JSON.stringify(c.departments, null, 2),
+    asOfDate: c.asOfDate, employeeCount: c.employeeCount,
+  });
+  if (seedCount) { state.docSeeds = prop.seedEmployees; f.seedSource = "documents"; }
+  settingsChanged();
+  state.studio.applied = true;
+  state.notice = { kind: "ok", text: "Applied to Configure. The next run uses these settings (the example run made on load is cleared)." };
+  render();
+}
+function studioExport() {
+  const s = state.studio, ready = s.docs.filter((d) => !d.error), untyped = ready.filter((d) => !d.documentType).length;
+  return h("div", { class: "card" },
+    h("h3", { text: "Export the templates" }),
+    h("p", { class: "muted", text: "A ZIP in the studio's layout: per document <type>/<nnnn>_<name>_template.pdf and its _fields.json, plus manifest.json with template contract v0.2's contract, domain and documentType."
+      + (untyped ? ` ${untyped} document${untyped === 1 ? " has" : "s have"} no document type: the manifest notes that the backend refuses ${untyped === 1 ? "it" : "them"}.` : "") }),
+    h("div", { class: "card-head" },
+      h("button", { class: "btn", disabled: !ready.length || studioBusy(), onclick: exportTemplates, text: "Export templates (ZIP)" })));
+}
+async function exportTemplates() {
+  const s = state.studio, n = s.docs.filter((d) => !d.error).length;
+  let bytes;
+  try { const p = studioBridge.export_templates(JSON.stringify(s.docs)); bytes = p.toJs(); p.destroy(); }
+  catch (e) { state.notice = { kind: "err", text: "The template export failed: " + errText(e) }; render(); return; }
+  await saveZip("templates.zip", bytes, `Saved templates.zip: ${n} template${n === 1 ? "" : "s"}.`);
+}
+
 // --- 1 · Configure -----------------------------------------------------------
 function viewConfigure() {
   const f = state.form, b = budget();
   const set = (k, parse = (x) => x) => (e) => { f[k] = parse(e.target.type === "checkbox" ? e.target.checked : e.target.value); settingsChanged(); render(); };
   const field = (id, label, input, hint) => h("div", { class: "field" + (input.tagName === "TEXTAREA" ? " wide" : "") }, h("label", { for: id, text: label }), input, hint ? h("span", { class: "hint", text: hint }) : null);
   const text = (id, k) => h("input", { id, value: f[k], onchange: set(k) });
+  const seedChoice = (value, title, note, disabled) => h("label", {},
+    h("input", { type: "radio", name: "seedSource", value, disabled, checked: f.seedSource === value, onchange: set("seedSource") }),
+    h("span", {}, h("b", { text: title }), h("small", { text: note })));
   const claudeOff = !sample;
   return [
     h("div", { class: "card" },
@@ -693,8 +990,12 @@ function viewConfigure() {
         field("partTimeShare", "Share working part time", h("input", { id: "partTimeShare", type: "number", step: "0.05", min: "0", max: "1", value: f.partTimeShare, onchange: set("partTimeShare") })),
         field("asOfDate", "Data as of", h("input", { id: "asOfDate", type: "date", value: f.asOfDate, onchange: set("asOfDate") })),
         field("seed", "Seed (repeatable CM ID and Plot)", h("input", { id: "seed", type: "number", value: state.seed, onchange: (e) => { state.seed = Number(e.target.value) || 0; settingsChanged(); render(); } }))),
-      h("label", { class: "check", for: "useReference" }, h("input", { type: "checkbox", id: "useReference", checked: f.useReference, onchange: set("useReference") }),
-        h("span", {}, "Start from AMEXIO's reference employee ", h("b", { text: "100101 Jan de Vries" }), " as a seed employee: his facts stay as AMEXIO's file has them, and Personas proposes the others."))),
+      h("div", { class: "field" }, h("label", { text: "Seed employees: their facts stay as given, and Personas proposes the others. They count in the number of employees." }),
+        h("div", { class: "choice" },
+          seedChoice("reference", "AMEXIO's reference employee", "100101 Jan de Vries, as AMEXIO's file has him."),
+          seedChoice("documents", "The employees of the example documents",
+            state.docSeeds ? `${state.docSeeds.length}: ${state.docSeeds.map((e) => `${e.firstName} ${e.lastName}`).join(", ")}.` : "Apply them on the Example documents step first.", !state.docSeeds),
+          seedChoice("none", "None", "Personas proposes every employee.")))),
     h("div", { class: "card" },
       h("h3", { text: "Company and departments" }),
       h("div", { class: "form" },
