@@ -20,6 +20,7 @@ are below, so they can be checked and defended.
 | 3 | The placeholder check for Parts 2 and 3 (contract §7, rule 3) | `pipeline/placeholders.py`, tests in `pipeline/test_placeholders.py` | done |
 | 4 | The demo app: an artifact page on the viewer's Claude account, like v1 | this folder: `site/index.html`, `demo_bridge.py`, `build_bundle.py`, tests in `test_demo_bridge.py` | done |
 | 5 | Daniel's PDF Template Studio, offline, as the first step of the page | this folder: `studio_bridge.py`, tests in `test_studio_bridge.py`; the step in `site/index.html` | done |
+| 6 | AMEXIO's import package (PDFs and `import.xml`) in the export, made by v1's export | this folder: `v1_export/entry.ts`, `build_v1_export.mjs`; `demo_bridge.export_files` | done |
 
 ## 1 · The LLM provider
 
@@ -279,10 +280,9 @@ step that stopped with an error can be asked again the same way.
 saves the run up to the last step that finished: one folder per case in the
 case model's own files, the run request, the corrections, the trace, every LLM
 call with its prompts and answers, each step's output in the contract's shape
-(`steps/`) and the document texts with their filled preview. The v1 demo opens
-this ZIP (Configure, *Open exported ZIP*) and makes AMEXIO's PDFs and
-`import.xml` from it: checked with a 5-employee run, which gave 241 PDFs and
-`import.xml` with no validation errors. **Fake model** answers with
+(`steps/`) and the document texts with their filled preview. After all steps
+it also holds AMEXIO's import package, `hr-dossier-import/` with `import.xml`
+and one PDF per document (section 6). **Fake model** answers with
 `pipeline/fake_answers.py` (`options.fake_llm`); **Claude** asks
 `claude-sonnet-5-5` through the page, on the viewer's account. The page opens
 with a fake run of the default request (100101 plus four generated employees)
@@ -315,11 +315,12 @@ marked as an example, so every step shows real output from the start.
 ```
 python generator/Second_demo_generator/build_bundle.py             # after a change in pipeline/ or case_model/
 python generator/Second_demo_generator/build_bundle.py --pyodide   # once: Pyodide into site/pyodide/
+node generator/Second_demo_generator/build_v1_export.mjs          # v1's export into site/v1_export.js (after npm ci in v1's folder)
 ```
 
 Then publish the files of `site/` to the artifact (Claude does this with its
-artifact tool). `site/python_bundle.json` and `site/pyodide/` are generated, so
-git ignores them (`.gitignore` in this folder); `site/index.html` is the page.
+artifact tool). `site/python_bundle.json`, `site/pyodide/` and
+`site/v1_export.js` are generated, so git ignores them (`.gitignore` in this folder); `site/index.html` is the page.
 
 ### Choices
 
@@ -435,9 +436,57 @@ Left out on purpose: the studio's AI detection, positioned fields, applying
 one document's settings to all documents of its type, review gating, and
 filling the templates with generated cases.
 
+## 6 · AMEXIO's import package in the export
+
+**What it does.** For a run through all steps, the export ZIP also holds
+`hr-dossier-import/`: `import.xml` and one PDF per document in `files/`, with
+v1's `README.md` and `generation.json`. That is the package v1's Export step
+makes. `package_check.json` records v1's checks and the documents per type, and
+the Result step shows them. A run exported before the last step has no package;
+`package_check.json` says why.
+
+**How.** Export (step 9) is Stylianos's and does not exist in Python yet. v1
+already makes this package from case folders (Configure, *Open case ZIP*).
+`v1_export/entry.ts` runs exactly those v1 functions (`readCaseFiles`,
+`renderCases`, `validate`, `buildPackageFiles`) on the case folders the page
+exports. `build_v1_export.mjs` bundles v1's source, unchanged, with pdf-lib and
+fflate into `site/v1_export.js`, which the page loads at the first export. The
+page and the ZIP's README label it as a demo stand-in.
+
+**Checked:** a 5-employee fake run gives 239 PDFs and `import.xml`, which
+parses and refers to the files as `C:\OI\hr-dossier-import\files\…`. v1's
+checks: 0 errors and 3 warnings (Contract Amendment, Annual Income Statement and
+Absence Report are not in AMEXIO's example). The appraisal PDFs print the case's
+names, dates and rating, and Part 2's comment.
+
+### Choices
+
+- **v1's code, not a new export.** v1's export is the one checked against
+  AMEXIO's format. Running it unchanged gives the same PDFs and `import.xml` v1
+  would make from these cases, and Stylianos's Python export replaces it
+  without the demo's own version in between.
+- **No package when v1's checks find an error**, as in v1's Export step. The
+  rest of the run is still saved, so the cause can be found.
+- **The run's as-of date.** v1 plans documents up to its as-of date; the page
+  passes the run's `asOfDate`, so each dossier ends where the run does. Like
+  v1, three years of history.
+- **What the PDFs show.** The chain's cases hold no documents yet: Document
+  plan plans only the three types that get LLM text, and Fill is a stub. So v1
+  plans each dossier from the cases' events, as it always did; the contract
+  says the other types stay templated. The PDFs print the cases' facts and
+  Part 2's texts (an appraisal's comment, the reason for a change or a
+  termination). **Part 3's sections are not printed yet** (an appraisal's
+  feedback and summary, a termination letter's body, an amendment's cover
+  letter): v1 has no place for them, and they wait for Fill and Export. They
+  are in `document_texts.json`, with a filled preview.
+- **Size.** `v1_export.js` is about 500 KB, most of it pdf-lib, loaded only
+  when exporting.
+
 ### For later
 
 - The rest of Daniel's studio (section 5 lists what is left out), and filling
   his templates with the generated cases once Fill is built.
+- Part 3's sections in the PDFs, once Fill writes `Document.text` and Export
+  (Stylianos) prints it; then Export replaces `v1_export/`.
 - When the school key arrives, the backend's `AnthropicLLM` (step 1) serves
   `POST /runs`; this page can then also call the backend over HTTP.

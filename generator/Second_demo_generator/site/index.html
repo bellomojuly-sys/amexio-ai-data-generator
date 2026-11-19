@@ -280,6 +280,7 @@ const state = {
   abort: null,
   example: false,          // the shown run is the fake example made on load
   notice: null,            // {kind, text}: the last export's outcome
+  packageCheck: null,      // v1's checks of the import package in the last export
   docSeeds: null,          // seed employees from the example documents, once applied
   docTypes: [],            // the case model's nine document types
   studio: {                // Example documents: Daniel's studio, offline
@@ -446,7 +447,7 @@ function budget() {
   return { n, calls, withRetries: calls * 2 };
 }
 function settingsChanged() {
-  state.answers = {}; state.last = null; state.lastStep = null; state.example = false;
+  state.answers = {}; state.last = null; state.lastStep = null; state.example = false; state.packageCheck = null;
 }
 
 // ---------------------------------------------------------------------------
@@ -461,7 +462,7 @@ async function runTo(step, opts = {}) {
     state.last = { status: "error", error: { kind: "validation", stage: "request", message: `With Claude, the demo makes at most ${MAX_EMPLOYEES_WITH_CLAUDE} employees per run (v1's limit). Lower the number, or use the fake model.` }, outputs: {}, calls: [], trace: [] };
     render(); return;
   }
-  state.busy = true; state.example = !!opts.example; state.abort = new AbortController(); state.notice = null;
+  state.busy = true; state.example = !!opts.example; state.abort = new AbortController(); state.notice = null; state.packageCheck = null;
   render();
   try {
     for (let i = 0; i < MAX_RUNS; i++) {
@@ -614,30 +615,76 @@ function noticeLine() {
   if (!state.notice) return null;
   return h("div", { class: "notice " + state.notice.kind, role: "status" }, h("span", { text: state.notice.text }));
 }
-// The files of the run, as a ZIP: case folders (v1 opens them), the request, corrections, trace,
-// LLM calls, each step's output and the document texts. Python builds it from the same answers.
+// The files of the run, as a ZIP. Python writes the run's files from the same answers: the case
+// folders, the request, corrections, trace, LLM calls, each step's output and the document texts.
+// For a run through all steps, v1's export (v1_export.js: v1's code, unchanged; demo stand-in for
+// Export, step 9, Stylianos) adds AMEXIO's import package made from the case folders: import.xml
+// and one PDF per document, as v1 makes it from "Open case ZIP".
+const RUN_ID = "GEN-2026-0001";
+let v1Export = null;
+function loadV1Export() {
+  if (!v1Export) v1Export = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "v1_export.js";
+    script.onload = () => (window.V1Export ? resolve(window.V1Export) : reject(new Error("v1_export.js did not set V1Export.")));
+    script.onerror = () => { v1Export = null; reject(new Error("v1_export.js did not load.")); };
+    document.head.append(script);
+  });
+  return v1Export;
+}
 async function exportRun() {
   const step = furthest();
   if (!step || !bridge || state.busy) return;
-  let bytes;
+  const full = step === "documents";
+  state.busy = true; state.notice = { kind: "", text: "Writing the run's files…" }; render();
   try {
-    const proxy = bridge.export_zip(JSON.stringify(buildRequest()), state.mode, step, JSON.stringify(state.answers), state.seed);
-    bytes = proxy.toJs(); proxy.destroy();
+    const request = buildRequest();
+    await new Promise((r) => setTimeout(r, 30));          // let the notice paint before Python works
+    const files = JSON.parse(bridge.export_files(JSON.stringify(request), state.mode, step, JSON.stringify(state.answers), state.seed));
+    const v1 = await withTimeout(loadV1Export(), 30, "Loading v1's export");
+    let check;
+    if (full) {
+      const cases = {};
+      for (const [path, text] of Object.entries(files)) if (path.startsWith("cases/")) cases[path.slice("cases/".length)] = text;
+      state.notice = { kind: "", text: "Making AMEXIO's import package with v1's export…" }; render();
+      try {
+        const out = await v1.makePackage(cases, request.config.asOfDate, (done, total) => {
+          state.notice = { kind: "", text: `Making the PDFs with v1's export: ${done} of ${total}…` }; render();
+        });
+        check = out.check;
+        Object.assign(files, out.files);                   // paths start with the package folder
+      } catch (e) {
+        check = { made: false, error: "v1's export stopped: " + errText(e) };
+      }
+    } else {
+      check = { made: false, reason: `The run stopped after ${labelOf(step)}: the import package is made from a run through all steps.` };
+    }
+    state.packageCheck = full ? check : null;
+    files["package_check.json"] = JSON.stringify(check, null, 2) + "\n";
+    const inFolder = {};
+    for (const [path, data] of Object.entries(files)) inFolder[`${RUN_ID}/${path}`] = data;
+    const bytes = v1.zip(inFolder);
+    const name = `${RUN_ID}.zip`;
+    const text = !full ? `Saved ${name}: the run up to ${labelOf(step)}, without the import package (that needs a run through all steps).`
+      : check.made ? `Saved ${name}: the run and AMEXIO's import package, ${check.packageName}/ with import.xml and ${fmt(check.pdfs)} PDFs.`
+      : check.error ? `Saved ${name} without the import package. ${check.error}`
+      : `Saved ${name} without the import package: v1's checks found ${check.errors} error${check.errors === 1 ? "" : "s"}; package_check.json and the Result step list them.`;
+    await saveZip(name, bytes, text, full && !check.made ? "err" : "ok");
   } catch (e) {
-    state.notice = { kind: "err", text: "The export failed: " + String(e && e.message ? e.message : e).split("\n").slice(-2).join(" ") };
-    render(); return;
+    state.notice = { kind: "err", text: "The export failed: " + errText(e) };
+  } finally {
+    state.busy = false; render();
   }
-  await saveZip("GEN-2026-0001.zip", bytes, `Saved GEN-2026-0001.zip: the run up to ${labelOf(step)}.`);
 }
 // Offer a ZIP to the viewer; Claude asks them to confirm the download.
-async function saveZip(filename, bytes, okText) {
+async function saveZip(filename, bytes, okText, okKind = "ok") {
   if (!downloads) {
     state.notice = { kind: "err", text: "Downloads are not available in this view of the page. Open the page itself on claude.ai and export again." };
     render(); return;
   }
   try {
     await downloads.save({ filename, data: new Blob([bytes], { type: "application/zip" }) });
-    state.notice = { kind: "ok", text: okText };
+    state.notice = { kind: okKind, text: okText };
   } catch (e) {
     const declined = /declin|cancel/i.test(String(e && (e.code || e.message)));
     state.notice = declined ? { kind: "", text: "Not saved: the download was cancelled." }
@@ -1118,7 +1165,8 @@ function viewResult() {
     h("div", { class: "card" }, h("h2", { text: "Result" }),
       h("p", { class: "lede", text: "The cases after all eight steps, in the case model's own shape (case.schema.json), the corrections and the trace: one line per code step and per LLM call (contract §8)." }),
       ...resultBar(),
-      h("p", { class: "muted", text: "The ZIP holds one folder per case in the case model's own files (case.json, cast.json, storyline.json, documents.json), the run request, the corrections, the trace, every LLM call with its prompts and answers, each step's output and the document texts. Open it in the v1 demo (Configure, Open exported ZIP) to make AMEXIO's PDFs and import.xml from these cases." })),
+      h("p", { class: "muted", text: "The ZIP holds one folder per case in the case model's own files (case.json, cast.json, storyline.json, documents.json), the run request, the corrections, the trace, every LLM call with its prompts and answers, each step's output and the document texts. After all steps it also holds AMEXIO's import package, hr-dossier-import/ with import.xml and one PDF per document, made from the case folders by v1's export, unchanged: a demo stand-in for Export (step 9, Stylianos)." })),
+    packageCard(),
     result ? h("div", { class: "tiles" },
       [["cases", result.cases.length], ["events", result.cases.reduce((a, c) => a + Object.keys(c.events).length, 0)],
        ["LLM calls", calls.length], ["retries", calls.reduce((a, c) => a + c.retries, 0)],
@@ -1139,6 +1187,22 @@ function viewResult() {
         { label: "Retries", get: (t) => t.retries, num: true }, { label: "cost_eur", get: (t) => t.cost_eur }, { label: "Error", get: (t) => t.error }], last.trace),
       h("p", { class: "muted", text: "In Claude mode, ms is the Python side's time and the tokens are estimates; the call cards show Claude's time. cost_eur stays empty: the trace has no price table yet." })) : null,
   ];
+}
+
+// v1's checks of the import package in the last export.
+function packageCard() {
+  const pc = state.packageCheck;
+  if (!pc) return null;
+  const head = h("h3", { text: "The import package in the last export" });
+  if (pc.error) return h("div", { class: "card" }, head, h("div", { class: "notice err" }, h("span", { text: pc.error })));
+  return h("div", { class: "card" }, head,
+    h("p", { class: pc.made ? "lede" : "", text: pc.made
+      ? `${pc.packageName}/: import.xml and ${fmt(pc.pdfs)} PDFs for ${pc.cases} cases, made by v1's export. v1's checks: ${pc.errors} errors, ${pc.warnings} warning${pc.warnings === 1 ? "" : "s"}.`
+      : `Not made: v1's checks found ${pc.errors} error${pc.errors === 1 ? "" : "s"}, so, as in v1, no package was exported.` }),
+    table([{ label: "Document type", get: (c) => c.label }, { label: "Documents", num: true, get: (c) => fmt(c.count) }], pc.counts),
+    pc.issues.length ? h("div", { class: "panel" }, pc.issues.map((i) => h("div", { class: i.severity === "error" ? "notice err" : "fix", text: `${i.severity === "error" ? "Error" : "Warning"}${i.employeeId ? ` (${i.employeeId})` : ""}: ${i.message}` }))) : null,
+    pc.problems.length ? h("div", { class: "panel" }, pc.problems.map((p) => h("div", { class: "fix", text: `${p.employeeId}: ${p.message}` }))) : null,
+    h("p", { class: "muted", text: "v1 plans the documents from the cases' events (the chain's cases hold no documents yet: Fill is a stub) and prints the cases' facts and Part 2's texts. Part 3's sections are not printed yet; they are in document_texts.json." }));
 }
 
 // ---------------------------------------------------------------------------
