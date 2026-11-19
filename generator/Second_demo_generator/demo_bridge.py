@@ -51,6 +51,7 @@ from pipeline.llm import BaseLLMClient, Completion, FakeLLM, ProviderError
 from pipeline.placeholders import PLACEHOLDER, text_problems
 
 RUN_ID = "GEN-2026-0001"
+PACKAGE = "hr-dossier-import"   # v1's import package folder (its DEFAULT_TARGET.packageName; v1 is frozen)
 MODEL = "claude-sonnet-5-5"      # Model Selection document; the page asks for it by name
 STEPS = {"personas": "cm_id", "events": "dates_participants", "documents": "fill"}
 CHARS_PER_TOKEN = 4              # the Claude-account route reports no tokens: an estimate
@@ -173,16 +174,35 @@ def _execute(request_json: str, mode: str, step: str, answers_json: str, seed: i
 
 # --- Export: the files of a run, as one ZIP -------------------------------------
 
+def export_files(request_json: str, mode: str, step: str, answers_json: str = "{}",
+                 seed: int = 0, model: str = MODEL) -> str:
+    """The files of a run up to ``step``, as JSON ``{path: text}`` with paths
+    inside the run's folder. Runs the chain again with the same answers, so it
+    sends nothing new to Claude.
+
+    One folder per case in the case model's own format (``save_case``), plus
+    the run request, the corrections, the trace, every LLM call with its
+    prompts and answers, the steps' outputs and the document texts with their
+    filled preview. The page adds AMEXIO's import package (PDFs and
+    ``import.xml``), made from ``cases/`` by v1's export (``v1_export/``)."""
+    return json.dumps(_export_files(request_json, mode, step, answers_json, seed, model),
+                      ensure_ascii=False)
+
+
 def export_zip(request_json: str, mode: str, step: str, answers_json: str = "{}",
                seed: int = 0, model: str = MODEL) -> bytes:
-    """The files of a run up to ``step``, as a ZIP. Runs the chain again with
-    the same answers, so it sends nothing new to Claude.
+    """``export_files`` as a ZIP, under the run's folder, without the import
+    package (which the page makes in JavaScript)."""
+    files = _export_files(request_json, mode, step, answers_json, seed, model)
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for path, text in sorted(files.items()):
+            archive.writestr(f"{RUN_ID}/{path}", text)
+    return buffer.getvalue()
 
-    One folder per case in the case model's own format (``save_case``), which
-    the v1 demo opens (Configure, "Open case ZIP") to make AMEXIO's PDFs and
-    ``import.xml``; plus the run request, the corrections, the trace, every LLM
-    call with its prompts and answers, the steps' outputs and the document
-    texts with their filled preview."""
+
+def _export_files(request_json: str, mode: str, step: str, answers_json: str,
+                  seed: int, model: str) -> dict[str, str]:
     o = _execute(request_json, mode, step, answers_json, seed)
     if o["status"] != "ok":
         reason = o.get("message") or (str(o["error"]) if o["error"] else "a prompt has no answer yet")
@@ -211,12 +231,7 @@ def export_zip(request_json: str, mode: str, step: str, answers_json: str = "{}"
     if "document_text" in o["outputs"]:
         files["document_texts.json"] = as_json(_texts(o["outputs"]))
     files["README.txt"] = _readme(result, mode, model, step, seed, sorted(files))
-
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
-        for path, text in sorted(files.items()):
-            archive.writestr(f"{RUN_ID}/{path}", text)
-    return buffer.getvalue()
+    return files
 
 
 EVENT_TEXTS = ("summary", "label", "comment", "reason")
@@ -251,8 +266,13 @@ def _readme(result, mode: str, model: str, step: str, seed: int, paths: list[str
         "cases/NNNNNN/        one folder per case, as case_model.storage.save_case writes it",
         "                     (case.json, cast.json, storyline.json, documents.json), with the",
         "                     placeholders in the events' texts filled (demo stand-in for Fill).",
-        "                     Open this ZIP in the v1 demo (Configure, Open case ZIP) to make",
-        "                     AMEXIO's PDFs and import.xml from these cases.",
+        f"{PACKAGE}/   AMEXIO's import package made from these cases: import.xml and one",
+        "                     PDF per document in files/. Demo stand-in for Export (step 9,",
+        "                     Stylianos): the page runs v1's export, unchanged, on cases/, as",
+        "                     v1's Configure step does with Open case ZIP. Only for a run",
+        "                     through all steps, and only when v1's checks find no error.",
+        "package_check.json   whether the package was made, v1's checks (errors and warnings)",
+        "                     and the documents per type",
         "run_request.json     the request the chain ran (POST /runs, contract section 3)",
         "corrections.json     values the case model corrected on the way in",
         "trace.json           one line per code step and per LLM call (contract section 8)",
@@ -264,7 +284,13 @@ def _readme(result, mode: str, model: str, step: str, seed: int, paths: list[str
         "the demo's own (dates as 1 March 2021, amounts as 4,350.00). In Claude mode the",
         "tokens in trace.json are estimates (characters / 4): the page's Claude call reports none.",
         "",
-        "Files:",
+        "The PDFs are v1's. The chain's cases hold no documents yet (Fill is a stub), so v1",
+        "plans each dossier from the cases' events, as it always has: three years up to the",
+        "as-of date. They print the cases' facts and Part 2's texts (an appraisal's comment, a",
+        "change's reason); Part 3's sections are not printed yet: they are in",
+        "document_texts.json.",
+        "",
+        "Files of the run (the package lists its own in its README.md):",
         *[f"  {p}" for p in paths + ["README.txt"]],
     ]
     return "\n".join(lines) + "\n"

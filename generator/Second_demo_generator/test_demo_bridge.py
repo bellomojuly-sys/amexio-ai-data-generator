@@ -13,7 +13,7 @@ import pytest
 import build_bundle
 import demo_bridge
 from case_model.storage import load_case
-from demo_bridge import RUN_ID, export_zip, key_of, run
+from demo_bridge import PACKAGE, RUN_ID, export_files, export_zip, key_of, run
 from pipeline import fake_answers
 
 
@@ -169,6 +169,15 @@ def test_the_export_holds_case_folders_that_load_and_every_record_of_the_run(tmp
     assert "{{personas.P001.name}}" in raw_comment                # the chain's own text keeps it
     calls = json.loads(files[f"{RUN_ID}/llm_calls.json"])
     assert calls and all(c["attempts"][0]["prompt"] for c in calls)
+
+
+def test_the_page_gets_the_same_files_as_a_map_and_the_readme_names_the_package():
+    req = request()
+    as_map = json.loads(export_files(req, "fake", "documents"))
+    zipped = _unzip(export_zip(req, "fake", "documents"))
+    assert {f"{RUN_ID}/{p}" for p in as_map} == set(zipped)
+    assert all(as_map[p] == zipped[f"{RUN_ID}/{p}"] for p in as_map if p != "README.txt")
+    assert f"{PACKAGE}/" in as_map["README.txt"] and "package_check.json" in as_map["README.txt"]
 
 
 def test_an_export_after_one_step_has_what_ran_so_far():
