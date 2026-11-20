@@ -6,7 +6,7 @@ run `pytest pipeline`, restore. Script: `docs/evidence/h3_break_each_rule.py`
 (run from the repository root: `python3 docs/evidence/h3_break_each_rule.py .`).
 
 Before H3, 3 contract rules (C12, C15, C17) and 7 plot rules (P2, P3, P5, P8,
-P9, P10, P13) broke without any test failing, and 7 contract rules (C2, C3, C6,
+P9, P10, P13) broke without any test failing, and 8 contract rules (C2, C3, C6,
 C7, C9, C10, C14, C19) were caught only by the schema snapshot, which fails on
 any change to the model, not for the rule. After H3 every break fails a test
 named after its rule. `schema-snapshot` = `test_committed_schema_matches_the_model`.

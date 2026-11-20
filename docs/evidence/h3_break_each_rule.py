@@ -1,4 +1,4 @@
-"""H3: break one rule at a time (contract §5 and plot.py) and record which tests fail.
+"""H3: break one rule at a time (contract §5 and plot.py) and record which tests fail."""
 import subprocess, sys, pathlib
 W = pathlib.Path(sys.argv[1])
 C, P = "pipeline/contracts.py", "pipeline/plot.py"
