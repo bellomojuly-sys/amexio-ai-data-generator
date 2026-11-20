@@ -5,3 +5,8 @@ __pycache__/
 
 #mock data
 generated_mock_data/
+
+# secrets: keys live only in environment variables (see pipeline/README.md)
+.env
+.env.*
+!.env.example

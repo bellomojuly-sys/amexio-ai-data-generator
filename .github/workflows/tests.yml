@@ -5,6 +5,23 @@ on:
   pull_request:
 
 jobs:
+  # H2 secret guard: scan the whole git history for keys and tokens.
+  # fetch-depth 0 = all commits (the default checkout has only the last one).
+  # gitleaks exits non-zero on a finding, which turns this job red.
+  secrets:
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: "8.21.2"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar xz gitleaks
+      - name: Scan git history
+        run: ./gitleaks git --redact --verbose .
+
   pytest:
     runs-on: ubuntu-latest
     steps:
