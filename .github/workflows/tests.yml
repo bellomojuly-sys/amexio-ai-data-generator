@@ -5,6 +5,26 @@ on:
   pull_request:
 
 jobs:
+  # H2 secret guard: scan the whole git history for keys and tokens.
+  # fetch-depth 0 = all commits (the default checkout has only the last one).
+  # gitleaks exits non-zero on a finding, which turns this job red.
+  # --log-opts=HEAD: only the history of the commit under test. The default
+  # (--all) would also scan every other branch the checkout fetched, so the
+  # never-merged evidence branch h2-fake-key-test would turn every run red.
+  secrets:
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: "8.21.2"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install gitleaks
+        run: |
+          curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar xz gitleaks
+      - name: Scan git history
+        run: ./gitleaks git --redact --verbose --log-opts="HEAD" .
+
   pytest:
     runs-on: ubuntu-latest
     steps:
@@ -33,3 +53,18 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+
+  # Daniel's PDF Template Studio (mock PDFs -> templates). Separate app, own
+  # requirements; its regression script checks the wizard without a browser.
+  template-studio:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: pdf_template_studio
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -r requirements.txt
+      - run: python test_wizard.py
