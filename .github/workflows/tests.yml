@@ -8,6 +8,9 @@ jobs:
   # H2 secret guard: scan the whole git history for keys and tokens.
   # fetch-depth 0 = all commits (the default checkout has only the last one).
   # gitleaks exits non-zero on a finding, which turns this job red.
+  # --log-opts=HEAD: only the history of the commit under test. The default
+  # (--all) would also scan every other branch the checkout fetched, so the
+  # never-merged evidence branch h2-fake-key-test would turn every run red.
   secrets:
     runs-on: ubuntu-latest
     env:
@@ -20,7 +23,7 @@ jobs:
         run: |
           curl -sSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" | tar xz gitleaks
       - name: Scan git history
-        run: ./gitleaks git --redact --verbose .
+        run: ./gitleaks git --redact --verbose --log-opts="HEAD" .
 
   pytest:
     runs-on: ubuntu-latest
