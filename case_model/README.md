@@ -245,6 +245,31 @@ assert load_case("runs/100101") == case
 | Reference dossier = AMEXIO's 100101, through ingest | D1 | `test_reference_dossier.py` |
 | JSON Schemas; fixtures test | the browser demo builds its types from them (BR-10, BR-11) | `test_fixtures.py` |
 
+## Filling a text (M04, AX-023 … AX-025)
+
+The Fill step (step 8, Valentin) writes a document text by replacing each
+`{{ path }}` with a fact of the case. `case_model.fill` guarantees three things:
+
+```python
+from case_model import fact_paths, fill_text, format_fact
+fact_paths(case)        # every path that prints one fact: offer these in the prompt
+fill_text(case, "Dear {{ personas.P001.name }}, salary {{ employments.P001.salary }}.")
+# "Dear Jan de Vries, salary EUR 4.350."
+fill_text(case, text, {"employments.P001.salary": "eurPlain"})   # format from the template field
+```
+
+- **AX-023 — every placeholder resolves.** `fact_paths` lists only paths that
+  resolve to one printable value; internal IDs (`id`, `persona_id`,
+  `signed_by`, …) are never offered.
+- **AX-024 — or the run stops.** `fill_text` raises `UnresolvedPlaceholders`
+  naming every placeholder at once that is unknown, has no value, names several
+  values, points at an internal ID, or is malformed. Never a silent blank.
+- **AX-025 — formatted only when printed.** `format_fact` uses AMEXIO's formats,
+  the same as the generator's `src/spec/format.ts`: `date` 14-04-2026,
+  `monthYear` September 2026, `eurGrouped` EUR 4.350, `eurPlain` EUR 4350,
+  `days` 2 days. Without a format, a date prints as `date` and an amount as
+  `eurGrouped`. The case keeps ISO dates and numeric amounts.
+
 ## v1.1 → v1.2
 
 | Change | Why | Test |
