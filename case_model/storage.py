@@ -33,10 +33,10 @@ def save_case(case, directory):
     directory.mkdir(parents=True, exist_ok=True)
     data = case.model_dump(mode="json")
 
-    _write(directory / "case.json", {
-        "case_number": data["case_number"],
-        "dossier": data["dossier"],
-    })
+    head = {"case_number": data["case_number"], "dossier": data["dossier"]}
+    if "domain" in data:          # v2.0: written only when the domain is not HR
+        head["domain"] = data["domain"]
+    _write(directory / "case.json", head)
     _write(directory / "cast.json", {
         "personas": data["personas"],
         "organisations": data["organisations"],
@@ -57,6 +57,7 @@ def load_case(directory):
 
     return Case.model_validate({
         "case_number": case["case_number"],
+        "domain": case.get("domain", "hr"),
         "dossier": case["dossier"],
         "personas": cast["personas"],
         "organisations": cast["organisations"],

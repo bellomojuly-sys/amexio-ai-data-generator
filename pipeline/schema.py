@@ -23,6 +23,11 @@ through the schema. Regenerate after every model change with:
 import json
 from pathlib import Path
 
+from pydantic import create_model
+
+from case_model.domains import HR
+from case_model.schema import typed_case
+
 from .contracts import (
     Analysis,
     CaseDocumentPlan,
@@ -49,7 +54,11 @@ SCHEMAS = {
     "case_document_plan.schema.json": lambda: CaseDocumentPlan.model_json_schema(by_alias=True),
     "document_texts_in.schema.json": lambda: DocumentTextsIn.model_json_schema(by_alias=True),
     "trace_line.schema.json": lambda: TraceLine.model_json_schema(),
-    "run_result.schema.json": lambda: RunResult.model_json_schema(mode="serialization"),
+    # The cases with HR's types written in (case model v2.0, GD-04).
+    "run_result.schema.json": lambda: create_model(
+        "RunResult", __base__=RunResult, __doc__=RunResult.__doc__,
+        cases=(list[typed_case(HR)], ...),
+    ).model_json_schema(mode="serialization"),
     "error.schema.json": lambda: ErrorBody.model_json_schema(),
 }
 

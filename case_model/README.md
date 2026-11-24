@@ -1,8 +1,9 @@
-# Case model — module contract (version 1.2)
+# Case model — module contract (version 2.0)
 
-Owner: Giulia Bellomo. Status: v1.2 (`signed_by` on events, agreed by the team
-on 24 November 2026); v1.1 is tag `v1.1`, v1 is tag `v1`. What changed and why:
-[v1 → v1.1](#v1--v11), [v1.1 → v1.2](#v11--v12).
+Owner: Giulia Bellomo. Status: v2.0 (24 November 2026): the lists come from a
+domain configuration, so the case model works for any domain; HR is the first.
+v1.2 added `signed_by`; v1.1 is tag `v1.1`, v1 is tag `v1`. What changed and
+why: [v1 → v1.1](#v1--v11), [v1.1 → v1.2](#v11--v12), [v1.2 → v2.0](#v12--v20).
 
 ## What it is for
 
@@ -274,6 +275,36 @@ fill_text(case, text, {"employments.P001.salary": "eurPlain"})   # format from t
   `monthYear` September 2026, `eurGrouped` EUR 4.350, `eurPlain` EUR 4350,
   `days` 2 days. Without a format, a date prints as `date` and an amount as
   `eurGrouped`. The case keeps ISO dates and numeric amounts.
+
+## v1.2 → v2.0: any domain
+
+Until v1.2 the HR lists were code. Since v2.0 they are a `DomainConfig`
+(`case_model/domain.py`); HR is `case_model.domains.HR`, the same lists as
+before, and every HR file is saved byte for byte as before.
+
+| A domain configuration holds | HR |
+|---|---|
+| `roles` | employee, manager, hr_officer, examiner |
+| `event_types`: per type its fields, each with a `format` (text, date, money, integer, number, persona, organisation), `required`, closed `values`, `gt`, `ends_period`, `label` | the 7 types of v1.1 |
+| `document_types`, each `recurring` or not | the 9 types; payslip and annual income statement recurring |
+| `rules`: `first_event` (at most one, nothing before it), `first_event_starts_employment`, `last_event` (at most one, nothing after it), `last_event_label` | hire, termination ("last working day") |
+| `case_number_pattern` | six digits |
+
+```python
+from case_model import CaseModel, DomainConfig, register_domain
+register_domain(DomainConfig.model_validate(config_json))   # checked first: a malformed one is refused
+case = CaseModel("CL000123", domain="insurance_claim")
+```
+
+- From the configuration the code builds one event class per type
+  (`AppraisalEvent`, `ClaimFiledEvent`, …): fields are typed, a field the type
+  does not define is refused, a reference field must point at a persona or
+  organisation of the case.
+- A case carries its `domain`; `case.json` writes it only when it is not HR.
+- `case.schema.json` is HR's typed schema (the demo's types);
+  `domain.schema.json` is the shape of a domain configuration.
+- Tests: `test_domains.py` (HR = v1.2's lists, malformed configurations, a
+  second domain with its own timeline, rules, save/load and fill).
 
 ## v1.1 → v1.2
 

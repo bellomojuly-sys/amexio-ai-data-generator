@@ -119,8 +119,10 @@ def test_dossier_needs_an_employee_number():
         Dossier(folder_title="No number")
 
 def test_employee_number_must_be_six_digits():
-    with pytest.raises(ValueError):
-        Dossier(employee_number="123")
+    # v2.0: the pattern belongs to the case's domain (HR: six digits), so it is
+    # checked when the dossier joins a case, not by a Dossier on its own.
+    with pytest.raises(ValueError, match="six digits"):
+        CaseModel("123").set_dossier(employee_number="123")
 
 
 # AX-010 — a full Case validates in one call; broken links are refused.
