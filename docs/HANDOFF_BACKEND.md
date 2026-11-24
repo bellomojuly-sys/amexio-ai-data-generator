@@ -87,9 +87,12 @@ fill(cm: CmIdOutput, texts: DocumentTexts) -> CmIdOutput
 - **In:** the dated cases and, per employee and planned document, the section
   texts written by the LLM. Texts contain placeholders `{{ path }}`
   (contract §7, AX-021), e.g. `{{ personas.P001.name }}`.
-- **Do:** resolve every placeholder with `get_fact(case, path)`
-  (`case_model/lookup.py`, AX-022). An unknown path raises `UnknownPath`: the
-  run stops, never a blank (contract §7). Reject any ID typed by the LLM.
+- **Do:** fill each text with `fill_text(case, text, formats)` from
+  `case_model.fill` (M04, 24 Nov). It resolves every placeholder with
+  `get_fact`, formats dates and amounts as AMEXIO prints them, and raises
+  `UnresolvedPlaceholders` naming every placeholder that does not resolve, has
+  no value or points at an internal ID: the run stops, never a blank
+  (contract §7). `fact_paths(case)` lists the placeholders a prompt may offer.
 - **What the stub does today:** only checks that every placeholder resolves;
   it does not write `Document.text` yet (see open points).
 

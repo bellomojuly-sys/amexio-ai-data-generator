@@ -100,7 +100,15 @@ class EmployeesIn(_In):
 
 # 2 — the storylines JSON (the event shapes of the generator's prompt)
 
-class ContractChangeIn(_In):
+class _EventIn(_In):
+    """What every storyline event may carry. ``signedBy`` (v1.2, H4) is the
+    persona ID of who signs the event's documents; it must be a persona the
+    case already holds (it is a reference, not a new ID)."""
+
+    signed_by: str | None = None
+
+
+class ContractChangeIn(_EventIn):
     type: Literal["contract_change"]
     date: dt.date
     reason: str
@@ -110,27 +118,27 @@ class ContractChangeIn(_In):
     new_hours: float | None = None
 
 
-class TrainingIn(_In):
+class TrainingIn(_EventIn):
     type: Literal["training"]
     date: dt.date
     course: str
     duration_days: int = Field(gt=0)
 
 
-class AbsenceIn(_In):
+class AbsenceIn(_EventIn):
     type: Literal["absence"]
     start_date: dt.date
     end_date: dt.date | None = None
 
 
-class TerminationIn(_In):
+class TerminationIn(_EventIn):
     type: Literal["termination"]
     date: dt.date
     reason: str
     notice_date: dt.date | None = None
 
 
-class MedicalCheckIn(_In):
+class MedicalCheckIn(_EventIn):
     """Added by the generator's rules (every two years), not by the LLM."""
 
     type: Literal["medical_check"]
@@ -138,7 +146,7 @@ class MedicalCheckIn(_In):
     result: str
 
 
-class AppraisalIn(_In):
+class AppraisalIn(_EventIn):
     """In the prompt's ``appraisals`` list (no ``type``), or among the events
     (``"type": "appraisal"``) once the generator has planned them."""
 
@@ -312,6 +320,8 @@ def ingest_storylines(cases, data):
                     else e.date or dt.date(e.year, 6, 30))
         for e in events:
             fields = {"type": e.type, "participant_ids": [employee]}
+            if e.signed_by is not None:
+                fields["signed_by"] = e.signed_by
             if e.type == "contract_change":
                 fields.update(
                     date=e.date, reason=e.reason, new_position=e.new_position,

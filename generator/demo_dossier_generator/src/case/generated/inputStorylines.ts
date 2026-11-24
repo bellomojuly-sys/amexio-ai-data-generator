@@ -3,6 +3,7 @@
 export type Comment = (string | null)
 export type Date = (string | null)
 export type Rating = string
+export type Signedby = (string | null)
 export type Type = "appraisal"
 export type Year = number
 export type Appraisals = AppraisalIn[]
@@ -13,20 +14,25 @@ export type Newhours = (number | null)
 export type Newposition = (string | null)
 export type Newsalary = (number | string | null)
 export type Reason = string
+export type Signedby1 = (string | null)
 export type Type1 = "contract_change"
 export type Course = string
 export type Date2 = string
 export type Durationdays = number
+export type Signedby2 = (string | null)
 export type Type2 = "training"
 export type Enddate = (string | null)
+export type Signedby3 = (string | null)
 export type Startdate = string
 export type Type3 = "absence"
 export type Date3 = string
 export type Noticedate = (string | null)
 export type Reason1 = string
+export type Signedby4 = (string | null)
 export type Type4 = "termination"
 export type Date4 = string
 export type Result = string
+export type Signedby5 = (string | null)
 export type Type5 = "medical_check"
 export type Events = (ContractChangeIn | TrainingIn | AbsenceIn | TerminationIn | MedicalCheckIn | AppraisalIn)[]
 export type Storylines = StorylineIn[]
@@ -54,6 +60,7 @@ export interface AppraisalIn {
 comment?: Comment
 date?: Date
 rating: Rating
+signedBy?: Signedby
 type?: Type
 year: Year
 }
@@ -68,6 +75,7 @@ newHours?: Newhours
 newPosition?: Newposition
 newSalary?: Newsalary
 reason: Reason
+signedBy?: Signedby1
 type: Type1
 }
 /**
@@ -78,6 +86,7 @@ export interface TrainingIn {
 course: Course
 date: Date2
 durationDays: Durationdays
+signedBy?: Signedby2
 type: Type2
 }
 /**
@@ -86,6 +95,7 @@ type: Type2
  */
 export interface AbsenceIn {
 endDate?: Enddate
+signedBy?: Signedby3
 startDate: Startdate
 type: Type3
 }
@@ -97,6 +107,7 @@ export interface TerminationIn {
 date: Date3
 noticeDate?: Noticedate
 reason: Reason1
+signedBy?: Signedby4
 type: Type4
 }
 /**
@@ -108,5 +119,6 @@ type: Type4
 export interface MedicalCheckIn {
 date: Date4
 result: Result
+signedBy?: Signedby5
 type: Type5
 }

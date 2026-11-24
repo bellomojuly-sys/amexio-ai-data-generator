@@ -223,8 +223,8 @@ says.
 
 This changes the case-model schema after v1.1, so it becomes **case model v1.2**
 (new field `signed_by: str | None` on every event, checked as a persona ID the
-case holds; `signedBy` in the storylines input). Needs team agreement before it
-is merged.
+case holds; `signedBy` in the storylines input). Agreed by the team on 24 Nov
+2026; built in H4 (`case_model/test_signed_by.py`).
 
 ---
 
@@ -338,7 +338,7 @@ For 10 employees: 13 calls, at most 26 with retries.
 | Batch sizes: keep 25 (personas) and 5 (event content), then measure with the school key | Robin, Mike |
 | A second human review after Fill | Daniel |
 | Exact shape of `RunConfig` and the review screen that edits it | Daniel, Giulia |
-| Case model v1.2 (`signed_by`) agreed by the team | all |
+| ~~Case model v1.2 (`signed_by`) agreed by the team~~ agreed 24 Nov, built (H4) | all |
 | `RunConfig` has no leaver share, so Plot plans no termination yet. Add `leaverShare`? | Daniel, Giulia |
 | Salary range of a position: for 40 hours (as in the generator's prompt, scaled for part time) or for any hours (as §4 reads now)? CM ID follows §4 | Robin, Giulia |
 | Hire dates: the config has no earliest hire date; CM ID uses the 10 years before `asOfDate` | Daniel, Giulia |

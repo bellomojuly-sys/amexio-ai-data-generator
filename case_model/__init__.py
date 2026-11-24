@@ -32,6 +32,7 @@ from .format_rules import (
     reject_caller_id,
     validate_id,
 )
+from .fill import UnresolvedPlaceholders, fact_paths, fill_text, format_fact
 from .lookup import UnknownPath, get_fact
 
 __all__ = [
@@ -59,4 +60,8 @@ __all__ = [
     "validate_id",
     "get_fact",
     "UnknownPath",
+    "fact_paths",
+    "fill_text",
+    "format_fact",
+    "UnresolvedPlaceholders",
 ]
