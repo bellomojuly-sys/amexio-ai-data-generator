@@ -28,6 +28,7 @@ export type Date = string
 export type Id1 = string
 export type Label = (string | null)
 export type ParticipantIds1 = string[]
+export type SignedBy = (string | null)
 export type Summary = (string | null)
 export type Type1 = "hire"
 export type Date1 = string
@@ -38,6 +39,7 @@ export type NewHours = (number | null)
 export type NewPosition = (string | null)
 export type ParticipantIds2 = string[]
 export type Reason = string
+export type SignedBy1 = (string | null)
 export type Summary1 = (string | null)
 export type Type2 = "contract_change"
 export type Course = string
@@ -47,6 +49,7 @@ export type Id3 = string
 export type Label2 = (string | null)
 export type ParticipantIds3 = string[]
 export type ProviderId = string
+export type SignedBy2 = (string | null)
 export type Summary2 = (string | null)
 export type Type3 = "training"
 export type Comment = (string | null)
@@ -55,6 +58,7 @@ export type Id4 = string
 export type Label3 = (string | null)
 export type ParticipantIds4 = string[]
 export type Rating = ("Below expectations" | "Meets expectations" | "Exceeds expectations")
+export type SignedBy3 = (string | null)
 export type Summary3 = (string | null)
 export type Type4 = "appraisal"
 export type Year = number
@@ -63,6 +67,7 @@ export type Id5 = string
 export type Label4 = (string | null)
 export type ParticipantIds5 = string[]
 export type Result = ("Fit for work" | "Fit for work with adjustments")
+export type SignedBy4 = (string | null)
 export type Summary4 = (string | null)
 export type Type5 = "medical_check"
 export type Date5 = string
@@ -70,6 +75,7 @@ export type EndDate = (string | null)
 export type Id6 = string
 export type Label5 = (string | null)
 export type ParticipantIds6 = string[]
+export type SignedBy5 = (string | null)
 export type Summary5 = (string | null)
 export type Type6 = "absence"
 export type Date6 = string
@@ -78,6 +84,7 @@ export type Label6 = (string | null)
 export type NoticeDate = (string | null)
 export type ParticipantIds7 = string[]
 export type Reason1 = ("Resignation" | "End of temporary contract" | "Mutual agreement" | "Retirement")
+export type SignedBy6 = (string | null)
 export type Summary6 = (string | null)
 export type Type7 = "termination"
 export type Address = (string | null)
@@ -195,6 +202,7 @@ date: Date
 id: Id1
 label?: Label
 participant_ids: ParticipantIds1
+signed_by?: SignedBy
 summary?: Summary
 type: Type1
 }
@@ -212,6 +220,7 @@ new_position?: NewPosition
 new_salary?: (Money | null)
 participant_ids: ParticipantIds2
 reason: Reason
+signed_by?: SignedBy1
 summary?: Summary1
 type: Type2
 }
@@ -227,6 +236,7 @@ id: Id3
 label?: Label2
 participant_ids: ParticipantIds3
 provider_id: ProviderId
+signed_by?: SignedBy2
 summary?: Summary2
 type: Type3
 }
@@ -241,6 +251,7 @@ id: Id4
 label?: Label3
 participant_ids: ParticipantIds4
 rating: Rating
+signed_by?: SignedBy3
 summary?: Summary3
 type: Type4
 year: Year
@@ -255,6 +266,7 @@ id: Id5
 label?: Label4
 participant_ids: ParticipantIds5
 result: Result
+signed_by?: SignedBy4
 summary?: Summary4
 type: Type5
 }
@@ -270,6 +282,7 @@ end_date?: EndDate
 id: Id6
 label?: Label5
 participant_ids: ParticipantIds6
+signed_by?: SignedBy5
 summary?: Summary5
 type: Type6
 }
@@ -286,6 +299,7 @@ label?: Label6
 notice_date?: NoticeDate
 participant_ids: ParticipantIds7
 reason: Reason1
+signed_by?: SignedBy6
 summary?: Summary6
 type: Type7
 }

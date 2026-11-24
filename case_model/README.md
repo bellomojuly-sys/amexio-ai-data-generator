@@ -1,7 +1,8 @@
-# Case model — module contract (version 1.1)
+# Case model — module contract (version 1.2)
 
-Owner: Giulia Bellomo. Status: v1.1 on `main` (merged 25 October 2026, PR #1,
-tag `v1.1`); v1 is tag `v1`. What changed and why: [v1 → v1.1](#v1--v11).
+Owner: Giulia Bellomo. Status: v1.2 (`signed_by` on events, agreed by the team
+on 24 November 2026); v1.1 is tag `v1.1`, v1 is tag `v1`. What changed and why:
+[v1 → v1.1](#v1--v11), [v1.1 → v1.2](#v11--v12).
 
 ## What it is for
 
@@ -64,7 +65,8 @@ Document metadata carries AMEXIO's five attributes: `employee_id`,
 `document_type`, `document_date`, `confidential`, `tags`.
 
 **Events (v1.1).** Every event has `id`, `type`, `date`, `participant_ids` and
-optional `label`, `summary`. The `type` picks the class and its own facts:
+optional `label`, `summary`, and since v1.2 an optional `signed_by`: the persona
+who signs the event's documents (a persona of the case). The `type` picks the class and its own facts:
 
 | `type` | Own facts |
 |---|---|
@@ -215,6 +217,7 @@ assert load_case("runs/100101") == case
 - An ID from the caller (AX-012).
 - An unknown participant, organisation or event — the link is checked when the
   part is added and again when the `Case` is built.
+- An event signed by a persona the case does not hold (`signed_by`, v1.2).
 - A date that is not ISO 8601 (AX-013); an amount as formatted text (AX-014).
 - A dossier without an employee number, or a missing required field — a
   validation error names the field.
@@ -241,6 +244,15 @@ assert load_case("runs/100101") == case
 | Ingest of the generator's JSON + command | the generator's data passes through the case model (D4) | `test_ingest.py` |
 | Reference dossier = AMEXIO's 100101, through ingest | D1 | `test_reference_dossier.py` |
 | JSON Schemas; fixtures test | the browser demo builds its types from them (BR-10, BR-11) | `test_fixtures.py` |
+
+## v1.1 → v1.2
+
+| Change | Why | Test |
+|---|---|---|
+| Optional `signed_by` (persona ID) on every event; `signedBy` in the storylines input | who signs an appraisal when the manager has left (BR-16 Q1, pipeline contract §6); set by step 5 Dates & participants | `test_signed_by.py` |
+
+A v1.1 case still loads and is saved byte for byte as before: an empty
+`signed_by` is not written.
 
 ## Fact lookup (AX-022)
 

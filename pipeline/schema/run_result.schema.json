@@ -45,6 +45,18 @@
           "title": "Participant Ids",
           "type": "array"
         },
+        "signed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
+        },
         "summary": {
           "anyOf": [
             {
@@ -122,6 +134,18 @@
           ],
           "title": "Rating",
           "type": "string"
+        },
+        "signed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
         },
         "summary": {
           "anyOf": [
@@ -327,6 +351,18 @@
         "reason": {
           "title": "Reason",
           "type": "string"
+        },
+        "signed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
         },
         "summary": {
           "anyOf": [
@@ -619,6 +655,18 @@
           "title": "Participant Ids",
           "type": "array"
         },
+        "signed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
+        },
         "summary": {
           "anyOf": [
             {
@@ -683,6 +731,18 @@
           ],
           "title": "Result",
           "type": "string"
+        },
+        "signed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
         },
         "summary": {
           "anyOf": [
@@ -906,6 +966,18 @@
           "title": "Reason",
           "type": "string"
         },
+        "signed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
+        },
         "summary": {
           "anyOf": [
             {
@@ -1093,6 +1165,18 @@
         "provider_id": {
           "title": "Provider Id",
           "type": "string"
+        },
+        "signed_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
         },
         "summary": {
           "anyOf": [

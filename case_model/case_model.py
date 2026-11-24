@@ -106,6 +106,11 @@ class _EventBase(BaseModel):
     participant_ids: list[str]
     label: str | None = None
     summary: str | None = None
+    # v1.2 (H4, BR-16 Q1): who signs the event's documents, a persona of the
+    # case. Set by Dates & participants: the manager at the event date, or the
+    # director when the manager has left (pipeline contract v1.1 §6).
+    # Not written when empty, so a v1.1 case is saved byte for byte as before.
+    signed_by: str | None = Field(default=None, exclude_if=lambda value: value is None)
 
 
 class HireEvent(_EventBase):
@@ -242,6 +247,11 @@ class Case(BaseModel):
             for pid in event.participant_ids:
                 if pid not in self.personas:
                     raise ValueError(f"Event {eid} references unknown persona {pid!r}.")
+            if event.signed_by is not None and event.signed_by not in self.personas:
+                raise ValueError(
+                    f"Event {eid} is signed by unknown persona {event.signed_by!r} "
+                    "(field signed_by)."
+                )
             if event.type == "training" and event.provider_id not in self.organisations:
                 raise ValueError(
                     f"Event {eid} points at unknown training provider {event.provider_id!r}."
@@ -388,6 +398,9 @@ class CaseModel:
         provider = fields.get("provider_id")
         if provider and provider not in self.organisations:
             raise ValueError(f"Unknown organisation: {provider}")
+        signer = fields.get("signed_by")
+        if signer is not None and signer not in self.personas:
+            raise ValueError(f"Unknown persona: {signer} (field signed_by)")
         new_id = next_id("event", self.events)
         self.events[new_id] = _EVENT.validate_python({"id": new_id, **fields})
         return new_id
