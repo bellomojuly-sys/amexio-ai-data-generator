@@ -189,7 +189,7 @@ class Dossier(BaseModel):
     def _employee_number_is_six_digits(self):
         if not is_valid_employee_number(self.employee_number):
             raise ValueError(
-                f"Employee number must be six digits, got {self.employee_number!r}."
+                f"Employee number must be six digits, got {self.employee_number!r} (field employee_number)."
             )
         return self
 
@@ -225,28 +225,28 @@ class Case(BaseModel):
                 validate_id(kind, key)
                 if part.id != key:
                     raise ValueError(
-                        f"{label} filed under {key!r} carries id {part.id!r}."
+                        f"{label} filed under {key!r} carries id {part.id!r} (field id)."
                     )
 
         for pid, persona in self.personas.items():
             if persona.organisation_id and persona.organisation_id not in self.organisations:
                 raise ValueError(
                     f"Persona {pid} points at unknown organisation "
-                    f"{persona.organisation_id!r}."
+                    f"{persona.organisation_id!r} (field organisation_id)."
                 )
 
         for job in self.employments:
             if job.persona_id not in self.personas:
-                raise ValueError(f"Employment points at unknown persona {job.persona_id!r}.")
+                raise ValueError(f"Employment points at unknown persona {job.persona_id!r} (field persona_id).")
             if job.organisation_id not in self.organisations:
                 raise ValueError(
-                    f"Employment points at unknown organisation {job.organisation_id!r}."
+                    f"Employment of {job.persona_id} points at unknown organisation {job.organisation_id!r} (field organisation_id)."
                 )
 
         for eid, event in self.events.items():
             for pid in event.participant_ids:
                 if pid not in self.personas:
-                    raise ValueError(f"Event {eid} references unknown persona {pid!r}.")
+                    raise ValueError(f"Event {eid} references unknown persona {pid!r} (field participant_ids).")
             if event.signed_by is not None and event.signed_by not in self.personas:
                 raise ValueError(
                     f"Event {eid} is signed by unknown persona {event.signed_by!r} "
@@ -254,7 +254,7 @@ class Case(BaseModel):
                 )
             if event.type == "training" and event.provider_id not in self.organisations:
                 raise ValueError(
-                    f"Event {eid} points at unknown training provider {event.provider_id!r}."
+                    f"Event {eid} points at unknown training provider {event.provider_id!r} (field provider_id)."
                 )
 
         self._events_tell_a_possible_story()
@@ -264,24 +264,24 @@ class Case(BaseModel):
                 if document.type not in RECURRING_DOCUMENT_TYPES:
                     raise ValueError(
                         f"Document {did} ({document.type}) needs an event; only "
-                        f"{', '.join(sorted(RECURRING_DOCUMENT_TYPES))} may have none."
+                        f"{', '.join(sorted(RECURRING_DOCUMENT_TYPES))} may have none (field event_id)."
                     )
             elif document.event_id not in self.events:
                 raise ValueError(
-                    f"Document {did} references unknown event {document.event_id!r}."
+                    f"Document {did} references unknown event {document.event_id!r} (field event_id)."
                 )
             for pid in document.participant_ids:
                 if pid not in self.personas:
-                    raise ValueError(f"Document {did} references unknown persona {pid!r}.")
+                    raise ValueError(f"Document {did} references unknown persona {pid!r} (field participant_ids).")
             if document.metadata.document_type != document.type:
                 raise ValueError(
                     f"Document {did} is a {document.type} but its metadata says "
-                    f"{document.metadata.document_type}."
+                    f"{document.metadata.document_type} (field metadata.document_type)."
                 )
             if document.metadata.employee_id != self.dossier.employee_number:
                 raise ValueError(
                     f"Document {did} belongs to employee {document.metadata.employee_id}, "
-                    f"not to this dossier ({self.dossier.employee_number})."
+                    f"not to this dossier ({self.dossier.employee_number}) (field metadata.employee_id)."
                 )
         return self
 
@@ -289,7 +289,8 @@ class Case(BaseModel):
         """BR-06 — rules between events that no single event can check."""
         hires = [e for e in self.events.values() if e.type == "hire"]
         if len(hires) > 1:
-            raise ValueError(f"A case has at most one hire event, found {len(hires)}.")
+            raise ValueError(f"A case has at most one hire event, found {len(hires)}: "
+                             f"{', '.join(e.id for e in hires)} (field type).")
         if hires:
             hire = hires[0]
             starts = {
@@ -299,19 +300,20 @@ class Case(BaseModel):
             if starts and hire.date not in starts:
                 raise ValueError(
                     f"Hire event {hire.id} is dated {hire.date}, but the employment "
-                    f"starts on {min(starts)}."
+                    f"starts on {min(starts)} (field date)."
                 )
             for event in self.events.values():
                 if event.date < hire.date:
                     raise ValueError(
                         f"Event {event.id} ({event.type}, {event.date}) happens before "
-                        f"the hire on {hire.date}."
+                        f"the hire on {hire.date} (field date)."
                     )
 
         terminations = [e for e in self.events.values() if e.type == "termination"]
         if len(terminations) > 1:
             raise ValueError(
-                f"A case has at most one termination event, found {len(terminations)}."
+                f"A case has at most one termination event, found {len(terminations)}: "
+                f"{', '.join(e.id for e in terminations)} (field type)."
             )
         if terminations:
             last_day = terminations[0].date
@@ -320,14 +322,14 @@ class Case(BaseModel):
                 if ends > last_day:
                     raise ValueError(
                         f"Event {event.id} ({event.type}) runs to {ends}, after the "
-                        f"last working day {last_day}."
+                        f"last working day {last_day} (field {'end_date' if getattr(event, 'end_date', None) else 'date'})."
                     )
 
         for event in self.events.values():
             if event.type == "absence" and event.end_date and event.end_date < event.date:
                 raise ValueError(
                     f"Absence {event.id} ends on {event.end_date}, before it starts "
-                    f"on {event.date}."
+                    f"on {event.date} (field end_date)."
                 )
 
 
@@ -374,7 +376,7 @@ class CaseModel:
         reject_caller_id(fields)
         org_id = fields.get("organisation_id")
         if org_id and org_id not in self.organisations:
-            raise ValueError(f"Unknown organisation: {org_id}")
+            raise ValueError(f"Unknown organisation: {org_id} (field organisation_id)")
         new_id = next_id("persona", self.personas)
         self.personas[new_id] = Persona(id=new_id, **fields)
         return new_id
@@ -382,9 +384,9 @@ class CaseModel:
     def add_employment(self, **fields):
         reject_caller_id(fields)
         if fields["persona_id"] not in self.personas:
-            raise ValueError(f"Unknown persona: {fields['persona_id']}")
+            raise ValueError(f"Unknown persona: {fields['persona_id']} (field persona_id)")
         if fields["organisation_id"] not in self.organisations:
-            raise ValueError(f"Unknown organisation: {fields['organisation_id']}")
+            raise ValueError(f"Unknown organisation: {fields['organisation_id']} (field organisation_id)")
         job = Employment(**fields)
         self.employments.append(job)
         return job
@@ -394,10 +396,10 @@ class CaseModel:
         reject_caller_id(fields)
         for pid in fields["participant_ids"]:
             if pid not in self.personas:
-                raise ValueError(f"Unknown persona: {pid}")
+                raise ValueError(f"Unknown persona: {pid} (field participant_ids)")
         provider = fields.get("provider_id")
         if provider and provider not in self.organisations:
-            raise ValueError(f"Unknown organisation: {provider}")
+            raise ValueError(f"Unknown organisation: {provider} (field provider_id)")
         signer = fields.get("signed_by")
         if signer is not None and signer not in self.personas:
             raise ValueError(f"Unknown persona: {signer} (field signed_by)")
@@ -409,17 +411,17 @@ class CaseModel:
         reject_caller_id(fields)
         event_id = fields.get("event_id")
         if event_id is not None and event_id not in self.events:
-            raise ValueError(f"Unknown event: {event_id}")
+            raise ValueError(f"Unknown event: {event_id} (field event_id)")
         for pid in fields["participant_ids"]:
             if pid not in self.personas:
-                raise ValueError(f"Unknown persona: {pid}")
+                raise ValueError(f"Unknown persona: {pid} (field participant_ids)")
         new_id = next_id("document", self.documents)
         self.documents[new_id] = Document(id=new_id, **fields)
         return new_id
 
     def build(self):
         if self.dossier is None:
-            raise ValueError("A case needs dossier facts; call set_dossier() first.")
+            raise ValueError("A case needs dossier facts; call set_dossier() first (field dossier).")
         return Case(
             case_number=self.case_number,
             dossier=self.dossier,

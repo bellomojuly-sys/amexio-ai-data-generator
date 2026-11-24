@@ -218,6 +218,11 @@ assert load_case("runs/100101") == case
 - An unknown participant, organisation or event — the link is checked when the
   part is added and again when the `Case` is built.
 - An event signed by a persona the case does not hold (`signed_by`, v1.2).
+- A part that is still referenced cannot disappear: a case whose JSON lost a
+  persona, organisation or event that something points at is refused (AX-069).
+
+Every refusal names the entity and the field, e.g. `Event EVT-003 references
+unknown persona 'P002' (field participant_ids)` (AX-070).
 - A date that is not ISO 8601 (AX-013); an amount as formatted text (AX-014).
 - A dossier without an employee number, or a missing required field — a
   validation error names the field.
