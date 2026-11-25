@@ -11,6 +11,7 @@ export type Tags = string[]
 export type ParticipantIds = string[]
 export type Text = (string | null)
 export type Type = ("employment_contract" | "payslip" | "medical_check" | "performance_appraisal" | "training_certificate" | "contract_amendment" | "annual_income_statement" | "absence_report" | "termination_letter")
+export type Domain = string
 export type Description = (string | null)
 export type EmployeeNumber = string
 export type FolderTitle = (string | null)
@@ -106,11 +107,13 @@ export type Salutation = (string | null)
  * single call: each part is filed under its own well-formed ID, every job
  * and event points at a persona or organisation the Case holds, every
  * document points at an event the Case holds, and the events tell a
- * possible story.
+ * possible story. Since v2.0 the event types, document types, roles and the
+ * rules between events come from the configuration of the case's domain.
  */
 export interface Case {
 case_number: CaseNumber
 documents?: Documents
+domain?: Domain
 dossier: Dossier
 employments?: Employments
 events?: Events
@@ -133,8 +136,6 @@ text?: Text
 type: Type
 }
 /**
- * AMEXIO's five metadata attributes for a document.
- * 
  * This interface was referenced by `Case`'s JSON-Schema
  * via the `definition` "DocumentMetadata".
  */
@@ -146,7 +147,8 @@ employee_id: EmployeeId
 tags?: Tags
 }
 /**
- * Dossier-level facts (AX-009). Without an employee number it fails.
+ * Dossier-level facts (AX-009). The key number (``employee_number`` for
+ * HR) must match the pattern of the case's domain; HR: six digits.
  * 
  * This interface was referenced by `Case`'s JSON-Schema
  * via the `definition` "Dossier".

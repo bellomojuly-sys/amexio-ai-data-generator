@@ -90,14 +90,32 @@ def format_fact(value, fmt: str | None = None) -> str:
     return str(value)
 
 
+def _is_reference(info) -> bool:
+    """A field of a domain's event that holds a persona or organisation ID (v2.0)."""
+    extra = info.json_schema_extra
+    return isinstance(extra, dict) and "reference" in extra
+
+
+def _points_at_an_id(case, path) -> bool:
+    if path.rsplit(".", 1)[-1] in INTERNAL_IDS:
+        return True
+    parent, _, name = path.rpartition(".")
+    try:
+        owner = get_fact(case, parent) if parent.count(".") >= 1 else None
+    except UnknownPath:
+        return False
+    info = type(owner).model_fields.get(name) if isinstance(owner, BaseModel) else None
+    return info is not None and _is_reference(info)
+
+
 def _leaves(obj, prefix):
     """Every dotted path under ``obj`` that ends in one printable value."""
     if isinstance(obj, Money):
         yield prefix, obj
         return
     if isinstance(obj, BaseModel):
-        for name in type(obj).model_fields:
-            if name not in INTERNAL_IDS:
+        for name, info in type(obj).model_fields.items():
+            if name not in INTERNAL_IDS and not _is_reference(info):
                 yield from _leaves(getattr(obj, name), f"{prefix}.{name}")
         return
     if obj is None or isinstance(obj, (list, dict)):
@@ -128,7 +146,7 @@ def fill_text(case: Case, text: str, formats: dict[str, str] | None = None) -> s
     problems: dict[str, str] = {}
     values: dict[str, str] = {}
     for path in dict.fromkeys(PLACEHOLDER.findall(text)):
-        if path.rsplit(".", 1)[-1] in INTERNAL_IDS:
+        if _points_at_an_id(case, path):
             problems[path] = ("an internal ID, not a printable fact (use the name, "
                               "e.g. personas.<id>.name)")
             continue

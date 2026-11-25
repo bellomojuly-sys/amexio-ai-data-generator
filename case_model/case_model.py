@@ -22,30 +22,22 @@ stored once: document text is derived from the facts, so it is optional (D3b).
 """
 
 from datetime import date
-from typing import Annotated, Literal, Union
 
-from pydantic import BaseModel, Field, TypeAdapter, model_validator
+from pydantic import BaseModel, Field, SerializeAsAny, model_validator
 
-from .format_rules import (
-    RECURRING_DOCUMENT_TYPES,
-    ContractType,
-    DocumentType,
-    MedicalResult,
-    Money,
-    PersonaRole,
-    Rating,
-    TerminationReason,
-    is_valid_employee_number,
-    next_id,
-    reject_caller_id,
-    validate_id,
-)
+from .domain import REFERENCE_FORMATS, EventBase, get_domain
+from .domains import HR  # registers the HR domain
+from .format_rules import ContractType, Money, next_id, reject_caller_id, validate_id
+
+# Every event class of every domain extends EventBase (case model v2.0).
+Event = EventBase
 
 
 class Persona(BaseModel):
     id: str
     name: str
-    role: PersonaRole
+    # One of the roles of the case's domain (v2.0); HR: employee, manager, ...
+    role: str
     salutation: str | None = None
     date_of_birth: date | None = None
     address: str | None = None
@@ -79,7 +71,8 @@ class DocumentMetadata(BaseModel):
     """AMEXIO's five metadata attributes for a document."""
 
     employee_id: str
-    document_type: DocumentType
+    # One of the document types of the case's domain (v2.0).
+    document_type: str
     document_date: date
     confidential: bool
     tags: list[str] = Field(default_factory=list)
@@ -87,7 +80,8 @@ class DocumentMetadata(BaseModel):
 
 class Document(BaseModel):
     id: str
-    type: DocumentType
+    # One of the document types of the case's domain (v2.0).
+    type: str
     # Empty only for recurring documents such as payslips (D3a).
     event_id: str | None = None
     participant_ids: list[str]
@@ -96,102 +90,29 @@ class Document(BaseModel):
     metadata: DocumentMetadata
 
 
-# Events (v1.1, BR-05). Every event has an id, a date and its participants;
-# the "type" field tells pydantic which class to use, so an appraisal without
-# a rating, or an event of an unknown type, is refused.
-
-class _EventBase(BaseModel):
-    id: str
-    date: date
-    participant_ids: list[str]
-    label: str | None = None
-    summary: str | None = None
-    # v1.2 (H4, BR-16 Q1): who signs the event's documents, a persona of the
-    # case. Set by Dates & participants: the manager at the event date, or the
-    # director when the manager has left (pipeline contract v1.1 §6).
-    # Not written when empty, so a v1.1 case is saved byte for byte as before.
-    signed_by: str | None = Field(default=None, exclude_if=lambda value: value is None)
-
-
-class HireEvent(_EventBase):
-    """The start of the employment. The agreed terms live in Employment."""
-
-    type: Literal["hire"]
-
-
-class ContractChangeEvent(_EventBase):
-    type: Literal["contract_change"]
-    reason: str
-    new_salary: Money | None = None
-    new_position: str | None = None
-    new_contract_type: ContractType | None = None
-    new_hours: float | None = None
-
-
-class TrainingEvent(_EventBase):
-    type: Literal["training"]
-    course: str
-    duration_days: int = Field(gt=0)
-    provider_id: str
-
-
-class AppraisalEvent(_EventBase):
-    type: Literal["appraisal"]
-    year: int
-    rating: Rating
-    comment: str | None = None
-
-
-class MedicalCheckEvent(_EventBase):
-    type: Literal["medical_check"]
-    result: MedicalResult
-
-
-class AbsenceEvent(_EventBase):
-    """A sick-leave period: dates only, never a cause or diagnosis."""
-
-    type: Literal["absence"]
-    end_date: date | None = None
-
-
-class TerminationEvent(_EventBase):
-    """The last working day."""
-
-    type: Literal["termination"]
-    reason: TerminationReason
-    notice_date: date | None = None
-
-
-Event = Annotated[
-    Union[
-        HireEvent,
-        ContractChangeEvent,
-        TrainingEvent,
-        AppraisalEvent,
-        MedicalCheckEvent,
-        AbsenceEvent,
-        TerminationEvent,
-    ],
-    Field(discriminator="type"),
-]
-
-_EVENT = TypeAdapter(Event)
-
-
 class Dossier(BaseModel):
-    """Dossier-level facts (AX-009). Without an employee number it fails."""
+    """Dossier-level facts (AX-009). The key number (``employee_number`` for
+    HR) must match the pattern of the case's domain; HR: six digits."""
 
     employee_number: str
     folder_title: str | None = None
     description: str | None = None
 
-    @model_validator(mode="after")
-    def _employee_number_is_six_digits(self):
-        if not is_valid_employee_number(self.employee_number):
-            raise ValueError(
-                f"Employee number must be six digits, got {self.employee_number!r} (field employee_number)."
-            )
-        return self
+
+def _case_number_error(domain, number):
+    if domain.name == "hr":
+        return f"Employee number must be six digits, got {number!r} (field employee_number)."
+    return (f"Case number {number!r} does not match the {domain.name} pattern "
+            f"{domain.case_number_pattern} (field employee_number).")
+
+
+def _event_of(domain, event):
+    """``event`` as an instance of the domain's class for its type (a dict
+    from JSON, or an event built for this domain)."""
+    if isinstance(event, EventBase) and domain.event_classes.get(event.type) is type(event):
+        return event
+    raw = event.model_dump() if isinstance(event, BaseModel) else event
+    return domain.event_adapter.validate_python(raw)
 
 
 class Case(BaseModel):
@@ -201,19 +122,37 @@ class Case(BaseModel):
     single call: each part is filed under its own well-formed ID, every job
     and event points at a persona or organisation the Case holds, every
     document points at an event the Case holds, and the events tell a
-    possible story.
+    possible story. Since v2.0 the event types, document types, roles and the
+    rules between events come from the configuration of the case's domain.
     """
 
     case_number: str
+    # The case's domain (v2.0). Not written for HR, so HR files stay as before.
+    domain: str = Field(default="hr", exclude_if=lambda value: value == "hr")
     dossier: Dossier
     personas: dict[str, Persona] = Field(default_factory=dict)
     organisations: dict[str, Organisation] = Field(default_factory=dict)
     employments: list[Employment] = Field(default_factory=list)
-    events: dict[str, Event] = Field(default_factory=dict)
+    events: dict[str, SerializeAsAny[EventBase]] = Field(default_factory=dict)
     documents: dict[str, Document] = Field(default_factory=dict)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _events_of_the_domain(cls, data):
+        """Each event becomes the class its domain gives its type, so an
+        appraisal without a rating, or a type the domain lacks, is refused."""
+        if isinstance(data, dict) and isinstance(data.get("events"), dict):
+            domain = get_domain(data.get("domain") or "hr")
+            data = {**data, "events": {key: _event_of(domain, event)
+                                       for key, event in data["events"].items()}}
+        return data
 
     @model_validator(mode="after")
     def _links_hold(self):
+        domain = get_domain(self.domain)
+        if not domain.is_case_number(self.dossier.employee_number):
+            raise ValueError(_case_number_error(domain, self.dossier.employee_number))
+
         for collection, label, kind in (
             (self.personas, "Persona", "persona"),
             (self.organisations, "Organisation", "organisation"),
@@ -229,6 +168,11 @@ class Case(BaseModel):
                     )
 
         for pid, persona in self.personas.items():
+            if persona.role not in domain.roles:
+                raise ValueError(
+                    f"Persona {pid} has role {persona.role!r}, not one of "
+                    f"{', '.join(domain.roles)} (field role)."
+                )
             if persona.organisation_id and persona.organisation_id not in self.organisations:
                 raise ValueError(
                     f"Persona {pid} points at unknown organisation "
@@ -252,19 +196,31 @@ class Case(BaseModel):
                     f"Event {eid} is signed by unknown persona {event.signed_by!r} "
                     "(field signed_by)."
                 )
-            if event.type == "training" and event.provider_id not in self.organisations:
-                raise ValueError(
-                    f"Event {eid} points at unknown training provider {event.provider_id!r} (field provider_id)."
-                )
+            for name, spec in domain.event_types[event.type].fields.items():
+                value = getattr(event, name)
+                if value is None or spec.format not in REFERENCE_FORMATS:
+                    continue
+                held = self.personas if spec.format == "persona" else self.organisations
+                if value not in held:
+                    raise ValueError(
+                        f"Event {eid} points at unknown {spec.label or spec.format} "
+                        f"{value!r} (field {name})."
+                    )
 
-        self._events_tell_a_possible_story()
+        self._events_tell_a_possible_story(domain)
 
+        recurring = domain.recurring_document_types()
         for did, document in self.documents.items():
+            if document.type not in domain.document_types:
+                raise ValueError(
+                    f"Document {did} has type {document.type!r}, not one of the "
+                    f"{domain.name} document types (field type)."
+                )
             if document.event_id is None:
-                if document.type not in RECURRING_DOCUMENT_TYPES:
+                if document.type not in recurring:
                     raise ValueError(
                         f"Document {did} ({document.type}) needs an event; only "
-                        f"{', '.join(sorted(RECURRING_DOCUMENT_TYPES))} may have none (field event_id)."
+                        f"{', '.join(sorted(recurring)) or 'recurring types'} may have none (field event_id)."
                     )
             elif document.event_id not in self.events:
                 raise ValueError(
@@ -285,62 +241,76 @@ class Case(BaseModel):
                 )
         return self
 
-    def _events_tell_a_possible_story(self):
-        """BR-06 — rules between events that no single event can check."""
-        hires = [e for e in self.events.values() if e.type == "hire"]
-        if len(hires) > 1:
-            raise ValueError(f"A case has at most one hire event, found {len(hires)}: "
-                             f"{', '.join(e.id for e in hires)} (field type).")
-        if hires:
-            hire = hires[0]
-            starts = {
-                job.start_date for job in self.employments
-                if job.persona_id in hire.participant_ids
-            }
-            if starts and hire.date not in starts:
-                raise ValueError(
-                    f"Hire event {hire.id} is dated {hire.date}, but the employment "
-                    f"starts on {min(starts)} (field date)."
-                )
-            for event in self.events.values():
-                if event.date < hire.date:
-                    raise ValueError(
-                        f"Event {event.id} ({event.type}, {event.date}) happens before "
-                        f"the hire on {hire.date} (field date)."
-                    )
+    def _events_tell_a_possible_story(self, domain):
+        """BR-06, GD-03 — the rules between events of the case's domain."""
+        rules = domain.rules
 
-        terminations = [e for e in self.events.values() if e.type == "termination"]
-        if len(terminations) > 1:
-            raise ValueError(
-                f"A case has at most one termination event, found {len(terminations)}: "
-                f"{', '.join(e.id for e in terminations)} (field type)."
-            )
-        if terminations:
-            last_day = terminations[0].date
-            for event in self.events.values():
-                ends = getattr(event, "end_date", None) or event.date
-                if ends > last_day:
-                    raise ValueError(
-                        f"Event {event.id} ({event.type}) runs to {ends}, after the "
-                        f"last working day {last_day} (field {'end_date' if getattr(event, 'end_date', None) else 'date'})."
-                    )
+        def period_end(event):
+            for name, spec in domain.event_types[event.type].fields.items():
+                if spec.ends_period and getattr(event, name) is not None:
+                    return name, getattr(event, name)
+            return "date", event.date
+
+        if rules.first_event:
+            firsts = [e for e in self.events.values() if e.type == rules.first_event]
+            if len(firsts) > 1:
+                raise ValueError(f"A case has at most one {rules.first_event} event, found {len(firsts)}: "
+                                 f"{', '.join(e.id for e in firsts)} (field type).")
+            if firsts:
+                first = firsts[0]
+                if rules.first_event_starts_employment:
+                    starts = {
+                        job.start_date for job in self.employments
+                        if job.persona_id in first.participant_ids
+                    }
+                    if starts and first.date not in starts:
+                        raise ValueError(
+                            f"{rules.first_event.capitalize()} event {first.id} is dated {first.date}, "
+                            f"but the employment starts on {min(starts)} (field date)."
+                        )
+                for event in self.events.values():
+                    if event.date < first.date:
+                        raise ValueError(
+                            f"Event {event.id} ({event.type}, {event.date}) happens before "
+                            f"the {rules.first_event} on {first.date} (field date)."
+                        )
+
+        if rules.last_event:
+            lasts = [e for e in self.events.values() if e.type == rules.last_event]
+            if len(lasts) > 1:
+                raise ValueError(
+                    f"A case has at most one {rules.last_event} event, found {len(lasts)}: "
+                    f"{', '.join(e.id for e in lasts)} (field type)."
+                )
+            if lasts:
+                last_day = lasts[0].date
+                for event in self.events.values():
+                    field, ends = period_end(event)
+                    if ends > last_day:
+                        raise ValueError(
+                            f"Event {event.id} ({event.type}) runs to {ends}, after the "
+                            f"{rules.last_event_label or rules.last_event + ' on'} {last_day} (field {field})."
+                        )
 
         for event in self.events.values():
-            if event.type == "absence" and event.end_date and event.end_date < event.date:
+            field, ends = period_end(event)
+            if ends < event.date:
                 raise ValueError(
-                    f"Absence {event.id} ends on {event.end_date}, before it starts "
-                    f"on {event.date} (field end_date)."
+                    f"{event.type.replace('_', ' ').capitalize()} {event.id} ends on {ends}, "
+                    f"before it starts on {event.date} (field {field})."
                 )
 
 
 class CaseModel:
     """Builds a case step by step, assigning every ID in code (AX-011, AX-012).
 
-    When the parts are in, ``build()`` returns a validated :class:`Case`.
+    ``domain`` names the configuration the case is checked against (HR by
+    default). When the parts are in, ``build()`` returns a validated :class:`Case`.
     """
 
-    def __init__(self, case_number):
+    def __init__(self, case_number, domain="hr"):
         self.case_number = case_number
+        self.domain = get_domain(domain)
         self.dossier = None
         self.personas = {}
         self.organisations = {}
@@ -352,7 +322,7 @@ class CaseModel:
     def from_case(cls, case):
         """A builder that continues from an existing case, e.g. to add the
         storyline to the cases made from the employees JSON."""
-        builder = cls(case.case_number)
+        builder = cls(case.case_number, case.domain)
         builder.dossier = case.dossier
         builder.personas = dict(case.personas)
         builder.organisations = dict(case.organisations)
@@ -363,7 +333,10 @@ class CaseModel:
 
     def set_dossier(self, **fields):
         reject_caller_id(fields)
-        self.dossier = Dossier(**fields)
+        dossier = Dossier(**fields)
+        if not self.domain.is_case_number(dossier.employee_number):
+            raise ValueError(_case_number_error(self.domain, dossier.employee_number))
+        self.dossier = dossier
         return self.dossier
 
     def add_organisation(self, **fields):
@@ -377,6 +350,11 @@ class CaseModel:
         org_id = fields.get("organisation_id")
         if org_id and org_id not in self.organisations:
             raise ValueError(f"Unknown organisation: {org_id} (field organisation_id)")
+        role = fields.get("role")
+        if role not in self.domain.roles:
+            raise ValueError(
+                f"Unknown role: {role!r}, not one of {', '.join(self.domain.roles)} (field role)"
+            )
         new_id = next_id("persona", self.personas)
         self.personas[new_id] = Persona(id=new_id, **fields)
         return new_id
@@ -392,23 +370,34 @@ class CaseModel:
         return job
 
     def add_event(self, **fields):
-        """Add an event of any type; ``type`` picks the class and its fields."""
+        """Add an event of any type of the domain; ``type`` picks the class and its fields."""
         reject_caller_id(fields)
         for pid in fields["participant_ids"]:
             if pid not in self.personas:
                 raise ValueError(f"Unknown persona: {pid} (field participant_ids)")
-        provider = fields.get("provider_id")
-        if provider and provider not in self.organisations:
-            raise ValueError(f"Unknown organisation: {provider} (field provider_id)")
+        spec = self.domain.event_types.get(fields.get("type"))
+        for name, field in (spec.fields.items() if spec else ()):
+            value = fields.get(name)
+            if value is None or field.format not in REFERENCE_FORMATS:
+                continue
+            held = self.personas if field.format == "persona" else self.organisations
+            if value not in held:
+                kind = "persona" if field.format == "persona" else "organisation"
+                raise ValueError(f"Unknown {kind}: {value} (field {name})")
         signer = fields.get("signed_by")
         if signer is not None and signer not in self.personas:
             raise ValueError(f"Unknown persona: {signer} (field signed_by)")
         new_id = next_id("event", self.events)
-        self.events[new_id] = _EVENT.validate_python({"id": new_id, **fields})
+        self.events[new_id] = self.domain.event_adapter.validate_python({"id": new_id, **fields})
         return new_id
 
     def add_document(self, **fields):
         reject_caller_id(fields)
+        if fields.get("type") not in self.domain.document_types:
+            raise ValueError(
+                f"Unknown document type: {fields.get('type')!r} for domain "
+                f"{self.domain.name} (field type)"
+            )
         event_id = fields.get("event_id")
         if event_id is not None and event_id not in self.events:
             raise ValueError(f"Unknown event: {event_id} (field event_id)")
@@ -424,6 +413,7 @@ class CaseModel:
             raise ValueError("A case needs dossier facts; call set_dossier() first (field dossier).")
         return Case(
             case_number=self.case_number,
+            domain=self.domain.name,
             dossier=self.dossier,
             personas=self.personas,
             organisations=self.organisations,
