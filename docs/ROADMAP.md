@@ -57,11 +57,11 @@ have their own prefix (BE-), as the bridge has BR-.
 
 | Field | Value |
 |---|---|
-| Completed | M00–M03 (AX-001 → AX-020, plus AX-018a), closed 21 Oct. M03b partly: the handoff sprint (BR-02 … BR-08, BR-10, BR-11, BR-13), Robin's R1–R6, BR-12 (tag `v1.1`, 16 Nov), BR-14 (locally) and BR-15. **B1 (BE-01 → BE-06), BE-07, AX-021, AX-022** closed 5 Nov |
-| Where the code is | Team repo [bellomojuly-sys/amexio-ai-data-generator](https://github.com/bellomojuly-sys/amexio-ai-data-generator), `main`: case model v1.1 (PR #1 `case-model-v1.1`) and Robin's demo on v1.1 (PR #2 `Demo-Generator`). Tags `v1` → `cf5f963`, `v1.1` → `1c8dca1` (PR #1 merge). Backend B1, BE-07, AX-021, AX-022 were built on branch `claude/amazing-goodall-0u897m` and moved to `main` on 16 Nov; doc alignment in PR `giulia/align-docs`. This repo's `case_model/` is an older copy (v1); do not build on it |
+| Completed | M00–M03 (AX-001 → AX-020, plus AX-018a), closed 21 Oct. M03b partly: the handoff sprint (BR-02 … BR-08, BR-10, BR-11, BR-13), Robin's R1–R6, BR-12 (tag `v1.1`, 16 Nov), BR-14 (locally) and BR-15. **B1 (BE-01 → BE-06), BE-07, AX-021, AX-022** closed 5 Nov. 17–20 Nov: BE-07a (backend on pipeline contract v1.1) and the hardening H1–H5 (PR #9). 24 Nov: BR-16, H4 (`signed_by`), M04 (AX-023 → AX-025), AX-069, AX-070 → case model v1.2 (PR #10). 24–25 Nov: any domain, GD-01 → GD-05 → case model v2.0 (PR #11), v2.1 (PR #12), GD-05 (PR #13). 25 Nov: **AX-070a, case model v2.2** (review fixes) |
+| Where the code is | Team repo [bellomojuly-sys/amexio-ai-data-generator](https://github.com/bellomojuly-sys/amexio-ai-data-generator), `main` (25 Nov, `929749b`): case model v2.1 + GD-05 and the backend on pipeline contract v1.1. **Case model v2.2 (AX-070a) on branch `claude/confident-clarke-ck1jjh`, PR to `main` open — build on it.** Robin's PR from `Demo-Generator` (Python LLM steps, demo v2) open; it passes with v2.2 (545 tests). Tags `v1` → `cf5f963`, `v1.1` → `1c8dca1`. This repo's `case_model/` is an older copy (v1); do not build on it |
 | Where backend code goes | Team repo, folder `pipeline/` (confirmed in BE-01) |
-| **Active** | **BE-08 — persona call through Robin's client** (prompt and output model without IDs), with BR-16 alongside |
-| Then | BE-09, BE-10 (CM ID stage), then BE-13 (Plot output model — Valentin's Date & participants waits for it) |
+| **Active** | **BE-17b — integration trial (week of 30 Nov)** with Daniel's studio and Robin's demo on case model v2.2; before it, Daniel and Robin fix review points 1–4 (message sent 25 Nov) |
+| Then | BE-08 and BE-14 (now: review and verify Robin's persona and event-text calls), BE-09, BE-10 (CM ID stage), BE-13 (Plot output model) |
 | Study objectives now | A-I (backend stages). B1 was closed in code without the study cycle: F3, F8 and A-I need Teoria → Prova. Still open: ripasso F2, A-A |
 
 ## Calendar
@@ -80,6 +80,7 @@ have their own prefix (BE-), as the bridge has BR-.
 Target dates in Part A (to be placed in the calendar): BR-12, BR-16 Wed 28 Oct ·
 B1 Fri 30 Oct · AX-021, AX-022 Tue 3 Nov · B2 Thu 5 Nov · B3 Tue 10 Nov ·
 B4 Fri 13 Nov. **Actual (16 Nov):** B1, BE-07, AX-021, AX-022 done 5 Nov; B2 from BE-08 on, B3 and B4 open; Review 2 moved to Thu 19 Nov.
+**Actual (25 Nov):** M04 (AX-023 → AX-025), AX-069, AX-070, BR-16 and the any-domain work (GD-01 → GD-05, case model v2.0 → v2.2) done. Robin built the three LLM steps in Python (personas, event texts, document texts), which covers the prompts of BE-08 and BE-14: those two become review and verification. Integration trial (BE-17b) in the week of 30 Nov.
 
 **Risk.** Adding the backend without cutting the case model moves the code
 freeze from 18 Dec (old plan) to 15 Jan, and Sprint 6 holds 20 microphases in
@@ -165,7 +166,7 @@ Robin's reply in `docs/HANDOFF_GIULIA.md`. BR-12 and BR-16 are in Part A
 | R1–R6 | Robin: types from the schemas, demo writes and reads case folders, fixtures, insurance demo removed | Robin's reply | ✅ PR #2 |
 | BR-14 | The demo renders 100101 as AMEXIO's 5 PDFs and `import.xml` | Identical output; removing a fact fails it | ✅ locally (CI skips it: AMEXIO's mock package is not in git) |
 | BR-15 | Generator's 100101 vs reference 100101: same facts | A changed salary fails it | ✅ |
-| BR-16 | Answer Robin's two questions: who signs an appraisal when the manager has left; keep document metadata in the demo's cases or leave `documents` empty | Answers in `docs/HANDOFF_GIULIA.md`; Robin confirms | ⬜ Part A |
+| BR-16 | Answer Robin's two questions: who signs an appraisal when the manager has left; keep document metadata in the demo's cases or leave `documents` empty | Answers in `docs/HANDOFF_GIULIA.md`; Robin confirms | ✅ 24 Nov · `c75c81c` · approved by the team; `signed_by` in v1.2 |
 
 **Gate M03b:** BR-00, BR-01, BR-09 (checked), BR-12 and BR-16 done; tag `v1.1`.
 
@@ -207,7 +208,7 @@ Closes: first part of FR-CM-01. Supports FR-GEN-04.
 | ID | Build | Output | Verify | Status |
 |---|---|---|---|---|
 | BE-07 | Map Daniel's analysis output to the ingest input (`employees`) | Mapping function | Daniel's sample analysis maps; an unknown field is refused | ✅ 5 Nov · `31d6e4c` · verified on `employees.json`; Daniel's real analysis still to come (API key since 14 Nov) |
-| BE-08 | Persona call through Robin's client: prompt and output model without IDs | Prompt + model | With the fake LLM the output validates; an output with an `id` is refused (AX-012) | ⬜ |
+| BE-08 | Persona call through Robin's client: prompt and output model without IDs. **Since 25 Nov:** the output model is mine (`PersonasIn`, BE-03/BE-07a), the prompt and call are Robin's (`pipeline/generation.py`, `propose_personas`); I review and verify them | Review + test | With the fake LLM the output validates; an output with an `id` is refused (AX-012); I can explain the prompt | ⬜ |
 | BE-09 | The CM ID stage: analysis → `ingest_employees` → cases with code-assigned IDs and the list of corrections | Stage function | AMEXIO's example in → 4 valid cases; 100101 carries the reference facts | ⬜ |
 | BE-10 | Invalid LLM output: one retry, then a clear error; nothing half-written | Error handling | A fake that returns bad JSON twice gives an error that names the field; no case folder is written | ⬜ |
 | BE-11 | One run with the real model, trace saved | Trace + run folder | The output loads with `load_case`; the trace is linked in the README as evidence | ⬜ |
@@ -220,7 +221,7 @@ Closes: first part of FR-CM-01. Supports FR-GEN-04.
 |---|---|---|---|---|
 | BE-12 | Decide with Robin and Mike what moves from the generator's seeded plot into the backend (revisits D9 of the bridge plan) | Decision Log | Both agree; the plot code that stays in the generator is listed | ⬜ |
 | BE-13 | Plot output model: per case, the ordered events (type from the closed list, type-specific facts, description), without dates, participants or IDs | Model + schema | An unknown event type fails; an outline that carries an ID fails | ⬜ |
-| BE-14 | Event-description call through Robin's client | Prompt + model | The fake-LLM test passes; the real model's answer validates | ⬜ |
+| BE-14 | Event-description call through Robin's client. **Since 25 Nov:** Robin's `write_event_content`; I review and verify it against `EventContentIn` | Review + test | The fake-LLM test passes; the real model's answer validates | ⬜ |
 | BE-15 | Plot coherence before handover: exactly one `hire`, first; nothing after `termination` | Checks | One deliberate break per rule fails with a clear message | ⬜ |
 | BE-16 | The Plot stage: cases → one outline per case | Stage function | On AMEXIO's example, 100101's outline has the reference event types in the reference order | ⬜ |
 
@@ -231,6 +232,7 @@ Closes: first part of FR-CM-01. Supports FR-GEN-04.
 | ID | Build | Output | Verify | Status |
 |---|---|---|---|---|
 | BE-17 | With Valentin: his dated, staffed events go back into the case through `ingest_storylines` | Events with IDs | Every event loads with `load_case`; an unknown `employeeId` is refused | ⬜ |
+| BE-17b | Integration trial (week of 30 Nov): Daniel's studio → Robin's demo chain → case model v2.2 → export ZIP, with Daniel and Robin. Before it: their review points 1–4 fixed (studio export keeps the placeholders, single font embed, flaky demo test, name check) | Trial run + list of breaks | The ZIP's cases load with `load_case`; every placeholder in the exported templates fills; each break found has an owner | ⬜ |
 | BE-18 | Full run: Daniel's input → four stages → filled documents for 100101 (Valentin's Fill stage uses AX-022) | End-to-end run | The result's facts equal the reference facts (as in BR-15) | ⬜ |
 | BE-19 | A run ID and one trace line per stage | Trace | The run can be reconstructed from the trace alone | ⬜ |
 | BE-20 | Contract version and tag `backend-v0.1`; README updated | Tag + README | CI green on `main` | ⬜ |
@@ -254,11 +256,27 @@ microphases make the case model guarantee what his stage needs.
 
 | ID | Build | Output | Verify | Status |
 |---|---|---|---|---|
-| AX-023 | Every placeholder in the reference documents resolves through the lookup | Test shared with Valentin's stage | 100% of placeholders in the reference dossier resolve | ⬜ |
-| AX-024 | An unresolved placeholder stops the run | Error | One wrong placeholder fails; no silent blank | ⬜ |
-| AX-025 | Format dates and amounts only when the text is filled (formatting functions the Fill stage calls) | Long date, formatted amount | Stored values stay ISO and numeric | ⬜ |
+| AX-023 | Every placeholder in the reference documents resolves through the lookup | Test shared with Valentin's stage | 100% of placeholders in the reference dossier resolve | ✅ 24 Nov · `8975e9d` |
+| AX-024 | An unresolved placeholder stops the run | Error | One wrong placeholder fails; no silent blank | ✅ 24 Nov · `8975e9d` · v2.2: a whole record is refused too |
+| AX-025 | Format dates and amounts only when the text is filled (formatting functions the Fill stage calls) | Long date, formatted amount | Stored values stay ISO and numeric | ✅ 24 Nov · `8975e9d` · v2.2: a format that does not fit is refused |
 
 **Gate M04:** every fact in a document comes from a case-model field.
+
+### GD — any domain: case model v2.0 → v2.2 · study: A-E (brought forward from M10/M11)
+
+Added on 24 Nov (team request: the generator must work for any domain, not
+only HR). The lists come from a domain configuration; HR is the first one.
+Contract: `docs/DOMAIN_CONTRACT.md` (team repo), v1.2.
+
+| ID | Build | Output | Verify | Status |
+|---|---|---|---|---|
+| GD-01 → GD-04 | Domain configuration (HR as data), case validated against its domain, rules between events from the configuration, save/load/fill/schemas per domain | Case model v2.0 | HR files saved byte for byte as in v1.2; a malformed configuration is refused | ✅ 24–25 Nov · `b82c15d` · PR #11 |
+| GD-04b | Case facts, domain metadata, employment and organisation kinds; fact generator | Case model v2.1 | Same seed, same facts; a value out of bounds is refused | ✅ 25 Nov · `c48502b` · PR #12 |
+| GD-05 | Ingest without IDs for any domain (`ingest_cases`) | Function + schema | JSON without IDs in, validated cases out | ✅ 25 Nov · `f7a4a05` · PR #13 |
+| AX-070a | Case model v2.2: the ten gaps of the 25 Nov review (whole record in `fill_text`, one number per case, hours and salaries above zero, one employment per persona, notice date in the story, formats checked, generator inside its bounds, missing fields named) | Case model v2.2, domain contract 1.2, Decision Log | `test_v22_rules.py`: accepted case + each refusal; Robin's branch still green with v2.2 | ✅ 25 Nov · `dde1fc3` · DL `docs/decisions/AX-070a-case-model-v2.2.md` · team to confirm the contract |
+| GD-05b | Daniel's configuration → `DomainConfig`; template fields bound to the case | Mapping | Daniel's export loads as a domain | ⬜ after the team's answer (domain contract §7) |
+| GD-06 | Pipeline contract v1.2 | Contract | Each owner confirms their row | ⬜ |
+| GD-07 | Template contract v0.3 (including how a fixed value for a whole dossier is declared: a "fact" field, not a preview value) | Contract | Daniel confirms | ⬜ |
 
 ### M05 — Change propagation · study: A-C
 
@@ -339,8 +357,8 @@ Closes: FR-CFG-02, supports BR-08 (requirement).
 | AX-066 | Large dossier: 10 participants, 20 documents | Fixture | Validates and reloads | ⬜ |
 | AX-067 | Two personas with the same name | Test | They stay distinct by ID in every document | ⬜ |
 | AX-068 | Event with no document, document with no participant | Two tests | Each is refused or flagged with a clear message | ⬜ |
-| AX-069 | Delete an entity that is still referenced | Refusal | Nothing is left pointing to a missing ID | ⬜ |
-| AX-070 | Error messages name the entity ID and the field | Reworded errors | A teammate fixes a broken fixture without asking me | ⬜ |
+| AX-069 | Delete an entity that is still referenced | Refusal | Nothing is left pointing to a missing ID | ✅ 24 Nov · `d498b94` |
+| AX-070 | Error messages name the entity ID and the field | Reworded errors | A teammate fixes a broken fixture without asking me | ✅ 24 Nov · `d498b94` · v2.2 (AX-070a): a missing field is named too |
 
 **Gate M13 (Review 3, ~18 Dec):** broken input fails loudly and never silently.
 
@@ -429,6 +447,8 @@ I propose, the team decides. Each one becomes a Decision Log.
 |---|---|---|
 | Generate from a structured case model, or extract metadata from generated text? | Team working principle | Decision Log in progress |
 | Case model schema v1, then v1.1 | AX-010, AX-020, M03b | Done; v1.1 decisions D1–D9 to write (BR-01) |
+| Case model v2.2: which rules close the review gaps, and how | AX-070a | Done 25 Nov (Decision Log); team confirms the contract |
+| How a template declares a fixed value for a whole dossier | GD-07, with Daniel | Before the integration trial (BE-17b) |
 | Domain focus: HR first | Team decision, 7 Oct | Done |
 | Where the backend runs and how stages talk | BE-01 | Wed 28 Oct |
 | Who owns the plot: generator or backend Plot stage | BE-12 | Thu 5 Nov |
