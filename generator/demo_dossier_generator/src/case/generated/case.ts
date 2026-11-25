@@ -88,6 +88,7 @@ export type Reason1 = ("Resignation" | "End of temporary contract" | "Mutual agr
 export type SignedBy6 = (string | null)
 export type Summary6 = (string | null)
 export type Type7 = "termination"
+export type Facts = null
 export type Address = (string | null)
 export type Id8 = string
 export type Kind = (string | null)
@@ -117,6 +118,7 @@ domain?: Domain
 dossier: Dossier
 employments?: Employments
 events?: Events
+facts?: Facts
 organisations?: Organisations
 personas?: Personas
 }

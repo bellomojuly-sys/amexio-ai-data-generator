@@ -57,6 +57,18 @@
       "additionalProperties": false,
       "description": "One field of an event type.",
       "properties": {
+        "currency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currency"
+        },
         "ends_period": {
           "default": false,
           "title": "Ends Period",
@@ -98,6 +110,38 @@
           ],
           "default": null,
           "title": "Label"
+        },
+        "max": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max"
+        },
+        "min": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Min"
         },
         "required": {
           "default": false,
@@ -180,6 +224,13 @@
   "additionalProperties": false,
   "description": "Everything a case of one domain is checked against.",
   "properties": {
+    "case_facts": {
+      "additionalProperties": {
+        "$ref": "#/$defs/FieldSpec"
+      },
+      "title": "Case Facts",
+      "type": "object"
+    },
     "case_number_pattern": {
       "default": "[0-9]{6}",
       "title": "Case Number Pattern",
@@ -213,9 +264,31 @@
       "title": "Event Types",
       "type": "object"
     },
+    "metadata_fields": {
+      "additionalProperties": {
+        "$ref": "#/$defs/FieldSpec"
+      },
+      "title": "Metadata Fields",
+      "type": "object"
+    },
     "name": {
       "title": "Name",
       "type": "string"
+    },
+    "organisation_kinds": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Organisation Kinds"
     },
     "roles": {
       "items": {
@@ -227,6 +300,11 @@
     },
     "rules": {
       "$ref": "#/$defs/StoryRules"
+    },
+    "uses_employment": {
+      "default": false,
+      "title": "Uses Employment",
+      "type": "boolean"
     },
     "version": {
       "default": "1",

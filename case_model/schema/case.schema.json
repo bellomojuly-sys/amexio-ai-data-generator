@@ -374,6 +374,7 @@
       "type": "object"
     },
     "DocumentMetadata": {
+      "additionalProperties": false,
       "properties": {
         "confidential": {
           "title": "Confidential",
@@ -1053,6 +1054,11 @@
       },
       "title": "Events",
       "type": "object"
+    },
+    "facts": {
+      "default": null,
+      "title": "Facts",
+      "type": "null"
     },
     "organisations": {
       "additionalProperties": {

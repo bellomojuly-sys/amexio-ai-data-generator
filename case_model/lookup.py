@@ -8,6 +8,7 @@ placeholder stage reads each path with ``get_fact``. An unknown path raises
 Path grammar::
 
     dossier.<field>                       dossier.employee_number
+    facts.<name>                          facts.policy_number (v2.1)
     personas.<id>.<field...>              personas.P001.name
     organisations.<id>.<field...>         organisations.ORG-01.name
     events.<id>.<field...>                events.EVT-001.date
@@ -49,6 +50,10 @@ def get_fact(case: Case, path: str):
 
     if head == "dossier":
         obj, rest = case.dossier, parts[1:]
+    elif head == "facts":                      # v2.1: facts.<name>
+        if case.facts is None:
+            raise UnknownPath(f"path {path!r}: this case has no facts")
+        obj, rest = case.facts, parts[1:]
     elif head in _BY_ID:
         if len(parts) < 2:
             raise UnknownPath(f"path {path!r}: {head} needs an id, e.g. {head}.<id>.<field>")

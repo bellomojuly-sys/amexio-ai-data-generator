@@ -1,10 +1,10 @@
-# Domain contract: any domain through the case model (v1.0)
+# Domain contract: any domain through the case model (v1.1)
 
-Version **1.0**, 24 November 2026 · from: Giulia (case model, backend) · to:
+Version **1.1**, 25 November 2026 (1.0: 24 Nov) · from: Giulia (case model, backend) · to:
 Daniel, Robin, Valentin, Mike, Stylianos · Status: **proposed to the team**;
 after agreement it changes only with a new version number.
 
-Code: case model **v2.0** (`case_model/domain.py`, `case_model/domains.py`, PR #11).
+Code: case model **v2.1** (`case_model/domain.py`, `case_model/domains.py`, PR #11).
 Related: `docs/PIPELINE_CONTRACT.md` (v1.1 → v1.2), `docs/TEMPLATE_CONTRACT.md`
 (v0.2 → v0.3), `case_model/README.md`.
 
@@ -41,6 +41,10 @@ One JSON object per domain. JSON Schema: `case_model/schema/domain.schema.json`.
 | `rules.last_event` | the event that closes the story | at most one; nothing happens or ends after it |
 | `rules.first_event_starts_employment` | the first event's date is the employment's start | HR only |
 | `rules.last_event_label` | how an error names the last date | HR: "last working day" |
+| `case_facts` (v1.1) | facts of the whole case, stored once in `case.facts` and read as `facts.<name>` by every document | each a field (§2); free text must be given, the rest can be generated |
+| `metadata_fields` (v1.1) | document metadata beyond AMEXIO's five attributes | any other metadata key is refused |
+| `uses_employment` (v1.1) | the domain holds `Employment` (jobs) | HR: yes |
+| `organisation_kinds` (v1.1) | the kinds an organisation may have | absent = free |
 
 ## 2. Fields of an event type
 
@@ -55,6 +59,13 @@ Every event has `id` (made by code), `type`, `date`, `participant_ids`,
 | `gt` | lower bound, exclusive (only for `integer`, `number`) |
 | `ends_period` | this date ends the event (an absence's `end_date`): never before the event's date |
 | `label` | how an error names a reference ("training provider") |
+| `min`, `max` (v1.1) | inclusive bounds: numbers for integer, number, money; ISO dates for date |
+| `currency` (v1.1) | the currency of a money field |
+
+A "fact" field (decided with Daniel, AX-021a) is a case fact with a rule:
+code generates its value from `values` or from `min`/`max`
+(`case_model.facts.generate_facts`, same seed = same value), unless the
+approved configuration gives it.
 
 `persona` and `organisation` fields hold an ID of the case and must point at a
 persona or organisation the case holds. They are never printed in a document.
@@ -125,7 +136,8 @@ the configuration; Event content writes text only in `text` fields.
 | GD-01 | Domain configuration, HR as data | Giulia | built, PR #11 |
 | GD-02 | The case validates against its domain | Giulia | built, PR #11 |
 | GD-03 | Rules between events from the configuration | Giulia | built, PR #11 |
-| GD-04 | Save, load, fill and schemas per domain | Giulia | built, PR #11 |
+| GD-04 | Save, load, fill and schemas per domain | Giulia | built, PR #11 (merged) |
+| GD-04b | Case facts, domain metadata, employment and organisation kinds; fact generator (v2.1) | Giulia | built |
 | GD-05 | Daniel's configuration → `DomainConfig`; ingest without IDs for any domain | Giulia, Daniel | next |
 | GD-06 | Pipeline contract v1.2 | Giulia, Robin, Valentin, Mike | after GD-05 |
 | GD-07 | Template contract v0.3 | Giulia, Daniel | after GD-05 |

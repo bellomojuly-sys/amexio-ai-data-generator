@@ -27,6 +27,7 @@ HR = register_domain(DomainConfig.model_validate({
     "version": "1.2",
     "description": "HR dossiers (AMEXIO's mock data): an employee's employment history.",
     "case_number_pattern": "[0-9]{6}",
+    "uses_employment": True,
     "roles": _values(PersonaRole),
     "event_types": {
         "hire": {"description": "The start of the employment. The agreed terms live in Employment."},
