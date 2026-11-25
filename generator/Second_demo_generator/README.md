@@ -34,7 +34,7 @@ result = run_chain(request, llm=llm)
 
 | Setting | How | Default |
 |---|---|---|
-| API key | environment variable `ANTHROPIC_API_KEY` only (contract §8) | none: a `setup` error |
+| API key | environment variable `LLM_API_KEY` only (the team's rule, `.env.example`) | none: a `setup` error |
 | Model | `AMEXIO_LLM_MODEL`, or `MODEL_DEFAULTS` in `pipeline/llm.py` for everyone | `claude-sonnet-5-5` (Model Selection document) |
 | Provider | `AMEXIO_LLM_PROVIDER`: `anthropic` or `fake` (offline, no key) | `anthropic` |
 | Address | `ANTHROPIC_BASE_URL`, for a gateway that speaks the same API | `https://api.anthropic.com` |
@@ -48,19 +48,21 @@ variable and making a new client switches it; nothing is stored in the repo.
 On Windows, either for one PowerShell session:
 
 ```powershell
-$env:ANTHROPIC_API_KEY = "sk-ant-..."
+$env:LLM_API_KEY = "sk-ant-..."
 ```
 
 or stored in the conda environment (outside the repo), active after
 `conda activate amexio` again:
 
 ```powershell
-conda env config vars set ANTHROPIC_API_KEY=sk-ant-... -n amexio
+conda env config vars set LLM_API_KEY=sk-ant-... -n amexio
 ```
 
-The demo app (step 4) will also read a `.env` file next to it. `.env` and
-`.env.*` are in `.gitignore` (commit "Ignore .env files before any API key is
-used").
+`.env.example` names the variable. A local `.env` (git ignores `.env` and
+`.env.*`) only works where a tool loads it into the environment, such as VS
+Code's Python extension: the backend reads the variable and loads no `.env`
+itself. CI's gitleaks job fails on a key in the git history. The demo app
+(step 4) needs no key: it runs on the viewer's Claude account.
 
 ### Errors
 

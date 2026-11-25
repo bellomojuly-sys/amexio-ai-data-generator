@@ -317,14 +317,17 @@ def _count(value) -> int:
         return 0
 
 
+KEY_ENV = "LLM_API_KEY"   # the team's one variable for the key (.env.example, pipeline/README.md)
+
+
 class _HttpLLM(BaseLLMClient):
-    """What every HTTP provider shares: the key from one environment
-    variable, one POST with v1's error kinds, and one wait-and-retry when the
-    service is rate limited or overloaded (not counted in ``retries``, which
-    counts the answer retry of ``complete_as``)."""
+    """What every HTTP provider shares: the key from ``LLM_API_KEY`` only, one
+    POST with v1's error kinds, and one wait-and-retry when the service is rate
+    limited or overloaded (not counted in ``retries``, which counts the answer
+    retry of ``complete_as``)."""
 
     service = "the model service"
-    key_env = ""
+    key_env = KEY_ENV
 
     def __init__(self, model: str, *, max_tokens: int = MAX_TOKENS, timeout: float = TIMEOUT_S,
                  temperature: float | None = None, transport: Transport = urllib_transport,
@@ -343,8 +346,8 @@ class _HttpLLM(BaseLLMClient):
         key = os.environ.get(self.key_env, "").strip()
         if not key:
             raise ProviderError(
-                f"No API key: set the {self.key_env} environment variable (for the "
-                "demo app, a .env file next to it, which git ignores).", "setup")
+                f"No API key: set the {self.key_env} environment variable (see "
+                ".env.example; never commit a key).", "setup")
         return key
 
     def _post(self, url: str, headers: dict, payload: dict) -> dict:
@@ -435,13 +438,13 @@ ANTHROPIC_VERSION = "2023-06-01"
 class AnthropicLLM(_HttpLLM):
     """Claude through the Anthropic Messages API (v1's ``anthropicProvider``).
 
-    The key comes only from ``ANTHROPIC_API_KEY`` (contract §8), read when the
-    client is made: to switch keys, change the variable and make a new client.
+    The key comes only from ``LLM_API_KEY`` (the team's variable, see
+    ``.env.example``), read when the client is made: to switch keys, change the
+    variable and make a new client.
     ``ANTHROPIC_BASE_URL`` sends the same requests to another address that
     speaks this API (a gateway). Implements only ``complete``."""
 
     service = "the Anthropic API"
-    key_env = "ANTHROPIC_API_KEY"
 
     def __init__(self, model: str | None = None, *, base_url: str | None = None, **options):
         super().__init__(model or MODEL_DEFAULTS["anthropic"], **options)

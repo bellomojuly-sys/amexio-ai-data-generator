@@ -1,5 +1,5 @@
 """The real provider (contract v1.1 §8; Robin): ``AnthropicLLM`` sends a
-Messages API request with the key from ``ANTHROPIC_API_KEY``, reads the text
+Messages API request with the key from ``LLM_API_KEY``, reads the text
 and the tokens, and maps every failure to v1's kinds (setup, retry, refused,
 cancelled). The client records every call, also one that fails at the
 provider. All offline: a fake transport stands in for the network."""
@@ -63,7 +63,7 @@ class Waits:
 
 @pytest.fixture
 def key(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", KEY)
+    monkeypatch.setenv("LLM_API_KEY", KEY)
     for name in ("ANTHROPIC_BASE_URL", "AMEXIO_LLM_MODEL", "AMEXIO_LLM_PROVIDER"):
         monkeypatch.delenv(name, raising=False)
 
@@ -122,10 +122,18 @@ def test_complete_as_validates_and_records_tokens_and_model(key):
 # --- setup: fix the settings ------------------------------------------------
 
 def test_no_key_is_a_setup_error(monkeypatch):
-    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
-    with pytest.raises(ProviderError, match="ANTHROPIC_API_KEY") as exc:
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    with pytest.raises(ProviderError, match="LLM_API_KEY") as exc:
         AnthropicLLM(transport=Transport())
     assert exc.value.kind == "setup"
+
+
+def test_the_key_comes_only_from_llm_api_key(monkeypatch):
+    """The team's rule (pipeline/README.md): not from the Anthropic SDK's own variable."""
+    monkeypatch.delenv("LLM_API_KEY", raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", KEY)
+    with pytest.raises(ProviderError, match="LLM_API_KEY"):
+        AnthropicLLM(transport=Transport())
 
 
 @pytest.mark.parametrize("status, kind", [(401, "authentication_error"), (402, "billing_error"),
