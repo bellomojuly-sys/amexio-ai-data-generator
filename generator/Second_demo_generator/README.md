@@ -351,18 +351,19 @@ artifact tool). `site/python_bundle.json`, `site/pyodide/` and
   the viewer's Claude usage. The fake model has no limit.
 - **Stand-in, labelled in the page: the filled preview.** Fill (Valentin) is
   still a stub that only checks the placeholders. To show what a filled text
-  will look like, `demo_bridge.fill_preview` replaces each placeholder with its
-  fact from `get_fact`, dates as "1 March 2021" and amounts as "4,350.00".
-  The real Fill and its formats (AX-025) replace it.
+  will look like, `demo_bridge.fill_preview` fills it with the case model's
+  `fill_text` (case model v1.2, AX-024), the function Fill will call, in
+  AMEXIO's formats (AX-025): dates as "01-03-2021", amounts as "EUR 4.350".
+  Where Fill would stop, the preview says why.
 - **Downloads** use the page's `downloads` capability; the viewer confirms
   each one.
 - **Stand-in, labelled in the ZIP's README: the events' texts are filled in the
   exported case folders.** Part 2's comments and reasons are saved on the events
   with their placeholders, and no step fills them yet (open point 1 in the team
   list). v1's own check refuses such texts ("the AI comment contains numbers",
-  from the digits in `{{personas.P001.name}}`), so the export fills them the
-  way the filled preview does (`demo_bridge.filled_case`). The chain's own texts
-  stay in `steps/event_content_in.json`.
+  from the digits in `{{personas.P001.name}}`), so the export fills them with
+  the same `fill_text` (`demo_bridge.filled_case`). The chain's own texts stay
+  in `steps/event_content_in.json`.
 - **Why the page showed "nullnull".** `replaceChildren` turns a missing part
   into the text "null"; the page now leaves missing parts out.
 

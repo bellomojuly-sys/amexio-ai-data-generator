@@ -180,6 +180,20 @@ def test_the_page_gets_the_same_files_as_a_map_and_the_readme_names_the_package(
     assert f"{PACKAGE}/" in as_map["README.txt"] and "package_check.json" in as_map["README.txt"]
 
 
+def test_filled_texts_are_the_case_models_fill_in_amexios_formats():
+    """The demo's filled preview and the exported events' texts use the case
+    model's fill_text (AX-024, AX-025), the function Fill will call."""
+    from case_model.fill import fill_text
+    from demo_bridge import _execute, fill_preview
+    case = _execute(request(), "fake", "documents", "{}", 0)["result"].cases[0]
+    event = next(e for e in case.events.values() if e.type == "hire")
+    text = f"On {{{{events.{event.id}.date}}}}, for {{{{employments.P001.salary}}}}."
+    euros = f"{int(case.employments[0].salary.amount):,}".replace(",", ".")      # 4.350
+    assert fill_preview(case, text) == fill_text(case, text) == (
+        f"On {event.date.strftime('%d-%m-%Y')}, for EUR {euros}.")
+    assert fill_preview(case, "{{personas.P001.id}}").startswith("Fill would stop here")
+
+
 def test_an_export_after_one_step_has_what_ran_so_far():
     files = _unzip(export_zip(request(), "fake", "personas"))
     assert f"{RUN_ID}/cases/100101/case.json" in files

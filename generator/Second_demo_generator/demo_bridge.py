@@ -42,13 +42,13 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from case_model.lookup import UnknownPath, get_fact
+from case_model.fill import UnresolvedPlaceholders, fill_text
 from case_model.storage import save_case
 from pipeline import fake_answers
 from pipeline.chain import STAGES, ChainError, Stage, run_chain
 from pipeline.contracts import RunRequest
 from pipeline.llm import BaseLLMClient, Completion, FakeLLM, ProviderError
-from pipeline.placeholders import PLACEHOLDER, text_problems
+from pipeline.placeholders import text_problems
 
 RUN_ID = "GEN-2026-0001"
 PACKAGE = "hr-dossier-import"   # v1's import package folder (its DEFAULT_TARGET.packageName; v1 is frozen)
@@ -241,13 +241,14 @@ def filled_case(case):
     """**Demo stand-in for Fill (Valentin), on the events.** Part 2's texts
     (summary, comment, reason) are saved on the events with their placeholders,
     and no step fills them yet (open point 1). The exported case folders get
-    them filled, as ``fill_preview`` does, so a reader such as the v1 demo gets
-    plain text. The chain's own texts stay in ``steps/event_content_in.json``."""
+    them filled with the case model's ``fill_text``, so a reader such as the v1
+    demo gets plain text; a placeholder Fill refuses stops the export. The
+    chain's own texts stay in ``steps/event_content_in.json``."""
     data = case.model_dump(mode="json")
     for event in data["events"].values():
         for name in EVENT_TEXTS:
             if isinstance(event.get(name), str):
-                event[name] = fill_preview(case, event[name])
+                event[name] = fill_text(case, event[name])
     return type(case).model_validate(data)
 
 
@@ -280,8 +281,9 @@ def _readme(result, mode: str, model: str, step: str, seed: int, paths: list[str
         "steps/               each step's output at its boundary (the contract's JSON shapes)",
         "document_texts.json  the document texts with their placeholders, and a filled preview",
         "",
-        "Stand-ins: Dates & participants and Fill are Valentin's stubs; the filled preview is",
-        "the demo's own (dates as 1 March 2021, amounts as 4,350.00). In Claude mode the",
+        "Stand-ins: Dates & participants and Fill are Valentin's stubs. The filled texts (the",
+        "events' texts in cases/, the filled preview) come from the case model's fill_text,",
+        "which Fill will call, in AMEXIO's formats (01-03-2021, EUR 4.350). In Claude mode the",
         "tokens in trace.json are estimates (characters / 4): the page's Claude call reports none.",
         "",
         "The PDFs are v1's. The chain's cases hold no documents yet (Fill is a stub), so v1",
@@ -364,20 +366,15 @@ def _events(cm) -> list[dict]:
 
 
 def fill_preview(case, text: str) -> str:
-    """**Demo stand-in for Fill (Valentin).** Each placeholder replaced by its
-    fact, read with ``get_fact``; dates as "1 March 2021", amounts as
-    "4,350.00". The real Fill and its formats (AX-025) are not built yet."""
-    def fact(match):
-        try:
-            value = get_fact(case, match.group(1))
-        except UnknownPath:
-            return match.group(0)
-        if isinstance(value, dt.date):
-            return f"{value.day} {value.strftime('%B')} {value.year}"
-        if isinstance(value, Decimal):
-            return f"{value:,.2f}"
-        return str(value)
-    return PLACEHOLDER.sub(fact, text)
+    """**Demo stand-in for Fill (Valentin)**, whose step is still a stub: the
+    text as the case model's ``fill_text`` fills it (AX-024), the function Fill
+    will call, in AMEXIO's formats (AX-025: dates "01-03-2021", amounts
+    "EUR 4.350"). Where Fill would stop, the preview says why instead."""
+    try:
+        return fill_text(case, text)
+    except UnresolvedPlaceholders as exc:
+        return "Fill would stop here: " + "; ".join(f"{{{{{p}}}}}: {why}"
+                                                    for p, why in exc.problems.items())
 
 
 def _texts(outputs: dict) -> list[dict]:
