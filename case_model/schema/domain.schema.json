@@ -143,6 +143,11 @@
           "default": null,
           "title": "Min"
         },
+        "not_after_event": {
+          "default": false,
+          "title": "Not After Event",
+          "type": "boolean"
+        },
         "required": {
           "default": false,
           "title": "Required",

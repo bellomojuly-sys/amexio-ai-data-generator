@@ -17,8 +17,9 @@ passed in (``random.Random(seed)``), so the same seed gives the same facts.
 from __future__ import annotations
 
 import datetime as dt
+import math
 import random
-from decimal import Decimal
+from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 
 from pydantic import BaseModel
 
@@ -40,6 +41,17 @@ def _bounds(name, spec, low_default=None):
     return low, high
 
 
+def _steps(name, low, high, step):
+    """The first and last multiple of ``step`` inside [low, high], counted in
+    steps. Raises CannotGenerate, naming the field, when there is none."""
+    lo = int((Decimal(str(low)) / step).to_integral_value(rounding=ROUND_CEILING))
+    hi = int((Decimal(str(high)) / step).to_integral_value(rounding=ROUND_FLOOR))
+    if lo > hi:
+        raise CannotGenerate(f"{name}: no value in steps of {step} lies between {low} and "
+                             f"{high} (field {name})")
+    return lo, hi
+
+
 def generate_fact(name: str, spec: FieldSpec, rng: random.Random):
     """One value for the fact ``name`` by its rule."""
     if spec.values:
@@ -52,13 +64,16 @@ def generate_fact(name: str, spec: FieldSpec, rng: random.Random):
         return low + dt.timedelta(days=rng.randint(0, (high - low).days))
     low, high = _bounds(name, spec)
     if spec.format == "integer":
-        return rng.randint(int(low), int(high))
+        return rng.randint(math.ceil(low), math.floor(high))
     if spec.format == "number":
-        return round(rng.uniform(low, high), 2)
+        # v2.2 — pick in hundredths inside the bounds, so rounding never
+        # carries the value past min or max.
+        lo, hi = _steps(name, low, high, Decimal("0.01"))
+        return float(Decimal(rng.randint(lo, hi)) / 100)
     if spec.format == "money":
-        whole = rng.randint(int(Decimal(str(low)).to_integral_value(rounding="ROUND_CEILING")),
-                            int(high))
-        return Money(amount=Decimal(whole).quantize(Decimal("0.01")),
+        # Whole euros, as AMEXIO's documents print them (v2.1).
+        lo, hi = _steps(name, low, high, Decimal("1"))
+        return Money(amount=Decimal(rng.randint(lo, hi)).quantize(Decimal("0.01")),
                      currency=spec.currency or "EUR")
     raise CannotGenerate(f"{name}: format {spec.format} is not generated (field {name})")
 

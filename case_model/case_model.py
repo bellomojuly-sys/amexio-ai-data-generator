@@ -23,7 +23,7 @@ stored once: document text is derived from the facts, so it is optional (D3b).
 
 from datetime import date
 
-from pydantic import BaseModel, Field, SerializeAsAny, model_validator
+from pydantic import BaseModel, Field, SerializeAsAny, field_validator, model_validator
 
 from pydantic import ConfigDict, create_model
 
@@ -65,8 +65,16 @@ class Employment(BaseModel):
     department: str
     start_date: date
     contract_type: ContractType
-    hours: float
+    # v2.2 — a job has hours and pays a salary: both above zero.
+    hours: float = Field(gt=0)
     salary: Money
+
+    @field_validator("salary")
+    @classmethod
+    def _salary_above_zero(cls, salary):
+        if salary.amount <= 0:
+            raise ValueError(f"a salary must be above zero, got {salary.amount}")
+        return salary
 
 
 class DocumentMetadata(BaseModel):
@@ -210,6 +218,12 @@ class Case(BaseModel):
         domain = get_domain(self.domain)
         if not domain.is_case_number(self.dossier.employee_number):
             raise ValueError(_case_number_error(domain, self.dossier.employee_number))
+        # v2.2 — one number per case: folders, storylines and metadata use both.
+        if self.case_number != self.dossier.employee_number:
+            raise ValueError(
+                f"Case number {self.case_number!r} differs from the dossier's "
+                f"{self.dossier.employee_number!r} (field case_number)."
+            )
         missing = [n for n, spec in domain.case_facts.items()
                    if spec.required and (self.facts is None or getattr(self.facts, n) is None)]
         if missing:
@@ -251,7 +265,15 @@ class Case(BaseModel):
                     f"{persona.organisation_id!r} (field organisation_id)."
                 )
 
+        employed = set()
         for job in self.employments:
+            # v2.2 — one employment per persona: paths read it by persona id.
+            if job.persona_id in employed:
+                raise ValueError(
+                    f"Persona {job.persona_id} has a second employment; changes are "
+                    "contract_change events (field employments)."
+                )
+            employed.add(job.persona_id)
             if job.persona_id not in self.personas:
                 raise ValueError(f"Employment points at unknown persona {job.persona_id!r} (field persona_id).")
             if job.organisation_id not in self.organisations:
@@ -323,6 +345,20 @@ class Case(BaseModel):
                     return name, getattr(event, name)
             return "date", event.date
 
+        def earlier_dates(event):
+            """v2.2 — dates that come on or before the event (a notice date)."""
+            return [(name, getattr(event, name))
+                    for name, spec in domain.event_types[event.type].fields.items()
+                    if spec.not_after_event and getattr(event, name) is not None]
+
+        for event in self.events.values():
+            for name, value in earlier_dates(event):
+                if value > event.date:
+                    raise ValueError(
+                        f"{event.type.replace('_', ' ').capitalize()} {event.id} has {name} "
+                        f"{value}, after the event itself on {event.date} (field {name})."
+                    )
+
         if rules.first_event:
             firsts = [e for e in self.events.values() if e.type == rules.first_event]
             if len(firsts) > 1:
@@ -346,6 +382,12 @@ class Case(BaseModel):
                             f"Event {event.id} ({event.type}, {event.date}) happens before "
                             f"the {rules.first_event} on {first.date} (field date)."
                         )
+                    for name, value in earlier_dates(event):
+                        if value < first.date:
+                            raise ValueError(
+                                f"Event {event.id} ({event.type}) has {name} {value}, before "
+                                f"the {rules.first_event} on {first.date} (field {name})."
+                            )
 
         if rules.last_event:
             lasts = [e for e in self.events.values() if e.type == rules.last_event]
@@ -410,6 +452,9 @@ class CaseModel:
         dossier = Dossier(**fields)
         if not self.domain.is_case_number(dossier.employee_number):
             raise ValueError(_case_number_error(self.domain, dossier.employee_number))
+        if dossier.employee_number != self.case_number:
+            raise ValueError(f"Employee number {dossier.employee_number!r} differs from the "
+                             f"case number {self.case_number!r} (field employee_number)")
         self.dossier = dossier
         return self.dossier
 
@@ -447,10 +492,15 @@ class CaseModel:
         reject_caller_id(fields)
         if not self.domain.uses_employment:
             raise ValueError(f"Domain {self.domain.name} has no employment (field employments)")
-        if fields["persona_id"] not in self.personas:
-            raise ValueError(f"Unknown persona: {fields['persona_id']} (field persona_id)")
-        if fields["organisation_id"] not in self.organisations:
-            raise ValueError(f"Unknown organisation: {fields['organisation_id']} (field organisation_id)")
+        # A missing reference is left to Employment, whose error names the field.
+        persona_id, org_id = fields.get("persona_id"), fields.get("organisation_id")
+        if persona_id is not None and persona_id not in self.personas:
+            raise ValueError(f"Unknown persona: {persona_id} (field persona_id)")
+        if org_id is not None and org_id not in self.organisations:
+            raise ValueError(f"Unknown organisation: {org_id} (field organisation_id)")
+        if persona_id is not None and any(j.persona_id == persona_id for j in self.employments):
+            raise ValueError(f"Persona {persona_id} already has an employment; record changes "
+                             "as contract_change events (field persona_id)")
         job = Employment(**fields)
         self.employments.append(job)
         return job
@@ -458,7 +508,7 @@ class CaseModel:
     def add_event(self, **fields):
         """Add an event of any type of the domain; ``type`` picks the class and its fields."""
         reject_caller_id(fields)
-        for pid in fields["participant_ids"]:
+        for pid in fields.get("participant_ids") or ():
             if pid not in self.personas:
                 raise ValueError(f"Unknown persona: {pid} (field participant_ids)")
         spec = self.domain.event_types.get(fields.get("type"))
@@ -487,7 +537,7 @@ class CaseModel:
         event_id = fields.get("event_id")
         if event_id is not None and event_id not in self.events:
             raise ValueError(f"Unknown event: {event_id} (field event_id)")
-        for pid in fields["participant_ids"]:
+        for pid in fields.get("participant_ids") or ():
             if pid not in self.personas:
                 raise ValueError(f"Unknown persona: {pid} (field participant_ids)")
         if "metadata" in fields:
