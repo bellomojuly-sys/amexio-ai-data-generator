@@ -9,10 +9,14 @@ the one retry with the problem named, and then the run fails (rule 5).
 
 A text passes when
 
-1. **every placeholder resolves** with ``get_fact`` on the case, to one fact
-   that the case holds: an unknown collection, key or field fails, and so does
-   a path that stops at a whole object (``{{personas.P001}}``) or reaches an
-   empty field; a brace that is not part of a ``{{ … }}`` fails too;
+1. **every placeholder is one fact Fill can print**, by the case model's own
+   rules (case model v1.2, M04): ``fill_text`` fills it (AX-024: it resolves,
+   holds a value and is not an internal ID such as ``personas.P001.id``), and
+   it is one of ``fact_paths(case)`` (AX-023), the facts a text may print. So
+   a whole object (``{{personas.P001}}``) fails, and so does a part of one
+   fact: an amount is written whole, ``{{employments.P001.salary}}``, and
+   prints with its currency ("EUR 4.350"), not as ``…salary.amount``. A
+   brace that is not part of a ``{{ … }}`` fails too;
 2. **no fact is typed out** in the text around the placeholders:
    - no name of a person or organisation in the case: the whole name, or for
      a person one word of it (``Jan``, ``Vries``; particles such as *de* and
@@ -39,6 +43,7 @@ from dataclasses import dataclass, field
 from pydantic import BaseModel
 
 from case_model import Case
+from case_model.fill import UnresolvedPlaceholders, fact_paths, fill_text
 from case_model.lookup import UnknownPath, get_fact
 
 from .contracts import DocumentTextsIn, EventContentIn
@@ -121,6 +126,7 @@ class TextCheck:
 
     def __init__(self, case: Case):
         self.case = case
+        self.paths = set(fact_paths(case))
         self.names: list[_Name] = []
         for p in case.personas.values():
             core = _core(p.name)
@@ -177,18 +183,26 @@ class TextCheck:
         return found
 
     def _resolve(self, path: str) -> str | None:
-        """Why ``{{path}}`` is not one fact of the case, or None when it is."""
+        """Why ``{{path}}`` is not one fact Fill can print, or None when it is."""
         shown = f"{{{{{path}}}}}"
         try:
             value = get_fact(self.case, path)
         except UnknownPath as exc:
             return f"{shown} does not resolve: {exc}"
-        if isinstance(value, BaseModel):
-            return (f"{shown} is a whole {type(value).__name__}, not one fact: add the "
-                    "field, such as .name or .date")
-        if isinstance(value, (dict, list, tuple, set)):
-            return f"{shown} is a list, not one fact"
-        if value is None or value == "":
+        try:
+            fill_text(self.case, shown)        # what the case model's Fill refuses, refuse here
+        except UnresolvedPlaceholders as exc:
+            return "; ".join(f"{shown}: {why}" for why in exc.problems.values())
+        if path not in self.paths:             # Fill prints it, but it is not one fact (AX-023)
+            whole = next((p for p in sorted(self.paths) if path.startswith(p + ".")), None)
+            if whole:
+                return (f"{shown} is part of one fact: write {{{{{whole}}}}} instead, which "
+                        "prints it whole (an amount with its currency)")
+            if isinstance(value, BaseModel):
+                return (f"{shown} is a whole {type(value).__name__}, not one fact: add the "
+                        "field, such as .name or .date")
+            return f"{shown} is not one fact this case can print"
+        if value == "":
             return f"{shown} is empty in this case"
         return None
 

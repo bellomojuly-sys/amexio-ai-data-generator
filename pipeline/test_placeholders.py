@@ -52,7 +52,7 @@ def only(problems, *words):
 def test_placeholders_that_resolve_and_no_typed_facts_pass(jan):
     text = ("On {{events.EVT-001.date}}, {{ personas.P002.name }} welcomed "
             "{{personas.P001.name}} at {{organisations.ORG-01.name}} for "
-            "{{employments.P001.salary.amount}} a month.")
+            "{{employments.P001.salary}} a month.")
     assert text_problems(text, jan) == []
 
 
@@ -80,8 +80,28 @@ def test_a_whole_object_is_not_one_fact(jan):
     only(text_problems("{{personas.P001}} started.", jan), "whole Persona", "not one fact")
 
 
+def test_an_internal_id_fails_as_fill_refuses_it(jan):
+    only(text_problems("{{personas.P001.id}} started.", jan), "an internal ID")
+
+
+def test_part_of_an_amount_fails_and_names_the_whole_amount(jan):
+    """Fill would print "4350"; the whole amount prints "EUR 4.350" (case model AX-025)."""
+    only(text_problems("{{employments.P001.salary.amount}} a month.", jan),
+         "part of one fact", "{{employments.P001.salary}}")
+
+
+def test_the_check_accepts_exactly_what_fill_prints(jan):
+    """Every fact the case model lists (AX-023) passes, and Fill fills it."""
+    from case_model.fill import fact_paths, fill_text
+    for path in fact_paths(jan):
+        text = f"{{{{{path}}}}}"
+        problems = [p for p in text_problems(text, jan) if "typed out" not in p]
+        assert problems == [] or problems == [f"{text} is empty in this case"], (path, problems)
+        fill_text(jan, text)
+
+
 def test_an_empty_fact_fails(jan):
-    only(text_problems("Born on {{personas.P001.date_of_birth}}.", jan), "empty in this case")
+    only(text_problems("Born on {{personas.P001.date_of_birth}}.", jan), "holds no value")
 
 
 @pytest.mark.parametrize("text", ["{{personas.P001.name} wrote.", "{personas.P001.name} wrote.",

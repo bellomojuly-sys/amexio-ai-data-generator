@@ -356,7 +356,7 @@ def _placeholders(event) -> dict:
         refs.update(year=_ref(event.id, "year"), rating=_ref(event.id, "rating"))
     elif event.type == "contract_change":
         for key, field, value in (("newPosition", "new_position", event.new_position),
-                                  ("newSalary", "new_salary.amount", event.new_salary),
+                                  ("newSalary", "new_salary", event.new_salary),   # prints "EUR 4.350"
                                   ("newContractType", "new_contract_type", event.new_contract_type),
                                   ("newHours", "new_hours", event.new_hours)):
             if value is not None:

@@ -5,6 +5,7 @@ with the fake answers; the signatures, batches and checks are tested in
 ``test_generation.py``."""
 
 import pytest
+from case_model.fill import fact_paths
 
 from pipeline import fake_answers
 from pipeline.chain import run_chain
@@ -146,9 +147,12 @@ def test_document_text_sees_every_fact_as_a_placeholder(run_request):
     for prompt in prompts:
         request = request_of(prompt)
         case = cases[request["employeeNumber"]]
+        printable = set(fact_paths(case))          # what the case model's Fill prints (AX-023)
         for doc in request["documents"]:
             event = case.events[doc["eventId"]]
             assert doc["date"] == doc["placeholders"]["date"] == f"{{{{events.{event.id}.date}}}}"
+            for placeholder in doc["placeholders"].values():
+                assert placeholder.strip("{}") in printable, placeholder
             assert doc["write"].keys() == set(doc["sections"])
             if event.type == "appraisal":
                 assert doc["about"]["rating"] == event.rating
