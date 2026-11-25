@@ -6,7 +6,7 @@ __pycache__/
 #mock data
 generated_mock_data/
 
-# API keys stay out of git (pipeline contract v1.1 §8): a local .env holds them
+# secrets: keys live only in environment variables (see pipeline/README.md)
 .env
 .env.*
 !.env.example

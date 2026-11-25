@@ -60,6 +60,7 @@ On D3a (payslips and annual statements without an event): agreed, and the demo f
 
 1. **Documents.** `ingest` writes `documents: {}`; `toCase` writes one document per PDF (type, `event_id`, participants, metadata). When a case has no documents, the demo's templates decide which exist (as for the reference case); when it has documents, the case decides.
 2. **An appraisal signed by someone other than P002.** When the department manager was not employed on 30 June (hired later, or left), the demo has the director sign, and `toCase` adds the director as a second manager persona (P004). `ingest` cannot express this: it always uses P002. It does not occur in the fixtures. **Question:** fine as is, or should the storyline input get a way to say who signs?
+   **Answer (Giulia, BR-16 Q1, approved by the team):** yes, the input says who signs. Case model v1.2 adds an optional `signed_by` (persona ID) on every event and `signedBy` in the storylines input; step 5 Dates & participants sets it (the manager at the event date, the director when the manager has left); a signer the case does not hold is refused. See `docs/PIPELINE_CONTRACT.md` §6. Built in H4.
 3. **Raw model answers in R2.** They would not give the same cases: the demo numbers employees by hire date, fixes values `ingest` refuses (a position outside the list, a salary outside the range), and adds the medical checks and appraisal years. So R2 writes the checked facts, which `ingest` turns into exactly the demo's cases. The raw answers stay visible in the app; I can add them to the ZIP if you want them.
 4. **Names.** A case holds one name; the reader splits it at the first space for display only. Printed names are unchanged.
 5. **Run settings are not facts.** Period (as-of date), document types, one-per-type or full history, version control, Dutch titles, `create`/`sync` and the update node come from the run configuration, not from the case. BR-14 renders the reference case with AMEXIO's example settings.
@@ -91,6 +92,8 @@ Everything else a document prints is a stored fact. "Rule" means derived when th
 | import.xml | createdby, owner, mime, category, ACL, version control, action, language titles | Target profile and run settings | Run configuration |
 
 Tags and confidentiality are now stored per document (`documents[].metadata`), from the document type specs, which match AMEXIO's `import.xml`. Your README says document metadata comes after BR-00: **question:** keep it in the demo's cases until then, or leave `documents` empty?
+
+**Answer (Giulia, BR-16 Q2, approved by the team):** keep the document metadata in the demo's cases. `documents[].metadata` stays as `toCase` writes it, from the document type specs; BR-00 later checks it against AMEXIO's files.
 
 ## Try it
 

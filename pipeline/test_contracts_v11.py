@@ -200,6 +200,87 @@ def test_plot_outline_refuses_more_than_ten_slots():
         PlotOutline.model_validate({"outlines": [{"employeeNumber": "100101", "slots": slots}]})
 
 
+# H3: one refusal per §5 rule that only the schema snapshot caught, or nothing.
+
+def _one_slot(slot):
+    return {"outlines": [{"employeeNumber": "100101", "slots": [{"slot": "S01", **slot}]}]}
+
+
+def _locs(exc):
+    return [".".join(str(p) for p in e["loc"]) for e in exc.value.errors()]
+
+
+def test_plot_outline_refuses_an_outline_without_slots():
+    with pytest.raises(ValidationError) as exc:
+        PlotOutline.model_validate({"outlines": [{"employeeNumber": "100101", "slots": []}]})
+    assert _locs(exc) == ["outlines.0.slots"]
+    assert "at least 1" in _errors(exc)
+
+
+def test_plot_outline_refuses_a_slot_key_not_made_by_code():
+    with pytest.raises(ValidationError) as exc:
+        PlotOutline.model_validate({"outlines": [{"employeeNumber": "100101", "slots": [
+            {"slot": "first", "type": "medical_check"}]}]})
+    assert _locs(exc) == ["outlines.0.slots.0.medical_check.slot"]
+
+
+def test_plot_outline_refuses_a_participant():
+    with pytest.raises(ValidationError) as exc:
+        PlotOutline.model_validate(_one_slot({"type": "appraisal", "year": 2025,
+                                              "rating": "Meets expectations",
+                                              "signedBy": "P002"}))
+    assert _locs(exc) == ["outlines.0.slots.0.appraisal.signedBy"]
+
+
+def test_plot_outline_refuses_an_id_under_another_name():
+    with pytest.raises(ValidationError) as exc:
+        PlotOutline.model_validate(_one_slot({"type": "medical_check", "eventId": "EVT-001"}))
+    assert _locs(exc) == ["outlines.0.slots.0.medical_check.eventId"]
+
+
+def test_plot_outline_refuses_a_termination_reason_outside_the_list():
+    with pytest.raises(ValidationError) as exc:
+        PlotOutline.model_validate(_one_slot({"type": "termination", "reason": "Bored"}))
+    assert _locs(exc) == ["outlines.0.slots.0.termination.reason"]
+
+
+def test_plot_outline_refuses_a_contract_change_kind_outside_the_list():
+    with pytest.raises(ValidationError) as exc:
+        PlotOutline.model_validate(_one_slot({"type": "contract_change", "change": "demotion"}))
+    assert _locs(exc) == ["outlines.0.slots.0.contract_change.change"]
+
+
+def test_plot_outline_refuses_a_new_position_without_a_promotion():
+    with pytest.raises(ValidationError, match="newPosition only on a promotion"):
+        PlotOutline.model_validate(_one_slot({"type": "contract_change", "change": "salary_review",
+                                              "newPosition": "IT Manager"}))
+
+
+def test_plot_outline_refuses_a_training_of_zero_days():
+    with pytest.raises(ValidationError) as exc:
+        PlotOutline.model_validate(_one_slot({"type": "training", "durationDays": 0}))
+    assert _locs(exc) == ["outlines.0.slots.0.training.durationDays"]
+
+
+def test_plot_outline_refuses_two_terminations():
+    with pytest.raises(ValidationError, match="more than one termination"):
+        PlotOutline.model_validate({"outlines": [{"employeeNumber": "100101", "slots": [
+            {"slot": "S01", "type": "termination", "reason": "Resignation"},
+            {"slot": "S02", "type": "termination", "reason": "Resignation"}]}]})
+
+
+def test_plot_outline_refuses_two_outlines_for_one_employee():
+    case = OUTLINE["outlines"][0]
+    with pytest.raises(ValidationError, match="employeeNumber '100101' appears twice"):
+        PlotOutline.model_validate({"outlines": [case, case]})
+
+
+def test_plot_outline_refuses_an_empty_run():
+    with pytest.raises(ValidationError) as exc:
+        PlotOutline.model_validate({"outlines": []})
+    assert _locs(exc) == ["outlines"]
+
+
 # --- EventContentIn + check_event_content (§5, fix 3) -------------------------
 
 def test_event_content_accepts_the_contract_example():

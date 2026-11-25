@@ -11,6 +11,7 @@ export type Tags = string[]
 export type ParticipantIds = string[]
 export type Text = (string | null)
 export type Type = ("employment_contract" | "payslip" | "medical_check" | "performance_appraisal" | "training_certificate" | "contract_amendment" | "annual_income_statement" | "absence_report" | "termination_letter")
+export type Domain = string
 export type Description = (string | null)
 export type EmployeeNumber = string
 export type FolderTitle = (string | null)
@@ -28,6 +29,7 @@ export type Date = string
 export type Id1 = string
 export type Label = (string | null)
 export type ParticipantIds1 = string[]
+export type SignedBy = (string | null)
 export type Summary = (string | null)
 export type Type1 = "hire"
 export type Date1 = string
@@ -38,6 +40,7 @@ export type NewHours = (number | null)
 export type NewPosition = (string | null)
 export type ParticipantIds2 = string[]
 export type Reason = string
+export type SignedBy1 = (string | null)
 export type Summary1 = (string | null)
 export type Type2 = "contract_change"
 export type Course = string
@@ -47,6 +50,7 @@ export type Id3 = string
 export type Label2 = (string | null)
 export type ParticipantIds3 = string[]
 export type ProviderId = string
+export type SignedBy2 = (string | null)
 export type Summary2 = (string | null)
 export type Type3 = "training"
 export type Comment = (string | null)
@@ -55,6 +59,7 @@ export type Id4 = string
 export type Label3 = (string | null)
 export type ParticipantIds4 = string[]
 export type Rating = ("Below expectations" | "Meets expectations" | "Exceeds expectations")
+export type SignedBy3 = (string | null)
 export type Summary3 = (string | null)
 export type Type4 = "appraisal"
 export type Year = number
@@ -63,6 +68,7 @@ export type Id5 = string
 export type Label4 = (string | null)
 export type ParticipantIds5 = string[]
 export type Result = ("Fit for work" | "Fit for work with adjustments")
+export type SignedBy4 = (string | null)
 export type Summary4 = (string | null)
 export type Type5 = "medical_check"
 export type Date5 = string
@@ -70,6 +76,7 @@ export type EndDate = (string | null)
 export type Id6 = string
 export type Label5 = (string | null)
 export type ParticipantIds6 = string[]
+export type SignedBy5 = (string | null)
 export type Summary5 = (string | null)
 export type Type6 = "absence"
 export type Date6 = string
@@ -78,8 +85,10 @@ export type Label6 = (string | null)
 export type NoticeDate = (string | null)
 export type ParticipantIds7 = string[]
 export type Reason1 = ("Resignation" | "End of temporary contract" | "Mutual agreement" | "Retirement")
+export type SignedBy6 = (string | null)
 export type Summary6 = (string | null)
 export type Type7 = "termination"
+export type Facts = null
 export type Address = (string | null)
 export type Id8 = string
 export type Kind = (string | null)
@@ -99,14 +108,17 @@ export type Salutation = (string | null)
  * single call: each part is filed under its own well-formed ID, every job
  * and event points at a persona or organisation the Case holds, every
  * document points at an event the Case holds, and the events tell a
- * possible story.
+ * possible story. Since v2.0 the event types, document types, roles and the
+ * rules between events come from the configuration of the case's domain.
  */
 export interface Case {
 case_number: CaseNumber
 documents?: Documents
+domain?: Domain
 dossier: Dossier
 employments?: Employments
 events?: Events
+facts?: Facts
 organisations?: Organisations
 personas?: Personas
 }
@@ -126,8 +138,6 @@ text?: Text
 type: Type
 }
 /**
- * AMEXIO's five metadata attributes for a document.
- * 
  * This interface was referenced by `Case`'s JSON-Schema
  * via the `definition` "DocumentMetadata".
  */
@@ -139,7 +149,8 @@ employee_id: EmployeeId
 tags?: Tags
 }
 /**
- * Dossier-level facts (AX-009). Without an employee number it fails.
+ * Dossier-level facts (AX-009). The key number (``employee_number`` for
+ * HR) must match the pattern of the case's domain; HR: six digits.
  * 
  * This interface was referenced by `Case`'s JSON-Schema
  * via the `definition` "Dossier".
@@ -195,6 +206,7 @@ date: Date
 id: Id1
 label?: Label
 participant_ids: ParticipantIds1
+signed_by?: SignedBy
 summary?: Summary
 type: Type1
 }
@@ -212,6 +224,7 @@ new_position?: NewPosition
 new_salary?: (Money | null)
 participant_ids: ParticipantIds2
 reason: Reason
+signed_by?: SignedBy1
 summary?: Summary1
 type: Type2
 }
@@ -227,6 +240,7 @@ id: Id3
 label?: Label2
 participant_ids: ParticipantIds3
 provider_id: ProviderId
+signed_by?: SignedBy2
 summary?: Summary2
 type: Type3
 }
@@ -241,6 +255,7 @@ id: Id4
 label?: Label3
 participant_ids: ParticipantIds4
 rating: Rating
+signed_by?: SignedBy3
 summary?: Summary3
 type: Type4
 year: Year
@@ -255,6 +270,7 @@ id: Id5
 label?: Label4
 participant_ids: ParticipantIds5
 result: Result
+signed_by?: SignedBy4
 summary?: Summary4
 type: Type5
 }
@@ -270,6 +286,7 @@ end_date?: EndDate
 id: Id6
 label?: Label5
 participant_ids: ParticipantIds6
+signed_by?: SignedBy5
 summary?: Summary5
 type: Type6
 }
@@ -286,6 +303,7 @@ label?: Label6
 notice_date?: NoticeDate
 participant_ids: ParticipantIds7
 reason: Reason1
+signed_by?: SignedBy6
 summary?: Summary6
 type: Type7
 }

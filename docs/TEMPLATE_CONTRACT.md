@@ -40,6 +40,14 @@ run.
 
 ## 1. Every placeholder is one of two kinds
 
+### Placeholder binding rules (AX-021a)
+
+1. Each placeholder gets its information from a specific field in the case data.
+2. If the same information is used multiple times, it always shows the same value.
+3. The way information looks can change (like date formats), but the actual information stays the same.
+4. Before creating a document, the system checks if all placeholders are linked to the right information.
+5. All generated documents must use the same case information so everything stays consistent.
+
 ### 1.1 Catalogue field: the backend already knows it
 
 The placeholder points to a field of Robin's spec for that document type:

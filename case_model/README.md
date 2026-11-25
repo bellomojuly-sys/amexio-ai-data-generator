@@ -1,7 +1,11 @@
-# Case model — module contract (version 1.1)
+# Case model — module contract (version 2.1)
 
-Owner: Giulia Bellomo. Status: v1.1 on `main` (merged 25 October 2026, PR #1,
-tag `v1.1`); v1 is tag `v1`. What changed and why: [v1 → v1.1](#v1--v11).
+Owner: Giulia Bellomo. Status: v2.1 (25 November 2026): the lists come from a
+domain configuration, so the case model works for any domain; HR is the first.
+v2.1 adds case facts, domain metadata, employment and organisation kinds per
+domain, and the generator of fact values.
+v1.2 added `signed_by`; v1.1 is tag `v1.1`, v1 is tag `v1`. What changed and
+why: [v1 → v1.1](#v1--v11), [v1.1 → v1.2](#v11--v12), [v1.2 → v2.0](#v12--v20).
 
 ## What it is for
 
@@ -64,7 +68,8 @@ Document metadata carries AMEXIO's five attributes: `employee_id`,
 `document_type`, `document_date`, `confidential`, `tags`.
 
 **Events (v1.1).** Every event has `id`, `type`, `date`, `participant_ids` and
-optional `label`, `summary`. The `type` picks the class and its own facts:
+optional `label`, `summary`, and since v1.2 an optional `signed_by`: the persona
+who signs the event's documents (a persona of the case). The `type` picks the class and its own facts:
 
 | `type` | Own facts |
 |---|---|
@@ -215,6 +220,12 @@ assert load_case("runs/100101") == case
 - An ID from the caller (AX-012).
 - An unknown participant, organisation or event — the link is checked when the
   part is added and again when the `Case` is built.
+- An event signed by a persona the case does not hold (`signed_by`, v1.2).
+- A part that is still referenced cannot disappear: a case whose JSON lost a
+  persona, organisation or event that something points at is refused (AX-069).
+
+Every refusal names the entity and the field, e.g. `Event EVT-003 references
+unknown persona 'P002' (field participant_ids)` (AX-070).
 - A date that is not ISO 8601 (AX-013); an amount as formatted text (AX-014).
 - A dossier without an employee number, or a missing required field — a
   validation error names the field.
@@ -241,6 +252,91 @@ assert load_case("runs/100101") == case
 | Ingest of the generator's JSON + command | the generator's data passes through the case model (D4) | `test_ingest.py` |
 | Reference dossier = AMEXIO's 100101, through ingest | D1 | `test_reference_dossier.py` |
 | JSON Schemas; fixtures test | the browser demo builds its types from them (BR-10, BR-11) | `test_fixtures.py` |
+
+## Filling a text (M04, AX-023 … AX-025)
+
+The Fill step (step 8, Valentin) writes a document text by replacing each
+`{{ path }}` with a fact of the case. `case_model.fill` guarantees three things:
+
+```python
+from case_model import fact_paths, fill_text, format_fact
+fact_paths(case)        # every path that prints one fact: offer these in the prompt
+fill_text(case, "Dear {{ personas.P001.name }}, salary {{ employments.P001.salary }}.")
+# "Dear Jan de Vries, salary EUR 4.350."
+fill_text(case, text, {"employments.P001.salary": "eurPlain"})   # format from the template field
+```
+
+- **AX-023 — every placeholder resolves.** `fact_paths` lists only paths that
+  resolve to one printable value; internal IDs (`id`, `persona_id`,
+  `signed_by`, …) are never offered.
+- **AX-024 — or the run stops.** `fill_text` raises `UnresolvedPlaceholders`
+  naming every placeholder at once that is unknown, has no value, names several
+  values, points at an internal ID, or is malformed. Never a silent blank.
+- **AX-025 — formatted only when printed.** `format_fact` uses AMEXIO's formats,
+  the same as the generator's `src/spec/format.ts`: `date` 14-04-2026,
+  `monthYear` September 2026, `eurGrouped` EUR 4.350, `eurPlain` EUR 4350,
+  `days` 2 days. Without a format, a date prints as `date` and an amount as
+  `eurGrouped`. The case keeps ISO dates and numeric amounts.
+
+## v2.0 → v2.1: case facts and the rest of the configuration
+
+| A domain configuration may also hold | What it does | HR |
+|---|---|---|
+| `case_facts` | facts of the whole case (a policy number, a "fact" field of a template), stored once in `case.facts`, read as `facts.<name>` by every document | none |
+| `metadata_fields` | document metadata beyond AMEXIO's five attributes; any other key is refused | none |
+| `uses_employment` | only such a domain may hold `Employment` | yes |
+| `organisation_kinds` | the kinds an organisation may have (None = free) | free |
+| field `min`, `max`, `currency` | bounds and currency of a value; also the rule facts are generated from | — |
+
+```python
+from case_model.facts import generate_facts
+facts = generate_facts(domain, random.Random(seed), given={"policy_number": "HP-2019-0777"})
+case.set_facts(**facts.model_dump())
+```
+
+`generate_facts` makes every declared fact by its rule (a value from the list,
+an amount or a date between min and max); a given value (a constant of the
+approved configuration) wins and is checked; free text is never generated (it
+is the LLM's to write). Tests: `test_facts.py`.
+
+## v1.2 → v2.0: any domain
+
+Until v1.2 the HR lists were code. Since v2.0 they are a `DomainConfig`
+(`case_model/domain.py`); HR is `case_model.domains.HR`, the same lists as
+before, and every HR file is saved byte for byte as before.
+
+| A domain configuration holds | HR |
+|---|---|
+| `roles` | employee, manager, hr_officer, examiner |
+| `event_types`: per type its fields, each with a `format` (text, date, money, integer, number, persona, organisation), `required`, closed `values`, `gt`, `ends_period`, `label` | the 7 types of v1.1 |
+| `document_types`, each `recurring` or not | the 9 types; payslip and annual income statement recurring |
+| `rules`: `first_event` (at most one, nothing before it), `first_event_starts_employment`, `last_event` (at most one, nothing after it), `last_event_label` | hire, termination ("last working day") |
+| `case_number_pattern` | six digits |
+
+```python
+from case_model import CaseModel, DomainConfig, register_domain
+register_domain(DomainConfig.model_validate(config_json))   # checked first: a malformed one is refused
+case = CaseModel("CL000123", domain="insurance_claim")
+```
+
+- From the configuration the code builds one event class per type
+  (`AppraisalEvent`, `ClaimFiledEvent`, …): fields are typed, a field the type
+  does not define is refused, a reference field must point at a persona or
+  organisation of the case.
+- A case carries its `domain`; `case.json` writes it only when it is not HR.
+- `case.schema.json` is HR's typed schema (the demo's types);
+  `domain.schema.json` is the shape of a domain configuration.
+- Tests: `test_domains.py` (HR = v1.2's lists, malformed configurations, a
+  second domain with its own timeline, rules, save/load and fill).
+
+## v1.1 → v1.2
+
+| Change | Why | Test |
+|---|---|---|
+| Optional `signed_by` (persona ID) on every event; `signedBy` in the storylines input | who signs an appraisal when the manager has left (BR-16 Q1, pipeline contract §6); set by step 5 Dates & participants | `test_signed_by.py` |
+
+A v1.1 case still loads and is saved byte for byte as before: an empty
+`signed_by` is not written.
 
 ## Fact lookup (AX-022)
 

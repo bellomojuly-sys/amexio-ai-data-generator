@@ -1,4 +1,4 @@
-"""AMEXIO case model — version 1.1.
+"""AMEXIO case model — version 2.0 (lists from a domain configuration).
 
 The single place where the facts of one dossier live. Import the parts and
 the builder from here:
@@ -7,23 +7,27 @@ the builder from here:
 """
 
 from .case_model import (
-    AbsenceEvent,
-    AppraisalEvent,
     Case,
     CaseModel,
     Document,
     DocumentMetadata,
     Dossier,
-    ContractChangeEvent,
     Employment,
     Event,
-    HireEvent,
-    MedicalCheckEvent,
     Organisation,
     Persona,
-    TerminationEvent,
-    TrainingEvent,
 )
+from .domain import DomainConfig, EventBase, get_domain, register_domain
+from .domains import HR
+
+# The HR event classes, built from the HR configuration (v2.0); same names as v1.x.
+HireEvent = HR.event_classes["hire"]
+ContractChangeEvent = HR.event_classes["contract_change"]
+TrainingEvent = HR.event_classes["training"]
+AppraisalEvent = HR.event_classes["appraisal"]
+MedicalCheckEvent = HR.event_classes["medical_check"]
+AbsenceEvent = HR.event_classes["absence"]
+TerminationEvent = HR.event_classes["termination"]
 from .format_rules import (
     Money,
     is_valid_employee_number,
@@ -32,6 +36,7 @@ from .format_rules import (
     reject_caller_id,
     validate_id,
 )
+from .fill import UnresolvedPlaceholders, fact_paths, fill_text, format_fact
 from .lookup import UnknownPath, get_fact
 
 __all__ = [
@@ -59,4 +64,13 @@ __all__ = [
     "validate_id",
     "get_fact",
     "UnknownPath",
+    "DomainConfig",
+    "EventBase",
+    "get_domain",
+    "register_domain",
+    "HR",
+    "fact_paths",
+    "fill_text",
+    "format_fact",
+    "UnresolvedPlaceholders",
 ]

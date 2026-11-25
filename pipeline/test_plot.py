@@ -74,3 +74,85 @@ def test_a_new_hire_still_gets_one_slot(config):
 def test_the_same_seed_gives_the_same_plot(config):
     cm = _cm(config)
     assert plot(cm, config, 5) == plot(cm, config, 5)
+
+
+# H3: the coherence rules of the plot, each with a test that fails for it.
+
+class _Extreme:
+    """A loaded die: always the most of everything. Every training, every
+    "Exceeds expectations", every absence, so each rule surely fires."""
+
+    def randint(self, a, b):
+        return b
+
+    def choices(self, population, weights, k):
+        return [population[-1]] * k
+
+    def random(self):
+        return 0.0
+
+
+def _case(config, years, contract="Permanent", position="Software Developer"):
+    case = _cm(config).cases[1].model_copy(deep=True)
+    job = case.employments[0]
+    job.start_date = config.as_of_date - dt.timedelta(days=round(years * 365.25))
+    job.contract_type = contract
+    job.position = position
+    return case
+
+
+def _types(out):
+    return [s["type"] for s in out["slots"]]
+
+
+class _Calm(_Extreme):
+    """The opposite die: no training, "Meets expectations", no absence, so
+    the slots are few and the cut at ten slots cannot hide a rule."""
+
+    def randint(self, a, b):
+        return a
+
+    def choices(self, population, weights, k):
+        return [population[1]] * k
+
+    def random(self):
+        return 0.99
+
+
+def test_at_most_the_last_four_appraisals(config):
+    out = outline_case(_case(config, 10), config, _Calm())
+    years = [s["year"] for s in out["slots"] if s["type"] == "appraisal"]
+    assert years == [2023, 2024, 2025, 2026]
+
+
+def test_over_ten_slots_the_oldest_appraisal_goes_first(config):
+    out = outline_case(_case(config, 10, contract="Temporary"), config, _Extreme())
+    assert len(out["slots"]) == 10
+    assert [s["year"] for s in out["slots"] if s["type"] == "appraisal"] == [2024, 2025, 2026]
+    assert "absence" in _types(out)
+
+
+def test_a_temporary_contract_under_a_year_stays_temporary(config):
+    out = outline_case(_case(config, 0.5, contract="Temporary"), config, _Extreme())
+    assert not any(s.get("change") == "made_permanent" for s in out["slots"])
+
+
+def test_no_salary_review_in_the_first_year(config):
+    out = outline_case(_case(config, 0.5), config, _Extreme())
+    assert not any(s.get("change") == "salary_review" for s in out["slots"])
+
+
+def test_no_medical_check_before_two_years(config):
+    out = outline_case(_case(config, 1.5), config, _Extreme())
+    assert "medical_check" not in _types(out)
+
+
+def test_no_promotion_to_a_manager_position(config):
+    out = outline_case(_case(config, 5, position="Senior Software Developer"), config, _Extreme())
+    assert not any(s.get("change") == "promotion" for s in out["slots"])
+
+
+def test_every_new_hire_gets_a_slot_whatever_the_seed(config):
+    case = _case(config, 10 / 365.25)
+    for seed in range(20):
+        assert outline_case(case, config, random.Random(seed))["slots"], f"seed {seed}"
