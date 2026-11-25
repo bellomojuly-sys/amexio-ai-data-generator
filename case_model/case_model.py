@@ -25,7 +25,9 @@ from datetime import date
 
 from pydantic import BaseModel, Field, SerializeAsAny, model_validator
 
-from .domain import REFERENCE_FORMATS, EventBase, get_domain
+from pydantic import ConfigDict, create_model
+
+from .domain import REFERENCE_FORMATS, EventBase, bounds_validator, field_definitions, get_domain
 from .domains import HR  # registers the HR domain
 from .format_rules import ContractType, Money, next_id, reject_caller_id, validate_id
 
@@ -68,7 +70,10 @@ class Employment(BaseModel):
 
 
 class DocumentMetadata(BaseModel):
-    """AMEXIO's five metadata attributes for a document."""
+    """AMEXIO's five metadata attributes for a document. A domain may add its
+    own (``metadata_fields``, v2.1); any other key is refused."""
+
+    model_config = ConfigDict(extra="forbid")
 
     employee_id: str
     # One of the document types of the case's domain (v2.0).
@@ -87,7 +92,44 @@ class Document(BaseModel):
     participant_ids: list[str]
     # Derived from the facts when needed; not a second copy of them (D3b).
     text: str | None = None
-    metadata: DocumentMetadata
+    metadata: SerializeAsAny[DocumentMetadata]
+
+
+_METADATA_CLASSES: dict[str, type[DocumentMetadata]] = {}
+
+
+def metadata_class(domain) -> type[DocumentMetadata]:
+    """AMEXIO's five attributes plus the domain's own metadata fields (v2.1)."""
+    if not domain.metadata_fields:
+        return DocumentMetadata
+    key = f"{domain.name}@{domain.version}"
+    if key not in _METADATA_CLASSES:
+        _METADATA_CLASSES[key] = create_model(
+            "".join(p.capitalize() for p in domain.name.split("_")) + "DocumentMetadata",
+            __base__=DocumentMetadata,
+            __validators__={"_bounds": bounds_validator(domain.metadata_fields)},
+            **field_definitions(domain.metadata_fields),
+        )
+    return _METADATA_CLASSES[key]
+
+
+def _metadata_of(domain, metadata):
+    cls = metadata_class(domain)
+    if type(metadata) is cls:
+        return metadata
+    raw = metadata.model_dump() if isinstance(metadata, BaseModel) else metadata
+    return cls.model_validate(raw)
+
+
+def _facts_of(domain, facts):
+    if facts is None:
+        return None
+    if domain.facts_class is None:
+        raise ValueError(f"Domain {domain.name} declares no case facts (field facts).")
+    if type(facts) is domain.facts_class:
+        return facts
+    raw = facts.model_dump() if isinstance(facts, BaseModel) else facts
+    return domain.facts_class.model_validate(raw)
 
 
 class Dossier(BaseModel):
@@ -130,6 +172,9 @@ class Case(BaseModel):
     # The case's domain (v2.0). Not written for HR, so HR files stay as before.
     domain: str = Field(default="hr", exclude_if=lambda value: value == "hr")
     dossier: Dossier
+    # v2.1 — the facts of the whole case its domain declares (``case_facts``),
+    # stored once; not written when the domain declares none (HR).
+    facts: SerializeAsAny[BaseModel] | None = Field(default=None, exclude_if=lambda value: value is None)
     personas: dict[str, Persona] = Field(default_factory=dict)
     organisations: dict[str, Organisation] = Field(default_factory=dict)
     employments: list[Employment] = Field(default_factory=list)
@@ -141,10 +186,23 @@ class Case(BaseModel):
     def _events_of_the_domain(cls, data):
         """Each event becomes the class its domain gives its type, so an
         appraisal without a rating, or a type the domain lacks, is refused."""
-        if isinstance(data, dict) and isinstance(data.get("events"), dict):
-            domain = get_domain(data.get("domain") or "hr")
+        if not isinstance(data, dict):
+            return data
+        domain = get_domain(data.get("domain") or "hr")
+        if isinstance(data.get("events"), dict):
             data = {**data, "events": {key: _event_of(domain, event)
                                        for key, event in data["events"].items()}}
+        if isinstance(data.get("documents"), dict):
+            documents = {}
+            for key, doc in data["documents"].items():
+                if isinstance(doc, dict) and "metadata" in doc:
+                    doc = {**doc, "metadata": _metadata_of(domain, doc["metadata"])}
+                elif isinstance(doc, Document):
+                    doc = doc.model_copy(update={"metadata": _metadata_of(domain, doc.metadata)})
+                documents[key] = doc
+            data = {**data, "documents": documents}
+        if data.get("facts") is not None:
+            data = {**data, "facts": _facts_of(domain, data["facts"])}
         return data
 
     @model_validator(mode="after")
@@ -152,6 +210,20 @@ class Case(BaseModel):
         domain = get_domain(self.domain)
         if not domain.is_case_number(self.dossier.employee_number):
             raise ValueError(_case_number_error(domain, self.dossier.employee_number))
+        missing = [n for n, spec in domain.case_facts.items()
+                   if spec.required and (self.facts is None or getattr(self.facts, n) is None)]
+        if missing:
+            raise ValueError(f"Case {self.case_number} misses the case facts "
+                             f"{', '.join(missing)} (field facts).")
+        if self.employments and not domain.uses_employment:
+            raise ValueError(f"Domain {domain.name} has no employment; remove it (field employments).")
+        if domain.organisation_kinds is not None:
+            for oid, org in self.organisations.items():
+                if org.kind not in domain.organisation_kinds:
+                    raise ValueError(
+                        f"Organisation {oid} has kind {org.kind!r}, not one of "
+                        f"{', '.join(domain.organisation_kinds)} (field kind)."
+                    )
 
         for collection, label, kind in (
             (self.personas, "Persona", "persona"),
@@ -312,6 +384,7 @@ class CaseModel:
         self.case_number = case_number
         self.domain = get_domain(domain)
         self.dossier = None
+        self.facts = None
         self.personas = {}
         self.organisations = {}
         self.employments = []
@@ -324,6 +397,7 @@ class CaseModel:
         storyline to the cases made from the employees JSON."""
         builder = cls(case.case_number, case.domain)
         builder.dossier = case.dossier
+        builder.facts = case.facts
         builder.personas = dict(case.personas)
         builder.organisations = dict(case.organisations)
         builder.employments = list(case.employments)
@@ -339,8 +413,18 @@ class CaseModel:
         self.dossier = dossier
         return self.dossier
 
+    def set_facts(self, **fields):
+        """The case facts the domain declares (v2.1), checked against their formats."""
+        reject_caller_id(fields)
+        self.facts = _facts_of(self.domain, fields)
+        return self.facts
+
     def add_organisation(self, **fields):
         reject_caller_id(fields)
+        kinds = self.domain.organisation_kinds
+        if kinds is not None and fields.get("kind") not in kinds:
+            raise ValueError(f"Unknown organisation kind: {fields.get('kind')!r}, not one of "
+                             f"{', '.join(kinds)} (field kind)")
         new_id = next_id("organisation", self.organisations)
         self.organisations[new_id] = Organisation(id=new_id, **fields)
         return new_id
@@ -361,6 +445,8 @@ class CaseModel:
 
     def add_employment(self, **fields):
         reject_caller_id(fields)
+        if not self.domain.uses_employment:
+            raise ValueError(f"Domain {self.domain.name} has no employment (field employments)")
         if fields["persona_id"] not in self.personas:
             raise ValueError(f"Unknown persona: {fields['persona_id']} (field persona_id)")
         if fields["organisation_id"] not in self.organisations:
@@ -404,6 +490,8 @@ class CaseModel:
         for pid in fields["participant_ids"]:
             if pid not in self.personas:
                 raise ValueError(f"Unknown persona: {pid} (field participant_ids)")
+        if "metadata" in fields:
+            fields = {**fields, "metadata": _metadata_of(self.domain, fields["metadata"])}
         new_id = next_id("document", self.documents)
         self.documents[new_id] = Document(id=new_id, **fields)
         return new_id
@@ -415,6 +503,7 @@ class CaseModel:
             case_number=self.case_number,
             domain=self.domain.name,
             dossier=self.dossier,
+            facts=self.facts,
             personas=self.personas,
             organisations=self.organisations,
             employments=self.employments,

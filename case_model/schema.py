@@ -24,7 +24,7 @@ from typing import Annotated, Literal, Union
 
 from pydantic import Field, create_model
 
-from .case_model import Case, Document, DocumentMetadata, Persona
+from .case_model import Case, Document, DocumentMetadata, Persona, metadata_class
 from .domain import DomainConfig
 from .domains import HR
 from .ingest import EmployeesIn, StorylinesIn
@@ -37,14 +37,16 @@ def typed_case(domain: DomainConfig):
     role = Literal[tuple(domain.roles)]
     doc_type = Literal[tuple(domain.document_types)]
     persona = create_model("Persona", __base__=Persona, role=(role, ...))
-    metadata = create_model("DocumentMetadata", __base__=DocumentMetadata,
+    metadata = create_model("DocumentMetadata", __base__=metadata_class(domain),
                             document_type=(doc_type, ...))
     document = create_model("Document", __base__=Document, type=(doc_type, ...),
                             metadata=(metadata, ...))
+    facts = (domain.facts_class | None) if domain.facts_class else None
     classes = tuple(domain.event_classes.values())
     event = Annotated[Union[classes], Field(discriminator="type")] if len(classes) > 1 else classes[0]
     return create_model(
         "Case", __base__=Case, __doc__=Case.__doc__,
+        facts=(facts, Field(default=None)),
         personas=(dict[str, persona], Field(default_factory=dict)),
         events=(dict[str, event], Field(default_factory=dict)),
         documents=(dict[str, document], Field(default_factory=dict)),

@@ -1,7 +1,9 @@
-# Case model — module contract (version 2.0)
+# Case model — module contract (version 2.1)
 
-Owner: Giulia Bellomo. Status: v2.0 (24 November 2026): the lists come from a
+Owner: Giulia Bellomo. Status: v2.1 (25 November 2026): the lists come from a
 domain configuration, so the case model works for any domain; HR is the first.
+v2.1 adds case facts, domain metadata, employment and organisation kinds per
+domain, and the generator of fact values.
 v1.2 added `signed_by`; v1.1 is tag `v1.1`, v1 is tag `v1`. What changed and
 why: [v1 → v1.1](#v1--v11), [v1.1 → v1.2](#v11--v12), [v1.2 → v2.0](#v12--v20).
 
@@ -275,6 +277,27 @@ fill_text(case, text, {"employments.P001.salary": "eurPlain"})   # format from t
   `monthYear` September 2026, `eurGrouped` EUR 4.350, `eurPlain` EUR 4350,
   `days` 2 days. Without a format, a date prints as `date` and an amount as
   `eurGrouped`. The case keeps ISO dates and numeric amounts.
+
+## v2.0 → v2.1: case facts and the rest of the configuration
+
+| A domain configuration may also hold | What it does | HR |
+|---|---|---|
+| `case_facts` | facts of the whole case (a policy number, a "fact" field of a template), stored once in `case.facts`, read as `facts.<name>` by every document | none |
+| `metadata_fields` | document metadata beyond AMEXIO's five attributes; any other key is refused | none |
+| `uses_employment` | only such a domain may hold `Employment` | yes |
+| `organisation_kinds` | the kinds an organisation may have (None = free) | free |
+| field `min`, `max`, `currency` | bounds and currency of a value; also the rule facts are generated from | — |
+
+```python
+from case_model.facts import generate_facts
+facts = generate_facts(domain, random.Random(seed), given={"policy_number": "HP-2019-0777"})
+case.set_facts(**facts.model_dump())
+```
+
+`generate_facts` makes every declared fact by its rule (a value from the list,
+an amount or a date between min and max); a given value (a constant of the
+approved configuration) wins and is checked; free text is never generated (it
+is the LLM's to write). Tests: `test_facts.py`.
 
 ## v1.2 → v2.0: any domain
 

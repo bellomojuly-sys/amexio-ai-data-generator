@@ -56,6 +56,12 @@ class FieldSpec(_Strict):
     ends_period: bool = False
     # How a refusal names what a reference points at ("training provider").
     label: str | None = None
+    # Inclusive bounds (v2.1): a number for integer, number and money, an ISO
+    # date for date. They check a value and are the rule code generates from.
+    min: float | dt.date | None = None
+    max: float | dt.date | None = None
+    # The currency of a money field (v2.1); a value in another currency is refused.
+    currency: str | None = None
 
     @model_validator(mode="after")
     def _options_fit_the_format(self):
@@ -65,7 +71,56 @@ class FieldSpec(_Strict):
             raise ValueError("gt needs format 'integer' or 'number'")
         if self.ends_period and self.format != "date":
             raise ValueError("ends_period needs format 'date'")
+        for bound in (self.min, self.max):
+            if bound is None:
+                continue
+            if self.format == "date" and not isinstance(bound, dt.date):
+                raise ValueError("min/max of a date field must be ISO dates")
+            if self.format in ("integer", "number", "money") and isinstance(bound, dt.date):
+                raise ValueError("min/max of a number or money field must be numbers")
+            if self.format not in ("date", "integer", "number", "money"):
+                raise ValueError("min/max need format date, integer, number or money")
+        if self.min is not None and self.max is not None and self.min > self.max:
+            raise ValueError("min must not be above max")
+        if self.currency is not None and (self.format != "money" or not re.fullmatch(r"[A-Z]{3}", self.currency)):
+            raise ValueError("currency needs format 'money' and a 3-letter ISO code")
         return self
+
+
+def check_value(name: str, spec: FieldSpec, value):
+    """The bounds and currency of one typed value (v2.1); raises ValueError naming the field."""
+    if value is None:
+        return
+    if spec.format == "money":
+        if spec.currency and value.currency != spec.currency:
+            raise ValueError(f"{name}: currency {value.currency} is not {spec.currency}")
+        value = value.amount
+    if spec.min is not None and value < (spec.min if not isinstance(value, (int, float)) and spec.format == "date" else type(value)(spec.min)):
+        raise ValueError(f"{name}: {value} is below the minimum {spec.min}")
+    if spec.max is not None and value > (spec.max if not isinstance(value, (int, float)) and spec.format == "date" else type(value)(spec.max)):
+        raise ValueError(f"{name}: {value} is above the maximum {spec.max}")
+
+
+def field_definitions(fields: dict[str, FieldSpec]) -> dict:
+    """pydantic field definitions for ``fields``, typed by their format."""
+    defs = {}
+    for field_name, field in fields.items():
+        kind = Literal[tuple(field.values)] if field.values else _FORMAT_TYPES[field.format]
+        extra = {"reference": field.format} if field.format in REFERENCE_FORMATS else None
+        if field.required:
+            defs[field_name] = (kind, Field(gt=field.gt, json_schema_extra=extra))
+        else:
+            defs[field_name] = (kind | None, Field(default=None, gt=field.gt, json_schema_extra=extra))
+    return defs
+
+
+def bounds_validator(fields: dict[str, FieldSpec]):
+    """A model validator that checks min, max and currency of every field."""
+    def _check(model):
+        for name, spec in fields.items():
+            check_value(name, spec, getattr(model, name))
+        return model
+    return model_validator(mode="after")(_check)
 
 
 class EventTypeSpec(_Strict):
@@ -104,6 +159,12 @@ class StoryRules(_Strict):
     last_event: str | None = None
     # How a refusal names the last event's date ("last working day" for HR).
     last_event_label: str | None = None
+
+
+class _FactsBase(BaseModel):
+    """The facts of a case (v2.1): only the ones its domain declares."""
+
+    model_config = ConfigDict(extra="forbid")
 
 
 class EventBase(BaseModel):
@@ -146,6 +207,15 @@ class DomainConfig(_Strict):
     event_types: dict[str, EventTypeSpec] = Field(min_length=1)
     document_types: dict[str, DocumentTypeSpec] = Field(min_length=1)
     rules: StoryRules = Field(default_factory=StoryRules)
+    # v2.1 — facts of the whole case, stored once in ``case.facts`` and read by
+    # every document (a policy number; a "fact" field of a template).
+    case_facts: dict[str, FieldSpec] = Field(default_factory=dict)
+    # v2.1 — document metadata beyond AMEXIO's five attributes.
+    metadata_fields: dict[str, FieldSpec] = Field(default_factory=dict)
+    # v2.1 — only a domain about jobs uses ``Employment`` (HR does).
+    uses_employment: bool = False
+    # v2.1 — the kinds an organisation may have; None leaves ``kind`` free.
+    organisation_kinds: list[str] | None = None
 
     model_config = ConfigDict(extra="forbid", frozen=True, ignored_types=(cached_property,))
 
@@ -166,6 +236,17 @@ class DomainConfig(_Strict):
                 raise ValueError(f"rules.{rule}: {name!r} is not an event type of this domain")
         if self.rules.first_event_starts_employment and self.rules.first_event is None:
             raise ValueError("rules.first_event_starts_employment needs rules.first_event")
+        if self.rules.first_event_starts_employment and not self.uses_employment:
+            raise ValueError("rules.first_event_starts_employment needs uses_employment")
+        for group, fields in (("case_facts", self.case_facts), ("metadata_fields", self.metadata_fields)):
+            for name, spec in fields.items():
+                if not _NAME.fullmatch(name):
+                    raise ValueError(f"{group}: field name {name!r} must be snake_case")
+                if spec.format in REFERENCE_FORMATS or spec.ends_period:
+                    raise ValueError(f"{group}.{name}: a reference or a period end belongs on an event")
+        if set(self.metadata_fields) & {"employee_id", "document_type", "document_date",
+                                        "confidential", "tags"}:
+            raise ValueError("metadata_fields cannot redefine AMEXIO's five attributes")
         try:
             re.compile(self.case_number_pattern)
         except re.error as error:
@@ -185,20 +266,26 @@ class DomainConfig(_Strict):
         """One pydantic class per event type, built from the configuration."""
         classes = {}
         for name, spec in self.event_types.items():
-            fields = {"type": (Literal[name], ...)}
-            for field_name, field in spec.fields.items():
-                kind = Literal[tuple(field.values)] if field.values else _FORMAT_TYPES[field.format]
-                info = Field(gt=field.gt, json_schema_extra=(
-                    {"reference": field.format} if field.format in REFERENCE_FORMATS else None))
-                if field.required:
-                    fields[field_name] = (kind, info)
-                else:
-                    info = Field(default=None, gt=field.gt, json_schema_extra=info.json_schema_extra)
-                    fields[field_name] = (kind | None, info)
+            fields = {"type": (Literal[name], ...), **field_definitions(spec.fields)}
+            validators = ({"_bounds": bounds_validator(spec.fields)}
+                          if any(f.min is not None or f.max is not None or f.currency
+                                 for f in spec.fields.values()) else None)
             classes[name] = create_model(
-                _class_name(name), __base__=EventBase, __doc__=spec.description, **fields,
+                _class_name(name), __base__=EventBase, __doc__=spec.description,
+                __validators__=validators, **fields,
             )
         return classes
+
+    @cached_property
+    def facts_class(self) -> type[BaseModel] | None:
+        """The class of ``case.facts`` for this domain; None when it declares no facts."""
+        if not self.case_facts:
+            return None
+        return create_model(
+            _class_name(self.name).removesuffix("Event") + "Facts", __base__=_FactsBase,
+            __validators__={"_bounds": bounds_validator(self.case_facts)},
+            **field_definitions(self.case_facts),
+        )
 
     @cached_property
     def event_adapter(self) -> TypeAdapter:

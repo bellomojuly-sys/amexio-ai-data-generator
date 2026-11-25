@@ -252,6 +252,11 @@
           "title": "Events",
           "type": "object"
         },
+        "facts": {
+          "default": null,
+          "title": "Facts",
+          "type": "null"
+        },
         "organisations": {
           "additionalProperties": {
             "$ref": "#/$defs/Organisation"
@@ -494,6 +499,7 @@
       "type": "object"
     },
     "DocumentMetadata": {
+      "additionalProperties": false,
       "properties": {
         "confidential": {
           "title": "Confidential",

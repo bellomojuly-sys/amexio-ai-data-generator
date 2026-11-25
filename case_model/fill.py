@@ -126,6 +126,8 @@ def _leaves(obj, prefix):
 def fact_paths(case: Case) -> list[str]:
     """AX-023 — every placeholder path that resolves to one printable fact."""
     paths = [p for p, _ in _leaves(case.dossier, "dossier")]
+    if case.facts is not None:
+        paths += [p for p, _ in _leaves(case.facts, "facts")]
     for name in ("personas", "organisations", "events", "documents"):
         for key, part in getattr(case, name).items():
             paths += [p for p, _ in _leaves(part, f"{name}.{key}")]
