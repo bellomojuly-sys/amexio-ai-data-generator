@@ -165,6 +165,41 @@ def test_document_text_sees_every_fact_as_a_placeholder(run_request):
             assert persona.name not in prompt
 
 
+def _signers(case, plan):
+    fake = FakeLLM(fake_answers.answer)
+    write_document_text(case, plan, fake)
+    return {d["eventId"]: d.get("signedBy") for d in request_of(fake.prompts[-1])["documents"]}
+
+
+def test_each_document_names_the_signer_of_its_event(run_request):
+    """Contract §6 (case model v1.2): a document inherits its event's signer."""
+    from pipeline.document_plan import plan_case
+    result = run_chain(run_request, llm=FakeLLM(fake_answers.answer))
+    case = next(c for c in result.cases if plan_case(c).documents)
+    plan = plan_case(case)
+    (manager,) = [p.id for p in case.personas.values() if p.role == "manager"]
+    # Dates & participants is still a stub that sets no signer: the case's one manager signs.
+    assert set(_signers(case, plan).values()) == {f"{{{{personas.{manager}.name}}}}"}
+    other = next(p.id for p in case.personas.values() if p.id != manager)
+    signed = case.model_copy(deep=True)
+    first = plan.documents[0].event_id
+    signed.events[first].signed_by = other
+    signers = _signers(signed, plan)
+    assert signers[first] == f"{{{{personas.{other}.name}}}}"
+    assert all(s == f"{{{{personas.{manager}.name}}}}" for e, s in signers.items() if e != first)
+
+
+def test_two_managers_and_no_signer_name_no_one(run_request):
+    """BR-16: a director who signs is a second manager persona. Without the
+    event's signed_by, code cannot tell which manager signs, so it names none."""
+    from pipeline.document_plan import plan_case
+    result = run_chain(run_request, llm=FakeLLM(fake_answers.answer))
+    case = next(c for c in result.cases if plan_case(c).documents).model_copy(deep=True)
+    second = next(p for p in case.personas.values() if p.role not in ("employee", "manager"))
+    second.role = "manager"
+    assert set(_signers(case, plan_case(case)).values()) == {None}
+
+
 def test_a_case_with_nothing_planned_makes_no_call(config):
     fake, cm, _ = _cases(config)
     case = cm.cases[0]

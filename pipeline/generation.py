@@ -305,8 +305,8 @@ SECTION_GUIDE = {
 
 DOCUMENT_TASK = """Write every section of every planned document of this employee's dossier. For each document, "write" says what each section is, "about" says what happened as code decided it, and "placeholders" holds the facts it may mention. "career" lists everything that happened to this employee, in order.
 
-- The manager (role manager in people) writes the appraisals and signs the letters for the employer (kind employer in organisations).
-- All of this dossier's texts are written together: keep the manager's voice the same from one document to the next, and keep every text consistent with the career. A document knows only what happened up to its own event.
+- Each document is written and signed by the person in its "signedBy", for the employer (kind employer in organisations); where a section names its author or signer, use that placeholder. A document without "signedBy" is written by the manager (role manager in people).
+- All of this dossier's texts are written together: keep each writer's voice the same from one document to the next, and keep every text consistent with the career. A document knows only what happened up to its own event.
 - Answer every planned document exactly once, echoing its doc key, with exactly its sections. Write no other fields.
 
 Text rules, checked by code:
@@ -320,6 +320,18 @@ DOCUMENT_SHAPE = ('{"employeeNumber":"(the employeeNumber of the request)","docu
 
 def _ref(event_id: str, field: str) -> str:
     return f"{{{{events.{event_id}.{field}}}}}"
+
+
+def _signer(case: Case, event) -> str | None:
+    """Who writes and signs a document: the signer of its event (case model
+    v1.2, contract §6: Dates & participants sets it, the manager at the event
+    date or the director when the manager has left), else the case's one
+    manager. A placeholder, never a name; None when code cannot tell."""
+    persona = event.signed_by
+    if persona is None:
+        managers = [p.id for p in case.personas.values() if p.role == "manager"]
+        persona = managers[0] if len(managers) == 1 else None
+    return f"{{{{personas.{persona}.name}}}}" if persona else None
 
 
 def _change_kind(event) -> str:
@@ -400,6 +412,7 @@ def write_document_text(case: Case, plan: CaseDocumentPlan, llm: LLMClient) -> D
         "documents": [
             {**d.model_dump(by_alias=True),
              "date": _ref(d.event_id, "date"),
+             **({"signedBy": signer} if (signer := _signer(case, case.events[d.event_id])) else {}),
              "about": _about(case.events[d.event_id]),
              "placeholders": _placeholders(case.events[d.event_id]),
              "write": {s: SECTION_GUIDE.get((d.type, s), f"the {s.replace('_', ' ')} of "
