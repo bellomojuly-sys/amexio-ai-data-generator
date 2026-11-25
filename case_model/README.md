@@ -1,9 +1,12 @@
-# Case model — module contract (version 2.1)
+# Case model — module contract (version 2.2)
 
-Owner: Giulia Bellomo. Status: v2.1 (25 November 2026): the lists come from a
+Owner: Giulia Bellomo. Status: v2.2 (25 November 2026): the lists come from a
 domain configuration, so the case model works for any domain; HR is the first.
 v2.1 adds case facts, domain metadata, employment and organisation kinds per
-domain, and the generator of fact values.
+domain, and the generator of fact values. v2.2 closes the gaps of the review
+of 25 Nov: one number per case, one employment per persona, hours and salaries
+above zero, a notice date inside the story, and `fill_text` never prints a
+whole record or crashes on a format ([v2.1 → v2.2](#v21--v22)).
 v1.2 added `signed_by`; v1.1 is tag `v1.1`, v1 is tag `v1`. What changed and
 why: [v1 → v1.1](#v1--v11), [v1.1 → v1.2](#v11--v12), [v1.2 → v2.0](#v12--v20).
 
@@ -233,7 +236,11 @@ unknown persona 'P002' (field participant_ids)` (AX-070).
   of an unknown type.
 - A story that cannot happen: two hires, a hire on another day than the
   employment start, anything before the hire or after the last working day,
-  an absence that ends before it starts.
+  an absence that ends before it starts, a notice date after the last working
+  day or before the hire (v2.2).
+- A case number that differs from the dossier's employee number (v2.2).
+- A second employment for the same persona; zero or negative hours, salary,
+  `new_hours` or `new_salary` (v2.2).
 - A non-recurring document without an event; metadata that names another
   document type or another employee.
 - From the generator: an `id`, a field the shape does not name, a storyline
@@ -301,6 +308,28 @@ cases, corrections = ingest_cases("building_permit", data, first_number=1,
   a `CaseCorrection`; nothing is saved unless every case is valid.
 - The HR ingest of Robin's generator (`ingest_employees`, `ingest_storylines`)
   stays as it is. Tests: `test_ingest_any.py`.
+
+## v2.1 → v2.2
+
+What the review of 25 Nov found, and what the case model does now. No field
+was added to a case; a case that was valid and made sense in v2.1 is still
+valid. Tests: `test_v22_rules.py`.
+
+| Gap in v2.1 | v2.2 |
+|---|---|
+| `{{ personas.P001 }}` printed the whole record, internal IDs included | refused: "it names several values, not one fact" (AX-024) |
+| `case_number` was never checked; a case could hold two numbers | `case_number` must equal `dossier.employee_number` (`set_dossier` and `Case`) |
+| hours, salary, `new_hours`, `new_salary` could be 0 or negative | all above zero (`Employment`, HR `contract_change`, ingest) |
+| a persona could have two employments, and `fact_paths` offered paths that then failed | one employment per persona; a change is a `contract_change` event |
+| a notice date after the last working day was accepted | field option `not_after_event` (HR: `notice_date`): on or before its event, never before the first event |
+| a format that does not fit (`eurGrouped` on a date) crashed `fill_text` | `format_fact` refuses it; `fill_text` names the placeholder |
+| an integer field with `min: 1.5` accepted 1 | integer bounds must be whole numbers |
+| a generated number could round past its bounds; a money range without a whole euro crashed | generated inside the bounds, or `CannotGenerate` naming the field |
+| a missing `participant_ids` or `persona_id` gave a bare `KeyError` | a validation error names the field |
+
+The HR configuration is now version 1.3 (`gt: 0` on `new_hours` and
+`new_salary`, `not_after_event` on `notice_date`). The JSON Schemas were
+regenerated (`hours` and `newHours` now carry `exclusiveMinimum: 0`).
 
 ## v2.0 → v2.1: case facts and the rest of the configuration
 
@@ -423,4 +452,4 @@ AX-006 → AX-014 were first built step by step (my own commits `fced31a`, `dc33
 | AX-019 | this commit | The reference dossier is frozen as a golden snapshot; a deliberate break fails, and CI runs it on every push | `-k "matches_golden"` (1) |
 | AX-020 | tag `v1` | Case model v1 is tagged for integration; generation and export read the dossier through the module | `git show v1 --stat` |
 
-All 100 tests (v1.1): `python3 -m pytest -v`.
+All tests (444 in v2.2, case model and pipeline): `python3 -m pytest -v`.

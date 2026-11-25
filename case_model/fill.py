@@ -13,6 +13,8 @@ replacing the ``{{ path }}`` placeholders (AX-021) with facts read through
 - AX-025 ``format_fact(value, fmt)`` formats a fact only when it is printed,
   in the formats of AMEXIO's PDFs (the same as the generator's
   ``src/spec/format.ts``). The case keeps ISO dates and numeric amounts.
+  Since v2.2 a format that does not fit the value (``eurGrouped`` on a date)
+  is refused, and ``fill_text`` names the placeholder instead of crashing.
 
 The syntax stays ``{{ path }}``. Without an explicit format, the format follows
 the value: a date prints as DD-MM-YYYY, an amount as "EUR 4.350".
@@ -61,11 +63,27 @@ def _whole_euros(amount) -> int:
     return int(Decimal(amount).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
 
 
+# v2.2 — which formats fit which kind of value. "text" fits every value.
+_DATE_FORMATS = ("date", "monthYear")
+_NUMBER_FORMATS = ("eurGrouped", "eurPlain", "days", "number")
+
+
+def _is_number(value) -> bool:
+    return isinstance(value, (int, float, Decimal, Money)) and not isinstance(value, bool)
+
+
 def format_fact(value, fmt: str | None = None) -> str:
     """One stored fact as the PDF prints it (AX-025). ``fmt`` is one of
-    ``FORMATS``; without it, the format follows the value's type."""
+    ``FORMATS``; without it, the format follows the value's type. A format
+    that does not fit the value raises ValueError (v2.2)."""
     if fmt is not None and fmt not in FORMATS:
         raise ValueError(f"unknown format {fmt!r}; use one of {', '.join(FORMATS)}")
+    if fmt == "dateRange":
+        raise ValueError("format 'dateRange' needs two dates; print each one with 'date'")
+    if fmt in _DATE_FORMATS and not isinstance(value, dt.date):
+        raise ValueError(f"format {fmt!r} needs a date, got {type(value).__name__}")
+    if fmt in _NUMBER_FORMATS and not _is_number(value):
+        raise ValueError(f"format {fmt!r} needs a number or an amount, got {type(value).__name__}")
     if isinstance(value, Money):
         value = value.amount
         fmt = fmt or "eurGrouped"
@@ -161,8 +179,16 @@ def fill_text(case: Case, text: str, formats: dict[str, str] | None = None) -> s
             problems[path] = "the case holds no value for it"
         elif isinstance(value, (list, dict)):
             problems[path] = "it names several values, not one fact"
+        elif isinstance(value, BaseModel) and not isinstance(value, Money):
+            # v2.2 — a whole record (personas.P001) is several values, not one
+            # fact; printed, it would leak the internal IDs it holds.
+            problems[path] = (f"a whole {type(value).__name__}: it names several values, "
+                              "not one fact (add a field, e.g. .name)")
         else:
-            values[path] = format_fact(value, formats.get(path))
+            try:
+                values[path] = format_fact(value, formats.get(path))
+            except ValueError as error:
+                problems[path] = str(error)
 
     filled = PLACEHOLDER.sub(lambda m: values.get(m.group(1), m.group(0)), text)
     if not problems:

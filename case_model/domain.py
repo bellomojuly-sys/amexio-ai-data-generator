@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import datetime as dt
 import re
+from decimal import Decimal
 from functools import cached_property
 from typing import Annotated, Literal, Union
 
@@ -49,11 +50,15 @@ class FieldSpec(_Strict):
     required: bool = False
     # A closed list: the field accepts only these values (text only).
     values: list[str] | None = None
-    # Lower bound, exclusive (integer and number only): ``duration_days`` > 0.
+    # Lower bound, exclusive (integer, number and, since v2.2, money):
+    # ``duration_days`` > 0, ``new_salary`` > 0.
     gt: float | None = None
     # A date that closes a period (an absence's ``end_date``): never before the
     # event's own date, and it counts as the event's end for "nothing after".
     ends_period: bool = False
+    # v2.2 — a date that comes on or before the event's own date (a
+    # termination's ``notice_date``), and never before the first event.
+    not_after_event: bool = False
     # How a refusal names what a reference points at ("training provider").
     label: str | None = None
     # Inclusive bounds (v2.1): a number for integer, number and money, an ISO
@@ -67,10 +72,14 @@ class FieldSpec(_Strict):
     def _options_fit_the_format(self):
         if self.values is not None and (self.format != "text" or not self.values):
             raise ValueError("values (a closed list) needs format 'text' and at least one value")
-        if self.gt is not None and self.format not in ("integer", "number"):
-            raise ValueError("gt needs format 'integer' or 'number'")
+        if self.gt is not None and self.format not in ("integer", "number", "money"):
+            raise ValueError("gt needs format 'integer', 'number' or 'money'")
         if self.ends_period and self.format != "date":
             raise ValueError("ends_period needs format 'date'")
+        if self.not_after_event and self.format != "date":
+            raise ValueError("not_after_event needs format 'date'")
+        if self.not_after_event and self.ends_period:
+            raise ValueError("a date cannot both end the period and come before the event")
         for bound in (self.min, self.max):
             if bound is None:
                 continue
@@ -80,11 +89,24 @@ class FieldSpec(_Strict):
                 raise ValueError("min/max of a number or money field must be numbers")
             if self.format not in ("date", "integer", "number", "money"):
                 raise ValueError("min/max need format date, integer, number or money")
+            # v2.2 — an integer field takes whole bounds: min 1.5 would let 1 through.
+            if self.format == "integer" and float(bound) != int(bound):
+                raise ValueError("min/max of an integer field must be whole numbers")
+        if self.gt is not None and self.format == "integer" and float(self.gt) != int(self.gt):
+            raise ValueError("gt of an integer field must be a whole number")
         if self.min is not None and self.max is not None and self.min > self.max:
             raise ValueError("min must not be above max")
         if self.currency is not None and (self.format != "money" or not re.fullmatch(r"[A-Z]{3}", self.currency)):
             raise ValueError("currency needs format 'money' and a 3-letter ISO code")
         return self
+
+
+def _bound(value, bound):
+    """``bound`` comparable with ``value`` without changing it (v2.2: no int()
+    truncation, so an integer 1 is below a min of 1.5)."""
+    if isinstance(value, Decimal) and not isinstance(bound, dt.date):
+        return Decimal(str(bound))
+    return bound
 
 
 def check_value(name: str, spec: FieldSpec, value):
@@ -95,9 +117,12 @@ def check_value(name: str, spec: FieldSpec, value):
         if spec.currency and value.currency != spec.currency:
             raise ValueError(f"{name}: currency {value.currency} is not {spec.currency}")
         value = value.amount
-    if spec.min is not None and value < (spec.min if not isinstance(value, (int, float)) and spec.format == "date" else type(value)(spec.min)):
+        # gt of a money field is checked here; pydantic's gt cannot read Money.
+        if spec.gt is not None and value <= _bound(value, spec.gt):
+            raise ValueError(f"{name}: {value} must be above {spec.gt}")
+    if spec.min is not None and value < _bound(value, spec.min):
         raise ValueError(f"{name}: {value} is below the minimum {spec.min}")
-    if spec.max is not None and value > (spec.max if not isinstance(value, (int, float)) and spec.format == "date" else type(value)(spec.max)):
+    if spec.max is not None and value > _bound(value, spec.max):
         raise ValueError(f"{name}: {value} is above the maximum {spec.max}")
 
 
@@ -107,10 +132,11 @@ def field_definitions(fields: dict[str, FieldSpec]) -> dict:
     for field_name, field in fields.items():
         kind = Literal[tuple(field.values)] if field.values else _FORMAT_TYPES[field.format]
         extra = {"reference": field.format} if field.format in REFERENCE_FORMATS else None
+        gt = field.gt if field.format != "money" else None   # money: check_value
         if field.required:
-            defs[field_name] = (kind, Field(gt=field.gt, json_schema_extra=extra))
+            defs[field_name] = (kind, Field(gt=gt, json_schema_extra=extra))
         else:
-            defs[field_name] = (kind | None, Field(default=None, gt=field.gt, json_schema_extra=extra))
+            defs[field_name] = (kind | None, Field(default=None, gt=gt, json_schema_extra=extra))
     return defs
 
 
@@ -244,6 +270,8 @@ class DomainConfig(_Strict):
                     raise ValueError(f"{group}: field name {name!r} must be snake_case")
                 if spec.format in REFERENCE_FORMATS or spec.ends_period:
                     raise ValueError(f"{group}.{name}: a reference or a period end belongs on an event")
+                if spec.not_after_event:
+                    raise ValueError(f"{group}.{name}: not_after_event belongs on an event")
         if set(self.metadata_fields) & {"employee_id", "document_type", "document_date",
                                         "confidential", "tags"}:
             raise ValueError("metadata_fields cannot redefine AMEXIO's five attributes")
@@ -269,6 +297,7 @@ class DomainConfig(_Strict):
             fields = {"type": (Literal[name], ...), **field_definitions(spec.fields)}
             validators = ({"_bounds": bounds_validator(spec.fields)}
                           if any(f.min is not None or f.max is not None or f.currency
+                                 or (f.gt is not None and f.format == "money")
                                  for f in spec.fields.values()) else None)
             classes[name] = create_model(
                 _class_name(name), __base__=EventBase, __doc__=spec.description,

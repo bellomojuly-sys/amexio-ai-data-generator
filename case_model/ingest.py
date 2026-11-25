@@ -112,10 +112,10 @@ class ContractChangeIn(_EventIn):
     type: Literal["contract_change"]
     date: dt.date
     reason: str
-    new_salary: Decimal | None = None
+    new_salary: Decimal | None = Field(default=None, gt=0)
     new_position: str | None = None
     new_contract_type: str | None = None
-    new_hours: float | None = None
+    new_hours: float | None = Field(default=None, gt=0)
 
 
 class TrainingIn(_EventIn):

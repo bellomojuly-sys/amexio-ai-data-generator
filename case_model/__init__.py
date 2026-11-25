@@ -1,4 +1,4 @@
-"""AMEXIO case model — version 2.0 (lists from a domain configuration).
+"""AMEXIO case model — version 2.2 (lists from a domain configuration).
 
 The single place where the facts of one dossier live. Import the parts and
 the builder from here:

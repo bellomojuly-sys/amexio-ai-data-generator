@@ -1,10 +1,10 @@
-# Domain contract: any domain through the case model (v1.1)
+# Domain contract: any domain through the case model (v1.2)
 
-Version **1.1**, 25 November 2026 (1.0: 24 Nov) · from: Giulia (case model, backend) · to:
+Version **1.2**, 25 November 2026 (1.1: 25 Nov, 1.0: 24 Nov) · from: Giulia (case model, backend) · to:
 Daniel, Robin, Valentin, Mike, Stylianos · Status: **proposed to the team**;
 after agreement it changes only with a new version number.
 
-Code: case model **v2.1** (`case_model/domain.py`, `case_model/domains.py`, PR #11).
+Code: case model **v2.2** (`case_model/domain.py`, `case_model/domains.py`; v2.0 in PR #11).
 Related: `docs/PIPELINE_CONTRACT.md` (v1.1 → v1.2), `docs/TEMPLATE_CONTRACT.md`
 (v0.2 → v0.3), `case_model/README.md`.
 
@@ -56,10 +56,11 @@ Every event has `id` (made by code), `type`, `date`, `participant_ids`,
 | `format` | `text`, `date`, `money`, `integer`, `number`, `persona`, `organisation` |
 | `required` | `true` / `false` |
 | `values` | a closed list (only for `text`): any other value is refused |
-| `gt` | lower bound, exclusive (only for `integer`, `number`) |
+| `gt` | lower bound, exclusive (only for `integer`, `number` and, since v1.2, `money`); whole for `integer` |
 | `ends_period` | this date ends the event (an absence's `end_date`): never before the event's date |
+| `not_after_event` (v1.2) | this date comes on or before the event's date and never before the first event (a termination's `notice_date`) |
 | `label` | how an error names a reference ("training provider") |
-| `min`, `max` (v1.1) | inclusive bounds: numbers for integer, number, money; ISO dates for date |
+| `min`, `max` (v1.1) | inclusive bounds: numbers for integer, number, money (whole for integer, v1.2); ISO dates for date |
 | `currency` (v1.1) | the currency of a money field |
 
 A "fact" field (decided with Daniel, AX-021a) is a case fact with a rule:

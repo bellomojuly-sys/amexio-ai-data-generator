@@ -24,7 +24,7 @@ def _values(literal):
 
 HR = register_domain(DomainConfig.model_validate({
     "name": "hr",
-    "version": "1.2",
+    "version": "1.3",
     "description": "HR dossiers (AMEXIO's mock data): an employee's employment history.",
     "case_number_pattern": "[0-9]{6}",
     "uses_employment": True,
@@ -33,10 +33,10 @@ HR = register_domain(DomainConfig.model_validate({
         "hire": {"description": "The start of the employment. The agreed terms live in Employment."},
         "contract_change": {"fields": {
             "reason": {"format": "text", "required": True},
-            "new_salary": {"format": "money"},
+            "new_salary": {"format": "money", "gt": 0},
             "new_position": {"format": "text"},
             "new_contract_type": {"format": "text", "values": _values(ContractType)},
-            "new_hours": {"format": "number"},
+            "new_hours": {"format": "number", "gt": 0},
         }},
         "training": {"fields": {
             "course": {"format": "text", "required": True},
@@ -55,7 +55,7 @@ HR = register_domain(DomainConfig.model_validate({
                     "fields": {"end_date": {"format": "date", "ends_period": True}}},
         "termination": {"description": "The last working day.", "fields": {
             "reason": {"format": "text", "required": True, "values": _values(TerminationReason)},
-            "notice_date": {"format": "date"},
+            "notice_date": {"format": "date", "not_after_event": True},
         }},
     },
     "document_types": {

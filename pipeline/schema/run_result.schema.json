@@ -322,6 +322,7 @@
         "new_hours": {
           "anyOf": [
             {
+              "exclusiveMinimum": 0.0,
               "type": "number"
             },
             {
@@ -600,6 +601,7 @@
           "type": "string"
         },
         "hours": {
+          "exclusiveMinimum": 0,
           "title": "Hours",
           "type": "number"
         },
