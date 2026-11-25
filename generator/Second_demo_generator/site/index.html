@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dossier Generator v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: v1's app shell. Top bar; a numbered step rail on the left (a row on phones);
+   one working panel per step. The same tokens and faces as v1, so the two read as one product. */
+:root {
+  --bg: #f2f3f5; --surface: #ffffff; --surface-2: #f7f8fa;
+  --ink: #15181c; --muted: #59606c; --faint: #868d98;
+  --line: #dadde3; --line-strong: #c2c7cf;
+  --accent: #23439b; --accent-hover: #1b3683; --accent-ink: #ffffff; --accent-soft: #e7ecf9;
+  --ok: #17754b; --ok-soft: #e2f3ea; --warn: #935700; --warn-soft: #fcf0d9;
+  --err: #b42318; --err-soft: #fbe7e5; --code-bg: #f4f5f8; --mark: #fff1c2; --mark-ink: #5a4300;
+  --shadow: 0 1px 2px rgba(16, 20, 28, 0.06), 0 4px 16px rgba(16, 20, 28, 0.05);
+  --font-display: "Archivo", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --radius: 6px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1114; --surface: #171a1f; --surface-2: #1c2026;
+    --ink: #e8eaee; --muted: #a3a9b4; --faint: #79808b;
+    --line: #2a2f37; --line-strong: #3b414b;
+    --accent: #93a9ef; --accent-hover: #aabcf4; --accent-ink: #0f1114; --accent-soft: #1e2944;
+    --ok: #57c793; --ok-soft: #12301f; --warn: #e5a84d; --warn-soft: #33260e;
+    --err: #f07a6f; --err-soft: #3a1714; --code-bg: #12151a; --mark: #3d3214; --mark-ink: #f3d98b;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1114; --surface: #171a1f; --surface-2: #1c2026;
+  --ink: #e8eaee; --muted: #a3a9b4; --faint: #79808b;
+  --line: #2a2f37; --line-strong: #3b414b;
+  --accent: #93a9ef; --accent-hover: #aabcf4; --accent-ink: #0f1114; --accent-soft: #1e2944;
+  --ok: #57c793; --ok-soft: #12301f; --warn: #e5a84d; --warn-soft: #33260e;
+  --err: #f07a6f; --err-soft: #3a1714; --code-bg: #12151a; --mark: #3d3214; --mark-ink: #f3d98b;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5; }
+h1, h2, h3 { font-family: var(--font-display); font-stretch: 92%; text-wrap: balance; margin: 0; line-height: 1.15; }
+h2 { font-size: 24px; font-weight: 750; }
+h3 { font-size: 16px; font-weight: 700; }
+p { margin: 0; max-width: 68ch; }
+code, .mono, pre { font-family: var(--font-mono); font-size: 12.5px; }
+a { color: var(--accent); }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.top { display: flex; align-items: center; gap: 16px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand-name { font-family: var(--font-display); font-weight: 750; font-size: 18px; font-stretch: 88%; white-space: nowrap; }
+.brand-sub { color: var(--muted); font-size: 12px; }
+.top .spacer { flex: 1; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line-strong); color: var(--muted); background: var(--surface-2); white-space: nowrap; }
+.chip.ok { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
+.chip.warn { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
+.chip.err { color: var(--err); background: var(--err-soft); border-color: transparent; }
+.chip.accent { color: var(--accent); background: var(--accent-soft); border-color: transparent; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+.shell { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 20px; padding: 20px; max-width: 1400px; margin: 0 auto; }
+.rail { display: flex; flex-direction: column; gap: 4px; position: sticky; top: 16px; align-self: start; }
+.rail button { display: grid; grid-template-columns: 26px 1fr auto; align-items: center; gap: 8px; text-align: left; padding: 9px 10px; border: 1px solid transparent; border-radius: var(--radius); background: none; cursor: pointer; }
+.rail button:hover { background: var(--surface); }
+.rail button[aria-current="step"] { background: var(--surface); border-color: var(--line); box-shadow: var(--shadow); }
+.rail .num { font-family: var(--font-display); font-weight: 700; font-size: 13px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line-strong); color: var(--muted); }
+.rail button[aria-current="step"] .num { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.rail .label { font-weight: 600; }
+.rail .state { font-size: 11px; color: var(--faint); }
+.rail .state.ok { color: var(--ok); } .rail .state.err { color: var(--err); }
+.rail-note { margin-top: 14px; padding: 10px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
+
+.panel { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.card-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.card-head .spacer { flex: 1; }
+.lede { color: var(--muted); }
+.steps-run { display: flex; gap: 6px; flex-wrap: wrap; }
+.owner { font-size: 12px; padding: 3px 8px; border-radius: var(--radius); background: var(--surface-2); border: 1px solid var(--line); }
+.owner b { font-family: var(--font-display); font-weight: 700; }
+.owner.llm { border-color: var(--accent); }
+.owner.stub { border-style: dashed; color: var(--warn); }
+
+.btn { padding: 8px 14px; border-radius: var(--radius); border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; font-weight: 600; }
+.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn.primary:hover:not(:disabled) { background: var(--accent-hover); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn.small { padding: 4px 10px; font-size: 12px; font-weight: 500; }
+
+.form { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label { font-size: 12px; font-weight: 600; color: var(--muted); }
+.field input, .field textarea, .field select { padding: 7px 9px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); width: 100%; }
+.field textarea { font-family: var(--font-mono); font-size: 12px; min-height: 90px; resize: vertical; }
+.field.wide { grid-column: 1 / -1; }
+.field .hint { font-size: 12px; color: var(--faint); }
+.choice { display: flex; gap: 10px; flex-wrap: wrap; }
+.choice label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: var(--radius); cursor: pointer; flex: 1 1 260px; background: var(--surface); }
+.choice label:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.choice label:has(input:disabled) { opacity: 0.55; cursor: not-allowed; }
+.choice small { display: block; color: var(--muted); }
+.check { display: flex; gap: 8px; align-items: center; }
+
+.budget { display: flex; gap: 22px; flex-wrap: wrap; }
+.budget div { display: flex; flex-direction: column; }
+.budget .big { font-family: var(--font-display); font-weight: 800; font-size: 28px; font-stretch: 85%; line-height: 1; font-variant-numeric: tabular-nums; }
+.budget .what { font-size: 12px; color: var(--muted); }
+
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; background: var(--surface-2); white-space: nowrap; }
+tr:last-child td { border-bottom: none; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.slots { display: flex; flex-wrap: wrap; gap: 4px; }
+.slot { font-size: 12px; padding: 1px 7px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); white-space: nowrap; }
+
+.call { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.call > summary { list-style: none; cursor: pointer; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; }
+.call > summary::-webkit-details-marker { display: none; }
+.call > summary::before { content: "▸"; color: var(--faint); }
+.call[open] > summary::before { content: "▾"; }
+.call .stats { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+.call-body { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.tabs button { border: none; background: none; padding: 6px 10px; cursor: pointer; color: var(--muted); border-bottom: 2px solid transparent; font-weight: 600; font-size: 13px; }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+pre.box { margin: 0; padding: 10px 12px; background: var(--code-bg); border: 1px solid var(--line); border-radius: var(--radius); white-space: pre-wrap; word-break: break-word; max-height: 420px; overflow: auto; line-height: 1.45; }
+.fix { padding: 8px 10px; border-radius: var(--radius); background: var(--warn-soft); color: var(--warn); font-size: 13px; }
+.fix.none { background: var(--ok-soft); color: var(--ok); }
+
+.notice { padding: 12px 14px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface-2); display: flex; flex-direction: column; gap: 4px; }
+.notice.err { background: var(--err-soft); border-color: transparent; color: var(--err); }
+.notice.err pre { color: var(--ink); }
+.notice.live { border-color: var(--accent); background: var(--accent-soft); }
+.notice.ok { background: var(--ok-soft); border-color: transparent; color: var(--ok); }
+.notice .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.doc { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.doc-head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.doc .grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 10px; }
+.doc .label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.prose { margin: 0; line-height: 1.55; }
+mark { background: var(--mark); color: var(--mark-ink); padding: 0 2px; border-radius: 3px; font-family: var(--font-mono); font-size: 12px; }
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+.tile { border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; background: var(--surface); }
+.tile .big { font-family: var(--font-display); font-weight: 800; font-size: 26px; font-stretch: 85%; font-variant-numeric: tabular-nums; }
+.tile .what { font-size: 12px; color: var(--muted); }
+.muted { color: var(--muted); }
+.empty { color: var(--faint); font-style: italic; }
+.foot { color: var(--faint); font-size: 12px; padding: 0 20px 24px; max-width: 1400px; margin: 0 auto; }
+
+/* Example documents (Daniel's studio): the drop zone, the document list and the page preview. */
+.drop { border: 1.5px dashed var(--line-strong); border-radius: var(--radius); padding: 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; background: var(--surface-2); }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop .spacer { flex: 1; }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: var(--surface-2); }
+tr.sel td, tr.sel:hover td { background: var(--accent-soft); }
+tr.changed td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+td input[type="text"], td select { padding: 4px 6px; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface); width: 100%; min-width: 140px; }
+td input[type="text"] { font-family: var(--font-mono); font-size: 12px; }
+.studio-doc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.studio-doc > div { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.page-img { width: 100%; height: auto; border: 1px solid var(--line); border-radius: var(--radius); background: #fff; }
+.pager { display: flex; gap: 8px; align-items: center; }
+@media (max-width: 1000px) { .studio-doc { grid-template-columns: 1fr; } }
+
+@media (max-width: 760px) {
+  .shell { grid-template-columns: 1fr; padding: 16px; }
+  .rail { position: static; flex-direction: row; overflow-x: auto; }
+  .rail button { grid-template-columns: 24px auto; }
+  .rail .state, .rail-note { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="brand-name">Dossier Generator</span><span class="brand-sub">v2 · pipeline contract v1.1 · runs the backend's Python in your browser</span></div>
+  <span class="spacer"></span>
+  <button class="btn small" id="exportTop" type="button" disabled>Export files (ZIP)</button>
+  <span class="chip" id="modeChip"><span class="dot"></span><span>Fake model</span></span>
+  <span class="chip warn" id="pyChip"><span class="dot"></span><span>Loading Python…</span></span>
+</header>
+
+<div class="shell">
+  <nav class="rail" id="rail" aria-label="Steps"></nav>
+  <main class="panel" id="panel"></main>
+</div>
+<p class="foot">Written with Claude for Team Datanova's AMEXIO project. The steps run the repo's <code>pipeline/</code> and <code>case_model/</code> packages unchanged, in Pyodide. In Claude mode each LLM call goes to Claude on the account of whoever has this page open; nothing is stored outside this page.</p>
+
+<!-- Pyodide 0.29.3, served from the page's own files (site/pyodide/, see build_bundle.py):
+     an artifact page may not fetch from Pyodide's CDN, and Pyodide fetches its WebAssembly and packages. -->
+<script>
+// The artifact host serves .js, .json and .wasm files but not .zip or .whl, so build_bundle.py
+// stores Pyodide's standard library and wheels with ".wasm" added; this maps Pyodide's requests.
+(() => {
+  const realFetch = window.fetch.bind(window);
+  window.fetch = (input, init) => {
+    const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+    return /\/pyodide\/[^/?#]+\.(zip|whl)$/.test(url) ? realFetch(url + ".wasm", init) : realFetch(input, init);
+  };
+})();
+</script>
+<script src="pyodide/pyodide.js"></script>
+<script>
+"use strict";
+// ---------------------------------------------------------------------------
+// Settings
+// ---------------------------------------------------------------------------
+const MODEL = "claude-sonnet-5-5";                  // Model Selection document (team, 30 Oct)
+const PRICE_USD_PER_MTOK = { input: 2, output: 10 };  // same document; an estimate, see the README
+const CHARS_PER_TOKEN = 4;
+const MAX_EMPLOYEES_WITH_CLAUDE = 25;                // v1's limit for a run with a model
+const MAX_RUNS = 200;                                // never loop: at most this many replays per click
+const MAX_PDF_MB = 25;                               // per example PDF (the studio reads it in memory)
+
+const STEPS = [
+  { id: "studio", label: "Example documents", title: "Example documents" },
+  { id: "configure", label: "Configure", title: "Configure the run" },
+  { id: "personas", label: "Personas", title: "Personas", chain: ["personas", "cm_id"] },
+  { id: "events", label: "Event content", title: "Event content", chain: ["plot", "event_content", "dates_participants"] },
+  { id: "documents", label: "Document text", title: "Document text", chain: ["document_plan", "document_text", "fill"] },
+  { id: "result", label: "Result", title: "Result" },
+];
+const CHAIN = {
+  personas: { n: 1, name: "Personas", kind: "LLM", owner: "Robin" },
+  cm_id: { n: 2, name: "CM ID", kind: "code", owner: "Giulia" },
+  plot: { n: 3, name: "Plot", kind: "code", owner: "Giulia" },
+  event_content: { n: 4, name: "Event content", kind: "LLM", owner: "Robin" },
+  dates_participants: { n: 5, name: "Dates & participants", kind: "code", owner: "Valentin", stub: true },
+  document_plan: { n: 6, name: "Document plan", kind: "code", owner: "Giulia" },
+  document_text: { n: 7, name: "Document text", kind: "LLM", owner: "Robin" },
+  fill: { n: 8, name: "Fill", kind: "code", owner: "Valentin", stub: true },
+};
+const ORDER = STEPS.map((s) => s.id);
+const FINAL = { personas: "cm_id", events: "dates_participants", documents: "fill" };   // where run_chain can stop
+const LLM_STAGE = { personas: "personas", events: "event_content", documents: "document_text" };
+// v1's messages for the Claude page call (src/ai/providers.ts), with v1's kinds.
+const SAMPLE_ERRORS = {
+  not_granted: ["You (or your organisation) have not allowed this page to use Claude. Allow it, or use the fake model.", "setup"],
+  sampling_disabled: ["Claude is not available for this account. Use the fake model.", "setup"],
+  rate_limited: ["Claude's usage limit for your account was reached, or too many requests at once. Wait a bit and run again.", "retry"],
+  session_expired: ["Your Claude session expired. Sign in again and run again.", "setup"],
+  prompt_too_large: ["The request was too large. Use fewer employees per run.", "refused"],
+  refused: ["Claude declined this request. Change the scenario notes and run again.", "refused"],
+  empty_completion: ["Claude returned an empty answer. Run again.", "retry"],
+  cancelled: ["Stopped.", "cancelled"],
+};
+
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+const state = {
+  view: "studio",
+  mode: "fake",            // "fake" | "claude"
+  seed: 0,
+  form: null,              // the config screen's values
+  reference: null,         // AMEXIO's employee 100101 (seed)
+  answers: {},             // prompt key -> {text, model, ms} from Claude
+  last: null,              // the last run's output (all steps up to the one run)
+  lastStep: null,
+  busy: false,
+  live: null,              // {stage, text} while Claude answers
+  abort: null,
+  example: false,          // the shown run is the fake example made on load
+  notice: null,            // {kind, text}: the last export's outcome
+  packageCheck: null,      // v1's checks of the import package in the last export
+  docSeeds: null,          // seed employees from the example documents, once applied
+  docTypes: [],            // the case model's nine document types
+  studio: {                // Example documents: Daniel's studio, offline
+    ready: false,          // PyMuPDF loaded
+    docs: [],              // per PDF: {id, name, path, fields, error, group, documentType, pageCount}
+    selected: null, view: "template", page: 0, preview: null,
+    loading: null, note: null, error: null, applied: false, nextId: 1,
+  },
+};
+let py = null, bridge = null, studioBridge = null, sample = null, downloads = null;
+const errText = (e) => String(e && e.message ? e.message : e).trim().split("\n").filter(Boolean).slice(-1)[0];
+
+// ---------------------------------------------------------------------------
+// Small DOM helper: text always goes in as text, never as HTML.
+// ---------------------------------------------------------------------------
+function h(tag, attrs, ...children) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === null || v === undefined || v === false) continue;
+    if (k === "class") el.className = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (k === "text") el.textContent = v;
+    else el.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of children.flat()) if (c !== null && c !== undefined && c !== false) el.append(c instanceof Node ? c : String(c));
+  return el;
+}
+const fmt = (n) => Number(n).toLocaleString("en-GB");
+const tokensOf = (text) => (text ? Math.max(1, Math.round(text.length / CHARS_PER_TOKEN)) : 0);
+function callTokens(call) {
+  let input = 0, output = 0;
+  for (const a of call.attempts) { input += tokensOf(a.prompt); output += tokensOf(a.answer || ""); }
+  return { input, output, usd: (input * PRICE_USD_PER_MTOK.input + output * PRICE_USD_PER_MTOK.output) / 1e6 };
+}
+const usd = (x) => "$" + x.toFixed(x < 0.1 ? 4 : 2);
+function table(columns, rows) {
+  if (!rows.length) return h("p", { class: "empty", text: "Nothing here." });
+  return h("div", { class: "table-wrap" }, h("table", {},
+    h("thead", {}, h("tr", {}, columns.map((c) => h("th", { class: c.num ? "num" : null, text: c.label })))),
+    h("tbody", {}, rows.map((r) => h("tr", {}, columns.map((c) => {
+      const v = c.get(r);
+      return h("td", { class: c.num ? "num" : null }, v instanceof Node ? v : (v === null || v === undefined ? "—" : String(v)));
+    }))))));
+}
+// Show {{placeholders}} as marks, the rest as text.
+function withMarks(text) {
+  const out = h("p", { class: "prose" });
+  let last = 0;
+  for (const m of text.matchAll(/\{\{\s*[^{}]*?\s*\}\}/g)) {
+    out.append(text.slice(last, m.index), h("mark", { text: m[0] }));
+    last = m.index + m[0].length;
+  }
+  out.append(text.slice(last));
+  return out;
+}
+
+// ---------------------------------------------------------------------------
+// Python
+// ---------------------------------------------------------------------------
+function setLoad(text, kind = "warn") {
+  const chip = document.getElementById("pyChip");
+  chip.className = "chip " + kind; chip.lastChild.textContent = text;
+  state.loadStep = text;
+  if (!state.form) render();
+}
+function withTimeout(promise, seconds, what) {
+  return Promise.race([promise, new Promise((_, reject) => setTimeout(
+    () => reject(new Error(`${what} did not finish within ${seconds} seconds.`)), seconds * 1000))]);
+}
+async function loadPython() {
+  const chip = document.getElementById("pyChip");
+  try {
+    if (typeof loadPyodide !== "function") throw new Error("Pyodide's script (pyodide/pyodide.js) did not load.");
+    setLoad("Loading Pyodide…");
+    py = await withTimeout(loadPyodide({ indexURL: new URL("pyodide/", location.href).href }), 60, "Loading Pyodide");
+    setLoad("Loading pydantic…");
+    const problems = [];
+    await withTimeout(py.loadPackage(["pydantic"], { messageCallback: (m) => setLoad(m), errorCallback: (m) => problems.push(m) }), 90, "Loading pydantic");
+    if (problems.length) throw new Error(problems.join("\n"));
+    setLoad("Loading the pipeline…");
+    const bundle = await (await fetch("python_bundle.json")).json();
+    for (const [path, text] of Object.entries(bundle.files)) {
+      const full = "/app/" + path;
+      py.FS.mkdirTree(full.slice(0, full.lastIndexOf("/")));
+      py.FS.writeFile(full, text);
+    }
+    py.globals.set("ENTRY", "/app/" + bundle.entry);
+    py.runPython("import sys; sys.path[:0] = ['/app', ENTRY]");
+    bridge = py.pyimport("demo_bridge");
+    studioBridge = py.pyimport("studio_bridge");   // PyMuPDF is loaded on the first upload
+    state.docTypes = JSON.parse(py.runPython("import json, studio_bridge; json.dumps(list(studio_bridge.DOCUMENT_TYPES))"));
+    const d = JSON.parse(bridge.defaults());
+    state.reference = d.reference;
+    state.form = formFrom(d.request);
+    const v = py.runPython("import pydantic, sys; f'Python {sys.version.split()[0]}, pydantic {pydantic.VERSION}'");
+    chip.className = "chip ok"; chip.lastChild.textContent = v;
+    await runTo("documents", { example: true });    // open in a working state: the fake run, marked as an example
+  } catch (e) {
+    chip.className = "chip err"; chip.lastChild.textContent = "Python did not load";
+    state.loadError = String(e && e.message ? e.message : e) + "\n\n" + await probe();
+  }
+  render();
+}
+// What this browser lets the page do, to say why Python did not load.
+async function probe() {
+  const out = [];
+  try { const r = await fetch("https://cdn.jsdelivr.net/pyodide/v0.29.3/full/pyodide-lock.json"); out.push("fetch from cdn.jsdelivr.net: HTTP " + r.status); }
+  catch (e) { out.push("fetch from cdn.jsdelivr.net: blocked (" + e.message + ")"); }
+  try { await WebAssembly.compile(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0])); out.push("WebAssembly: allowed"); }
+  catch (e) { out.push("WebAssembly: blocked (" + e.message + ")"); }
+  try { const r = await fetch("python_bundle.json"); out.push("fetch of the page's own file: HTTP " + r.status); }
+  catch (e) { out.push("fetch of the page's own file: blocked (" + e.message + ")"); }
+  return out.join("\n");
+}
+async function loadClaude() {
+  try {
+    if (window.claude && window.claude.use) {
+      sample = await window.claude.use("sample");
+      downloads = await window.claude.use("downloads");
+    }
+  } catch (e) { sample = null; }
+  render();
+}
+
+// ---------------------------------------------------------------------------
+// The run request from the config screen (contract §3)
+// ---------------------------------------------------------------------------
+function formFrom(req) {
+  const c = req.config;
+  return {
+    employerName: c.company.employerName, trainingProvider: c.company.trainingProvider || "",
+    examiner: c.company.examiner || "", absenceService: c.company.absenceService || "",
+    directorName: c.company.directorName || "",
+    departments: JSON.stringify(c.departments, null, 2),
+    employeeCount: 5, temporaryShare: c.temporaryShare, partTimeShare: c.partTimeShare,
+    asOfDate: c.asOfDate, notes: c.notes || "", seedSource: "reference",   // "reference" | "documents" | "none"
+  };
+}
+function seedsOf(f) {
+  if (f.seedSource === "reference") return [state.reference];
+  if (f.seedSource === "documents") return state.docSeeds && state.docSeeds.length ? state.docSeeds : null;
+  return null;
+}
+function buildRequest() {
+  const f = state.form;
+  let departments;
+  try { departments = JSON.parse(f.departments); }
+  catch (e) { throw new Error("Departments: not valid JSON (" + e.message + ")"); }
+  const company = { employerName: f.employerName };
+  for (const k of ["trainingProvider", "examiner", "absenceService", "directorName"]) if (f[k].trim()) company[k] = f[k].trim();
+  return {
+    config: {
+      company, departments,
+      employeeCount: Number(f.employeeCount), temporaryShare: Number(f.temporaryShare),
+      partTimeShare: Number(f.partTimeShare), asOfDate: f.asOfDate, notes: f.notes.trim() || null,
+    },
+    seedEmployees: seedsOf(f),
+    options: { fake_llm: state.mode === "fake" },
+  };
+}
+function budget() {
+  const f = state.form, n = Number(f.employeeCount) || 0, seeds = (seedsOf(f) || []).length;
+  const calls = Math.ceil(Math.max(0, n - seeds) / 25) + Math.ceil(n / 5) + n;
+  return { n, calls, withRetries: calls * 2 };
+}
+function settingsChanged() {
+  state.answers = {}; state.last = null; state.lastStep = null; state.example = false; state.packageCheck = null;
+}
+
+// ---------------------------------------------------------------------------
+// Running: the chain up to a step; in Claude mode, ask for each new prompt
+// ---------------------------------------------------------------------------
+async function runTo(step, opts = {}) {
+  if (state.busy || !bridge) return;
+  let request;
+  try { request = JSON.stringify(buildRequest()); }
+  catch (e) { state.last = { status: "error", error: { kind: "validation", stage: "request", message: e.message }, outputs: {}, calls: [], trace: [] }; render(); return; }
+  if (state.mode === "claude" && Number(state.form.employeeCount) > MAX_EMPLOYEES_WITH_CLAUDE) {
+    state.last = { status: "error", error: { kind: "validation", stage: "request", message: `With Claude, the demo makes at most ${MAX_EMPLOYEES_WITH_CLAUDE} employees per run (v1's limit). Lower the number, or use the fake model.` }, outputs: {}, calls: [], trace: [] };
+    render(); return;
+  }
+  state.busy = true; state.example = !!opts.example; state.abort = new AbortController(); state.notice = null; state.packageCheck = null;
+  render();
+  try {
+    for (let i = 0; i < MAX_RUNS; i++) {
+      const out = JSON.parse(bridge.run(request, state.mode, step, JSON.stringify(state.answers), state.seed));
+      state.last = out; state.lastStep = step;
+      if (out.status !== "need_answer") break;
+      state.live = { stage: out.stage, text: "", calls: out.calls.length + 1 };
+      render();
+      const entry = await ask(out.prompt);
+      state.live = null;
+      state.answers[out.key] = { ...entry, stage: out.stage };   // the stage: to ask again for one step
+      if (entry.error) {                 // show the stop as the chain reports it, then forget it
+        state.last = JSON.parse(bridge.run(request, state.mode, step, JSON.stringify(state.answers), state.seed));
+        delete state.answers[out.key];
+        break;
+      }
+    }
+  } catch (e) {
+    state.last = { status: "error", error: { kind: "chain", stage: "demo", message: String(e && e.message ? e.message : e) }, outputs: {}, calls: [], trace: [] };
+  } finally {
+    state.busy = false; state.live = null; state.abort = null;
+    render();
+  }
+}
+async function ask(prompt) {
+  if (!sample) return { error: { kind: "setup", message: "Claude is not available on this page. Open it on claude.ai, or use the fake model." } };
+  const started = performance.now();
+  try {
+    const r = await sample(prompt, {
+      model: MODEL, modelTier: "default", cache: false, signal: state.abort.signal,
+      onText: ({ text }) => { if (state.live) { state.live.text = text; renderLive(); } },
+    });
+    if (r.truncated) return { error: { kind: "refused", message: "Claude's answer was cut off. Use fewer employees per run." } };
+    return { text: r.text, model: r.modelApplied || MODEL, ms: Math.round(performance.now() - started) };
+  } catch (e) {
+    const code = e && (e.name === "AbortError" ? "cancelled" : e.code);
+    const [message, kind] = SAMPLE_ERRORS[code] || [`Claude could not answer (${code || "error"}). Run again.`, "retry"];
+    return { error: { kind, message } };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+function stepState(id) {
+  if (id === "studio") return state.studio.applied ? "ok" : "";
+  const last = state.last;
+  if (!last || !["personas", "events", "documents", "result"].includes(id)) return "";
+  const need = { personas: "cm_id", events: "dates_participants", documents: "fill", result: "fill" }[id];
+  if (last.outputs && last.outputs[need]) return "ok";
+  if (last.status === "error" && STEPS.find((s) => s.id === id)?.chain?.includes(last.error.stage)) return "err";
+  return "";
+}
+function renderRail() {
+  const rail = document.getElementById("rail");
+  rail.replaceChildren(...STEPS.map((s, i) => {
+    const st = stepState(s.id), n = state.studio.docs.length;
+    const text = s.id === "studio" ? (st === "ok" ? "applied" : n ? `${n} PDF${n === 1 ? "" : "s"}` : "optional")
+                                   : st === "ok" ? "done" : st === "err" ? "stopped" : "";
+    return h("button", { "aria-current": state.view === s.id ? "step" : null, onclick: () => { state.view = s.id; render(); } },
+      h("span", { class: "num", text: String(i + 1) }), h("span", { class: "label", text: s.label }),
+      h("span", { class: "state " + st, text }));
+  }), h("p", { class: "rail-note", text: "Each step runs the chain from the start up to that step. In Claude mode the answers Claude already gave are replayed, so only new prompts are sent." }));
+  const exp = document.getElementById("exportTop");
+  exp.disabled = state.busy || !bridge || !furthest();
+  exp.textContent = isDone("documents") || !furthest() ? "Export files (ZIP)" : "Export so far (ZIP)";
+  exp.onclick = exportRun;
+  const chip = document.getElementById("modeChip");
+  chip.className = "chip " + (state.mode === "claude" ? "accent" : "");
+  chip.lastChild.textContent = state.mode === "claude" ? `Claude · ${MODEL} · your account` : "Fake model · offline";
+}
+function render() {
+  renderRail();
+  const panel = document.getElementById("panel");
+  if (state.loadError) {
+    panel.replaceChildren(h("div", { class: "notice err" }, h("b", { text: "Python could not load in this browser." }), h("pre", { class: "box", text: state.loadError }),
+      h("p", { text: "The page serves Python (Pyodide) from its own files. Reload the page, or try another browser." })));
+    return;
+  }
+  if (!state.form) { panel.replaceChildren(h("div", { class: "card" }, h("h2", { text: "Loading" }), h("p", { class: "lede", text: "Starting Python in your browser and loading the pipeline (about ten seconds the first time)." }), h("p", { class: "muted", text: state.loadStep || "" }))); return; }
+  const view = { studio: viewStudio, configure: viewConfigure, personas: viewPersonas, events: viewEvents, documents: viewDocuments, result: viewResult }[state.view];
+  // replaceChildren turns a null into the text "null": leave the empty parts out.
+  panel.replaceChildren(...[noticeLine(), ...view()].filter(Boolean));
+}
+function renderLive() {
+  const box = document.getElementById("liveText");
+  if (box && state.live) box.textContent = state.live.text || "Waiting for Claude…";
+}
+function chainChips(ids) {
+  return h("div", { class: "steps-run" }, ids.map((id) => {
+    const c = CHAIN[id];
+    return h("span", { class: "owner" + (c.kind === "LLM" ? " llm" : "") + (c.stub ? " stub" : "") },
+      h("b", { text: `${c.n} ${c.name}` }), ` · ${c.kind} · ${c.owner}${c.stub ? " · stub" : ""}`);
+  }));
+}
+// --- Step controls: run a step, ask Claude again for it, go to the next one -----
+const labelOf = (id) => STEPS.find((s) => s.id === id).label;
+const chainOf = (id) => STEPS.find((s) => s.id === id).chain;   // by id: a new step must not shift them
+const nextOf = (id) => ORDER[ORDER.indexOf(id) + 1];
+const isDone = (id) => !!(FINAL[id] && state.last?.outputs?.[FINAL[id]]);
+const stoppedIn = (id) => state.last?.status === "error" && !!STEPS.find((s) => s.id === id)?.chain?.includes(state.last.error.stage);
+const hasCalls = (id) => (state.last?.calls || []).some((c) => c.stage === LLM_STAGE[id]);
+const furthest = () => ["documents", "events", "personas"].find(isDone) || null;
+async function goNext(id) {
+  const next = nextOf(id);
+  state.view = next; render();
+  if (FINAL[next] && !isDone(next)) await runTo(next);
+}
+// Forget Claude's answers for this step's LLM call (and its retry), then run up to it again.
+// The answers of the steps before it are replayed, so only this step gets new answers.
+async function askAgain(id) {
+  for (const [key, entry] of Object.entries(state.answers)) if (entry.stage === LLM_STAGE[id]) delete state.answers[key];
+  await runTo(id);
+}
+function stepBar(id) {
+  const label = labelOf(id), next = nextOf(id), nextLabel = labelOf(next);
+  const done = isDone(id), nextDone = isDone(next), stopped = stoppedIn(id), claude = state.mode === "claude";
+  const off = state.busy || !bridge;
+  const buttons = [];
+  if (!done) {
+    buttons.push(h("button", { class: "btn primary", disabled: off, onclick: () => (stopped && claude ? askAgain(id) : runTo(id)),
+      text: state.busy ? "Running…" : stopped ? (claude ? `Ask Claude again for ${label}` : `Run ${label} again`) : `Run ${label}` }));
+  } else {
+    buttons.push(h("button", { class: "btn primary", disabled: off, onclick: () => goNext(id),
+      text: state.busy ? "Running…" : FINAL[next] && !nextDone ? `Next: run ${nextLabel}` : `Next: ${nextLabel}` }));
+    if (claude && hasCalls(id) && !nextDone)
+      buttons.push(h("button", { class: "btn", disabled: off, onclick: () => askAgain(id), text: `Ask Claude again for ${label}` }));
+  }
+  const bar = h("div", { class: "card-head" }, buttons, h("span", { class: "spacer" }),
+    state.example ? h("span", { class: "chip warn", text: "Example: fake model, made on load" }) : null);
+  const parts = [bar];
+  if (done && claude && hasCalls(id) && nextDone)
+    parts.push(h("p", { class: "muted", text: `${nextLabel} has already run on these answers, so this step's answers stay. To ask Claude again for everything, use Start over on the Result step.` }));
+  if (done && !claude && hasCalls(id))
+    parts.push(h("p", { class: "muted", text: "The fake model gives the same answers every time. Choose Claude on the Configure step to ask for new ones." }));
+  return parts.concat(runNotices());
+}
+function resultBar() {
+  const off = state.busy || !bridge, full = isDone("documents"), claude = state.mode === "claude";
+  const bar = h("div", { class: "card-head" },
+    full ? h("button", { class: "btn primary", disabled: off, onclick: exportRun, text: "Export files (ZIP)" })
+         : h("button", { class: "btn primary", disabled: off, onclick: () => runTo("documents"), text: state.busy ? "Running…" : "Run all steps" }),
+    !full && furthest() ? h("button", { class: "btn", disabled: off, onclick: exportRun, text: "Export what has run so far" }) : null,
+    full && claude ? h("button", { class: "btn", disabled: off, onclick: () => { state.answers = {}; runTo("documents"); }, text: "Start over: ask Claude again for every step" }) : null,
+    h("span", { class: "spacer" }),
+    state.example ? h("span", { class: "chip warn", text: "Example: fake model, made on load" }) : null);
+  return [bar, ...runNotices()];
+}
+function noticeLine() {
+  if (!state.notice) return null;
+  return h("div", { class: "notice " + state.notice.kind, role: "status" }, h("span", { text: state.notice.text }));
+}
+// The files of the run, as a ZIP. Python writes the run's files from the same answers: the case
+// folders, the request, corrections, trace, LLM calls, each step's output and the document texts.
+// For a run through all steps, v1's export (v1_export.js: v1's code, unchanged; demo stand-in for
+// Export, step 9, Stylianos) adds AMEXIO's import package made from the case folders: import.xml
+// and one PDF per document, as v1 makes it from "Open case ZIP".
+const RUN_ID = "GEN-2026-0001";
+let v1Export = null;
+function loadV1Export() {
+  if (!v1Export) v1Export = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "v1_export.js";
+    script.onload = () => (window.V1Export ? resolve(window.V1Export) : reject(new Error("v1_export.js did not set V1Export.")));
+    script.onerror = () => { v1Export = null; reject(new Error("v1_export.js did not load.")); };
+    document.head.append(script);
+  });
+  return v1Export;
+}
+async function exportRun() {
+  const step = furthest();
+  if (!step || !bridge || state.busy) return;
+  const full = step === "documents";
+  state.busy = true; state.notice = { kind: "", text: "Writing the run's files…" }; render();
+  try {
+    const request = buildRequest();
+    await new Promise((r) => setTimeout(r, 30));          // let the notice paint before Python works
+    const files = JSON.parse(bridge.export_files(JSON.stringify(request), state.mode, step, JSON.stringify(state.answers), state.seed));
+    const v1 = await withTimeout(loadV1Export(), 30, "Loading v1's export");
+    let check;
+    if (full) {
+      const cases = {};
+      for (const [path, text] of Object.entries(files)) if (path.startsWith("cases/")) cases[path.slice("cases/".length)] = text;
+      state.notice = { kind: "", text: "Making AMEXIO's import package with v1's export…" }; render();
+      try {
+        const out = await v1.makePackage(cases, request.config.asOfDate, (done, total) => {
+          state.notice = { kind: "", text: `Making the PDFs with v1's export: ${done} of ${total}…` }; render();
+        });
+        check = out.check;
+        Object.assign(files, out.files);                   // paths start with the package folder
+      } catch (e) {
+        check = { made: false, error: "v1's export stopped: " + errText(e) };
+      }
+    } else {
+      check = { made: false, reason: `The run stopped after ${labelOf(step)}: the import package is made from a run through all steps.` };
+    }
+    state.packageCheck = full ? check : null;
+    files["package_check.json"] = JSON.stringify(check, null, 2) + "\n";
+    const inFolder = {};
+    for (const [path, data] of Object.entries(files)) inFolder[`${RUN_ID}/${path}`] = data;
+    const bytes = v1.zip(inFolder);
+    const name = `${RUN_ID}.zip`;
+    const text = !full ? `Saved ${name}: the run up to ${labelOf(step)}, without the import package (that needs a run through all steps).`
+      : check.made ? `Saved ${name}: the run and AMEXIO's import package, ${check.packageName}/ with import.xml and ${fmt(check.pdfs)} PDFs.`
+      : check.error ? `Saved ${name} without the import package. ${check.error}`
+      : `Saved ${name} without the import package: v1's checks found ${check.errors} error${check.errors === 1 ? "" : "s"}; package_check.json and the Result step list them.`;
+    await saveZip(name, bytes, text, full && !check.made ? "err" : "ok");
+  } catch (e) {
+    state.notice = { kind: "err", text: "The export failed: " + errText(e) };
+  } finally {
+    state.busy = false; render();
+  }
+}
+// Offer a ZIP to the viewer; Claude asks them to confirm the download.
+async function saveZip(filename, bytes, okText, okKind = "ok") {
+  if (!downloads) {
+    state.notice = { kind: "err", text: "Downloads are not available in this view of the page. Open the page itself on claude.ai and export again." };
+    render(); return;
+  }
+  try {
+    await downloads.save({ filename, data: new Blob([bytes], { type: "application/zip" }) });
+    state.notice = { kind: okKind, text: okText };
+  } catch (e) {
+    const declined = /declin|cancel/i.test(String(e && (e.code || e.message)));
+    state.notice = declined ? { kind: "", text: "Not saved: the download was cancelled." }
+                            : { kind: "err", text: "The ZIP was not saved" + (e && e.message ? `: ${e.message}` : ".") };
+  }
+  render();
+}
+function runNotices() {
+  const last = state.last;
+  const parts = [];
+  if (state.live) {
+    parts.push(h("div", { class: "notice live" },
+      h("div", { class: "row" }, h("b", { text: `Asking Claude: ${CHAIN[state.live.stage]?.name || state.live.stage}, call ${state.live.calls}` }),
+        h("span", { class: "spacer" }), h("button", { class: "btn small", onclick: () => state.abort && state.abort.abort(), text: "Stop" })),
+      h("pre", { class: "box", id: "liveText", text: state.live.text || "Waiting for Claude…" })));
+  }
+  if (last && last.status === "error") {
+    const e = last.error;
+    parts.push(h("div", { class: "notice err" },
+      h("b", { text: `The run stopped at ${CHAIN[e.stage]?.name || e.stage} (${e.kind}). Nothing was saved.` }),
+      h("pre", { class: "box", text: e.message + (e.field ? `\n\nfield: ${e.field}` : "") })));
+  }
+  return parts;
+}
+function callsFor(stages) {
+  const calls = (state.last?.calls || []).filter((c) => stages.includes(c.stage));
+  if (!calls.length) return h("p", { class: "empty", text: "No LLM call in this step yet." });
+  return h("div", { class: "panel" }, calls.map((call, i) => callCard(call, i)));
+}
+function callCard(call, i) {
+  const t = callTokens(call);
+  const time = call.attempts.map((a) => a.ms).filter((x) => x != null);
+  const ms = time.length ? time.reduce((a, b) => a + b, 0) : null;
+  const pill = call.ok ? h("span", { class: "chip ok", text: call.retries ? "valid after the retry" : "valid" }) : h("span", { class: "chip err", text: "failed" });
+  const body = h("div", { class: "call-body" });
+  const tabs = ["Prompt", "Answer", "Corrections", "Trace line"];
+  let current = "Prompt";
+  const tabBar = h("div", { class: "tabs", role: "tablist" });
+  const content = h("div");
+  const attempt = () => call.attempts[call.attempts.length - 1];
+  function show(name) {
+    current = name;
+    for (const b of tabBar.children) b.setAttribute("aria-selected", b.textContent.startsWith(name) ? "true" : "false");
+    if (name === "Prompt") content.replaceChildren(...call.attempts.map((a, k) => h("div", { class: "panel" },
+      call.attempts.length > 1 ? h("span", { class: "muted", text: `Attempt ${k + 1}${k ? " (the retry: the first prompt plus the refusal)" : ""}` }) : null,
+      h("pre", { class: "box", text: k ? a.prompt.slice(call.attempts[0].prompt.length).trim() : a.prompt }))));
+    if (name === "Answer") content.replaceChildren(...call.attempts.map((a, k) => h("div", { class: "panel" },
+      call.attempts.length > 1 ? h("span", { class: "muted", text: `Attempt ${k + 1}` }) : null,
+      h("pre", { class: "box", text: a.answer ?? "(no answer: " + (a.error || "the call failed") + ")" }))));
+    if (name === "Corrections") {
+      const refused = call.attempts.filter((a) => a.error);
+      content.replaceChildren(refused.length
+        ? h("div", { class: "panel" }, refused.map((a, k) => h("div", { class: "fix", text: `Attempt ${call.attempts.indexOf(a) + 1} refused by code: ${a.error}` })))
+        : h("div", { class: "fix none", text: "Code accepted the first answer: no correction." }));
+    }
+    if (name === "Trace line") content.replaceChildren(h("pre", { class: "box", text: JSON.stringify(call.trace, null, 2) }),
+      h("p", { class: "muted", text: state.mode === "claude"
+        ? "Claude on your account reports no token counts: the tokens in the trace and the cost above are estimates (characters ÷ 4, prices of the Model Selection document). cost_eur stays empty until the trace has a price table (open point 6)."
+        : "The fake model has no tokens; the estimate above shows what the same prompts would cost on the API." }));
+  }
+  for (const name of tabs) tabBar.append(h("button", { role: "tab", onclick: () => show(name), text: name + (name === "Corrections" && call.retries ? " (1)" : "") }));
+  body.append(tabBar, content);
+  show(current);
+  return h("details", { class: "call", open: !call.ok || null },
+    h("summary", {}, h("b", { text: `${CHAIN[call.stage]?.name || call.stage} · call ${i + 1}` }), pill,
+      h("span", { class: "stats", text: `≈${fmt(t.input)} in · ≈${fmt(t.output)} out tokens · ≈${usd(t.usd)} · retries ${call.retries}${ms != null ? ` · ${(ms / 1000).toFixed(1)} s` : ""}` })),
+    body);
+}
+
+// --- 0 · Example documents: Daniel's PDF Template Studio, offline ---------------
+// The studio's own functions (pdf_template_studio/app.py) run in Python here, through
+// studio_bridge.py: detection by its label rules, its templates and previews. "Use for the
+// run" is the demo's stand-in for Daniel's step 0, Create analysis (contract §3).
+const typeLabel = (id) => (id ? id.charAt(0).toUpperCase() + id.slice(1).replace(/_/g, " ") : "Not one of the nine");
+const byType = (a, b) => (a.documentType || "~").localeCompare(b.documentType || "~") || a.name.localeCompare(b.name);
+const studioBusy = () => !studioBridge || !!state.studio.loading || state.busy;
+async function loadStudio() {
+  const s = state.studio;
+  if (s.ready) return;
+  s.loading = "Loading PyMuPDF for the studio (about 17 MB, once)…"; render();
+  const problems = [];
+  await withTimeout(py.loadPackage(["pymupdf"], { messageCallback: () => {}, errorCallback: (m) => problems.push(m) }), 120, "Loading PyMuPDF");
+  if (problems.length) throw new Error(problems.join("\n"));
+  py.runPython("import studio_bridge; studio_bridge.studio()");   // reads Daniel's functions out of app.py now
+  s.ready = true;
+}
+async function addFiles(list) {
+  const s = state.studio;
+  if (studioBusy()) return;
+  const all = [...list];
+  const pdfs = all.filter((f) => /\.pdf$/i.test(f.name) || f.type === "application/pdf");
+  const big = pdfs.filter((f) => f.size > MAX_PDF_MB * 1e6);
+  const take = pdfs.filter((f) => f.size <= MAX_PDF_MB * 1e6);
+  s.error = null;
+  s.note = [all.length > pdfs.length ? `${all.length - pdfs.length} file(s) left out: not a PDF.` : "",
+            big.length ? `${big.map((f) => f.name).join(", ")}: larger than ${MAX_PDF_MB} MB, left out.` : ""].filter(Boolean).join(" ") || null;
+  if (!take.length) { render(); return; }
+  try {
+    await loadStudio();
+    s.loading = `Reading ${take.length} PDF${take.length === 1 ? "" : "s"} with the studio's rules…`; render();
+    py.FS.mkdirTree("/uploads");
+    const batch = [];
+    for (const file of take) {
+      const id = String(s.nextId++), path = `/uploads/${id}.pdf`;
+      py.FS.writeFile(path, new Uint8Array(await file.arrayBuffer()));
+      batch.push({ id, name: file.name, path });
+    }
+    await new Promise((r) => setTimeout(r, 30));      // let the notice paint: Python holds the page while it reads
+    const found = JSON.parse(studioBridge.detect(JSON.stringify(batch))).documents;
+    s.docs.push(...found);
+    s.docs.sort(byType);
+    if (!s.docs.some((d) => d.id === s.selected)) selectDoc((found.find((d) => !d.error) || found[0]).id, false);
+  } catch (e) {
+    s.error = errText(e);
+  } finally {
+    s.loading = null; render();
+  }
+}
+function selectDoc(id, draw = true) {
+  const s = state.studio;
+  s.selected = id; s.page = 0;
+  refreshPreview();
+  if (draw) render();
+}
+function refreshPreview() {
+  const s = state.studio, d = s.docs.find((x) => x.id === s.selected);
+  s.preview = null;
+  if (!d || d.error || !s.ready) return;
+  try { s.preview = JSON.parse(studioBridge.preview(d.path, JSON.stringify(d.fields), s.view, s.page)); }
+  catch (e) { s.preview = { error: errText(e) }; }
+}
+function removeDoc(id) {
+  const s = state.studio, d = s.docs.find((x) => x.id === id);
+  if (!d) return;
+  try { py.FS.unlink(d.path); } catch (e) { /* already gone */ }
+  s.docs = s.docs.filter((x) => x.id !== id);
+  if (s.selected === id) {
+    s.selected = null; s.preview = null;
+    const next = s.docs.find((x) => !x.error) || s.docs[0];
+    if (next) selectDoc(next.id, false);
+  }
+  render();
+}
+function clearDocs() {
+  const s = state.studio;
+  for (const d of s.docs) { try { py.FS.unlink(d.path); } catch (e) { /* already gone */ } }
+  Object.assign(s, { docs: [], selected: null, preview: null, note: null, error: null, applied: false });
+  render();
+}
+function fieldsChanged() { refreshPreview(); render(); }
+
+function viewStudio() {
+  const s = state.studio, off = studioBusy();
+  const pick = h("input", { type: "file", accept: ".pdf,application/pdf", multiple: true, hidden: true,
+    onchange: (e) => { addFiles(e.target.files); e.target.value = ""; } });
+  const drop = h("div", { class: "drop",
+      ondragover: (e) => { e.preventDefault(); e.currentTarget.classList.add("over"); },
+      ondragleave: (e) => e.currentTarget.classList.remove("over"),
+      ondrop: (e) => { e.preventDefault(); e.currentTarget.classList.remove("over"); addFiles(e.dataTransfer.files); } },
+    pick,
+    h("button", { class: "btn primary", disabled: off, onclick: () => pick.click(), text: s.docs.length ? "Add PDFs…" : "Choose PDFs…" }),
+    h("span", { class: "muted", text: "or drop them here. PDFs with text only (no OCR). They stay in this browser: nothing is uploaded, and nothing goes to Claude." }),
+    h("span", { class: "spacer" }),
+    s.docs.length ? h("button", { class: "btn small", disabled: off, onclick: clearDocs, text: "Remove all" }) : null);
+  const intro = h("div", { class: "card" },
+    h("h2", { text: "Example documents" }),
+    h("p", { class: "lede", text: "Optional. Upload example PDFs of the documents the run should make, such as AMEXIO's mock dossier. Daniel's PDF Template Studio finds their fields with its offline rules (no API, no AI), makes a template of each, and proposes run settings and seed employees for Configure." }),
+    h("div", { class: "steps-run" },
+      h("span", { class: "owner" }, h("b", { text: "Template Studio" }), " · offline rules · Daniel"),
+      h("span", { class: "owner stub" }, h("b", { text: "0 Create analysis" }), " · code · Daniel · stand-in")),
+    drop,
+    s.loading ? h("div", { class: "notice live", role: "status" }, h("b", { text: s.loading })) : null,
+    s.note ? h("p", { class: "muted", text: s.note }) : null,
+    s.error ? h("div", { class: "notice err" }, h("b", { text: "The studio stopped." }), h("pre", { class: "box", text: s.error })) : null,
+    s.docs.length ? null : h("div", { class: "card-head" },
+      h("button", { class: "btn", disabled: state.busy, onclick: () => { state.view = "configure"; render(); }, text: "Skip: go to Configure" })));
+  if (!s.docs.length) return [intro];
+  return [intro, studioDocs(), studioDoc(), studioUse(), studioExport()];
+}
+function studioDocs() {
+  const s = state.studio, off = studioBusy();
+  const ready = s.docs.filter((d) => !d.error), untyped = ready.filter((d) => !d.documentType).length;
+  const types = new Set(ready.map((d) => d.documentType).filter(Boolean)).size;
+  const rows = s.docs.map((d) => {
+    const used = d.fields.filter((f) => f.replace).length;
+    const type = h("select", { "aria-label": `Document type of ${d.name}`, disabled: off || !!d.error,
+        onclick: (e) => e.stopPropagation(),
+        onchange: (e) => { d.documentType = e.target.value || null; s.docs.sort(byType); render(); } },
+      h("option", { value: "", text: typeLabel(null), selected: !d.documentType }),
+      state.docTypes.map((t) => h("option", { value: t, text: typeLabel(t), selected: d.documentType === t })));
+    const status = d.error ? h("span", { class: "chip err", text: "no text" })
+      : d.documentType ? h("span", { class: "chip ok", text: "ready" }) : h("span", { class: "chip warn", text: "no type" });
+    return h("tr", { class: "click" + (d.id === s.selected ? " sel" : ""), onclick: () => selectDoc(d.id) },
+      h("td", {}, h("b", { text: d.name })),
+      h("td", { text: d.error ? "—" : d.group }),
+      h("td", {}, type),
+      h("td", { class: "num", text: d.error ? "—" : `${used} of ${d.fields.length}` }),
+      h("td", { class: "num", text: d.error ? "—" : String(d.pageCount) }),
+      h("td", {}, status),
+      h("td", {}, h("button", { class: "btn small", disabled: off, onclick: (e) => { e.stopPropagation(); removeDoc(d.id); }, text: "Remove" })));
+  });
+  const head = ["Document", "The studio's type", "Document type", "Fields in use", "Pages", "", ""];
+  return h("div", { class: "card" },
+    h("div", { class: "card-head" }, h("h3", { text: "Documents" }), h("span", { class: "spacer" }),
+      h("span", { class: "muted", text: `${s.docs.length} PDF${s.docs.length === 1 ? "" : "s"} · ${types} document type${types === 1 ? "" : "s"}${untyped ? ` · ${untyped} without a type` : ""}` })),
+    h("p", { class: "muted", text: "The studio names a type from the file name, else from keywords in the text (its signatures). Each type maps to one of the case model's nine document types, as template contract v0.2 asks; change it where it is wrong. Select a row to see its fields." }),
+    h("div", { class: "table-wrap" }, h("table", {},
+      h("thead", {}, h("tr", {}, head.map((t, i) => h("th", { class: i === 3 || i === 4 ? "num" : null, text: t })))),
+      h("tbody", {}, rows))));
+}
+function studioDoc() {
+  const s = state.studio, d = s.docs.find((x) => x.id === s.selected);
+  if (!d) return null;
+  if (d.error) return h("div", { class: "card" }, h("h3", { text: d.name }),
+    h("div", { class: "notice err" }, h("b", { text: "The studio cannot read this PDF." }), h("span", { text: d.error })));
+  const off = studioBusy(), pv = s.preview;
+  const fields = d.fields.length ? h("div", { class: "table-wrap" }, h("table", {},
+    h("thead", {}, h("tr", {}, ["Use", "Placeholder", "Value in the PDF"].map((t) => h("th", { text: t })))),
+    h("tbody", {}, d.fields.map((f) => h("tr", {},
+      h("td", {}, h("input", { type: "checkbox", "aria-label": `Use ${f.placeholder}`, checked: !!f.replace, disabled: off,
+        onchange: (e) => { f.replace = e.target.checked; fieldsChanged(); } })),
+      h("td", {}, h("input", { type: "text", "aria-label": `Placeholder for ${f.original}`, value: f.placeholder, disabled: off,
+        onchange: (e) => { const v = e.target.value.trim().replace(/[{}]/g, "").replace(/\s+/g, "_"); if (v) f.placeholder = v; fieldsChanged(); } })),
+      h("td", { text: f.original })))))) : h("p", { class: "empty", text: "The rules found no field in this PDF." });
+  const tabs = h("div", { class: "tabs", role: "tablist" }, [["template", "Template"], ["original", "Original"]].map(([v, label]) =>
+    h("button", { role: "tab", "aria-selected": s.view === v ? "true" : "false", onclick: () => { s.view = v; fieldsChanged(); }, text: label })));
+  const pager = d.pageCount > 1 ? h("div", { class: "pager" },
+    h("button", { class: "btn small", disabled: s.page === 0, onclick: () => { s.page--; fieldsChanged(); }, text: "Previous page" }),
+    h("span", { class: "muted", text: `Page ${s.page + 1} of ${d.pageCount}` }),
+    h("button", { class: "btn small", disabled: s.page >= d.pageCount - 1, onclick: () => { s.page++; fieldsChanged(); }, text: "Next page" })) : null;
+  const image = !pv ? h("p", { class: "empty", text: "No preview." })
+    : pv.error ? h("div", { class: "notice err" }, h("span", { text: pv.error }))
+    : h("img", { class: "page-img", src: pv.image, alt: `${s.view === "template" ? "Template" : "Original"} of ${d.name}, page ${s.page + 1}` });
+  return h("div", { class: "card" },
+    h("div", { class: "card-head" }, h("h3", { text: d.name }),
+      h("span", { class: "chip " + (d.documentType ? "ok" : "warn"), text: typeLabel(d.documentType) })),
+    h("div", { class: "studio-doc" },
+      h("div", {},
+        h("p", { class: "muted", text: "The fields the rules found. A field in use becomes {{PLACEHOLDER}} in the template, and Use for the run reads its value. Switch off a value that is wrong." }),
+        fields),
+      h("div", {}, tabs, pager, image,
+        pv && pv.warnings && pv.warnings.length ? h("div", { class: "fix", text: pv.warnings.join(" ") } ) : null)));
+}
+// The stand-in for step 0: what the documents say, next to what Configure has now.
+function studioUse() {
+  const s = state.studio;
+  const card = (...children) => h("div", { class: "card" }, h("h3", { text: "Use for the run" }), ...children);
+  if (!s.docs.some((d) => !d.error && d.documentType)) return card(h("p", { class: "empty", text: "No document with a document type yet." }));
+  let now, a;
+  try { now = buildRequest(); }
+  catch (e) { return card(h("div", { class: "notice err" }, h("span", { text: "Fix Configure first: " + e.message }))); }
+  try { a = JSON.parse(studioBridge.analysis(JSON.stringify(s.docs), JSON.stringify(now))); }
+  catch (e) { a = { error: errText(e) }; }
+  if (a.error) return card(h("div", { class: "notice err" }, h("span", { text: a.error })));
+  const prop = a.request, same = (x, y) => JSON.stringify(x ?? null) === JSON.stringify(y ?? null);
+  const deps = (list) => (list || []).map((d) => `${d.name} (${d.positions.length})`).join(", ") || "—";
+  const people = (list) => (list && list.length ? list.map((e) => `${e.firstName} ${e.lastName}`).join(", ") : "none");
+  const pc = prop.config, nc = now.config;
+  const rows = [
+    ["Employer", pc.company.employerName, nc.company.employerName],
+    ["Training provider", pc.company.trainingProvider, nc.company.trainingProvider],
+    ["Examiner", pc.company.examiner, nc.company.examiner],
+    ["Data as of", pc.asOfDate, nc.asOfDate],
+    ["Departments (positions)", deps(pc.departments), deps(nc.departments), same(pc.departments, nc.departments)],
+    ["Seed employees", people(prop.seedEmployees), people(now.seedEmployees), same(prop.seedEmployees, now.seedEmployees)],
+    ["Number of employees", a.seedCount ? `${pc.employeeCount}: ${a.seedCount} from the documents, ${pc.employeeCount - a.seedCount} generated` : String(pc.employeeCount),
+      String(nc.employeeCount), pc.employeeCount === nc.employeeCount],
+  ].map(([what, p, n, eq]) => ({ what, p: p ?? "—", n: n ?? "—", eq: eq ?? (p ?? null) === (n ?? null) }));
+  const changes = rows.filter((r) => !r.eq).length;
+  const compare = h("div", { class: "table-wrap" }, h("table", {},
+    h("thead", {}, h("tr", {}, ["Setting", "From the documents", "In Configure now"].map((t) => h("th", { text: t })))),
+    h("tbody", {}, rows.map((r) => h("tr", { class: r.eq ? null : "changed" },
+      h("td", {}, r.eq ? r.what : h("b", { text: r.what })), h("td", { text: r.p }), h("td", { class: r.eq ? null : "muted", text: r.n }))))));
+  const seeds = a.seedCount ? table([
+    { label: "Name", get: (e) => `${e.firstName} ${e.lastName}` }, { label: "Department", get: (e) => e.department },
+    { label: "Position", get: (e) => e.position }, { label: "Hired", get: (e) => e.hireDate },
+    { label: "Contract", get: (e) => e.contractType }, { label: "Hours", num: true, get: (e) => e.hoursPerWeek },
+    { label: "Salary (EUR)", num: true, get: (e) => fmt(e.startSalary) }, { label: "Manager", get: (e) => e.managerName },
+  ], prop.seedEmployees) : null;
+  const sources = table([{ label: "What", get: (f) => f.what }, { label: "Value", get: (f) => f.value }, { label: "From", get: (f) => f.from }], a.facts);
+  return card(
+    h("p", { class: "muted", text: "Demo stand-in for Daniel's step 0, Create analysis (contract §3): code reads the values the studio found, without an LLM, and proposes the run request. What PDFs cannot say stays as Configure has it. Apply puts it into Configure; nothing changes until you do." }),
+    compare,
+    a.warnings.length ? h("div", { class: "panel" }, a.warnings.map((w) => h("div", { class: "fix", text: w }))) : null,
+    seeds ? h("h3", { text: `Seed employees from the employment contracts (${a.seedCount})` }) : null, seeds,
+    h("details", { class: "call" }, h("summary", {}, h("b", { text: "Where each value comes from" })), h("div", { class: "call-body" }, sources,
+      h("p", { class: "muted", text: "Kept from Configure: " + a.kept.join(", ") + "." }))),
+    h("div", { class: "card-head" },
+      h("button", { class: "btn primary", disabled: state.busy || !changes, onclick: () => applyProposal(prop, a.seedCount),
+        text: changes ? `Apply to Configure (${changes} change${changes === 1 ? "" : "s"})` : "Configure uses these values" }),
+      h("button", { class: "btn", disabled: state.busy, onclick: () => { state.view = "configure"; render(); }, text: "Next: Configure" })));
+}
+function applyProposal(prop, seedCount) {
+  const f = state.form, c = prop.config;
+  Object.assign(f, {
+    employerName: c.company.employerName, trainingProvider: c.company.trainingProvider || "",
+    examiner: c.company.examiner || "", departments: JSON.stringify(c.departments, null, 2),
+    asOfDate: c.asOfDate, employeeCount: c.employeeCount,
+  });
+  if (seedCount) { state.docSeeds = prop.seedEmployees; f.seedSource = "documents"; }
+  settingsChanged();
+  state.studio.applied = true;
+  state.notice = { kind: "ok", text: "Applied to Configure. The next run uses these settings (the example run made on load is cleared)." };
+  render();
+}
+function studioExport() {
+  const s = state.studio, ready = s.docs.filter((d) => !d.error), untyped = ready.filter((d) => !d.documentType).length;
+  return h("div", { class: "card" },
+    h("h3", { text: "Export the templates" }),
+    h("p", { class: "muted", text: "A ZIP in the studio's layout: per document <type>/<nnnn>_<name>_template.pdf and its _fields.json, plus manifest.json with template contract v0.2's contract, domain and documentType."
+      + (untyped ? ` ${untyped} document${untyped === 1 ? " has" : "s have"} no document type: the manifest notes that the backend refuses ${untyped === 1 ? "it" : "them"}.` : "") }),
+    h("div", { class: "card-head" },
+      h("button", { class: "btn", disabled: !ready.length || studioBusy(), onclick: exportTemplates, text: "Export templates (ZIP)" })));
+}
+async function exportTemplates() {
+  const s = state.studio, n = s.docs.filter((d) => !d.error).length;
+  let bytes;
+  try { const p = studioBridge.export_templates(JSON.stringify(s.docs)); bytes = p.toJs(); p.destroy(); }
+  catch (e) { state.notice = { kind: "err", text: "The template export failed: " + errText(e) }; render(); return; }
+  await saveZip("templates.zip", bytes, `Saved templates.zip: ${n} template${n === 1 ? "" : "s"}.`);
+}
+
+// --- 1 · Configure -----------------------------------------------------------
+function viewConfigure() {
+  const f = state.form, b = budget();
+  const set = (k, parse = (x) => x) => (e) => { f[k] = parse(e.target.type === "checkbox" ? e.target.checked : e.target.value); settingsChanged(); render(); };
+  const field = (id, label, input, hint) => h("div", { class: "field" + (input.tagName === "TEXTAREA" ? " wide" : "") }, h("label", { for: id, text: label }), input, hint ? h("span", { class: "hint", text: hint }) : null);
+  const text = (id, k) => h("input", { id, value: f[k], onchange: set(k) });
+  const seedChoice = (value, title, note, disabled) => h("label", {},
+    h("input", { type: "radio", name: "seedSource", value, disabled, checked: f.seedSource === value, onchange: set("seedSource") }),
+    h("span", {}, h("b", { text: title }), h("small", { text: note })));
+  const claudeOff = !sample;
+  return [
+    h("div", { class: "card" },
+      h("h2", { text: "Configure the run" }),
+      h("p", { class: "lede", text: "This becomes the run request of POST /runs (contract §3). The steps then run the backend's chain on it: the LLM proposes, code decides every ID, date, amount and closed-list value." })),
+    h("div", { class: "card" },
+      h("h3", { text: "Model" }),
+      h("div", { class: "choice" },
+        h("label", {}, h("input", { type: "radio", name: "mode", id: "modeFake", checked: state.mode === "fake", onchange: () => { state.mode = "fake"; settingsChanged(); render(); } }),
+          h("span", {}, h("b", { text: "Fake model, offline" }), h("small", { text: "Deterministic answers from pipeline/fake_answers.py (options.fake_llm). No Claude calls." }))),
+        h("label", {}, h("input", { type: "radio", name: "mode", id: "modeClaude", disabled: claudeOff, checked: state.mode === "claude", onchange: () => { state.mode = "claude"; settingsChanged(); render(); } }),
+          h("span", {}, h("b", { text: "Claude, on your Claude account" }),
+            h("small", { text: claudeOff ? "Not available here: open this page on claude.ai." : `${MODEL} through this page, like v1. Claude asks for your permission on the first call.` }))))),
+    h("div", { class: "card" },
+      h("h3", { text: "Employees" }),
+      h("div", { class: "form" },
+        field("employeeCount", "Number of employees", h("input", { id: "employeeCount", type: "number", min: "1", max: "1000", value: f.employeeCount, onchange: set("employeeCount") }),
+          state.mode === "claude" ? `At most ${MAX_EMPLOYEES_WITH_CLAUDE} with Claude.` : null),
+        field("temporaryShare", "Share on a temporary contract", h("input", { id: "temporaryShare", type: "number", step: "0.05", min: "0", max: "1", value: f.temporaryShare, onchange: set("temporaryShare") })),
+        field("partTimeShare", "Share working part time", h("input", { id: "partTimeShare", type: "number", step: "0.05", min: "0", max: "1", value: f.partTimeShare, onchange: set("partTimeShare") })),
+        field("asOfDate", "Data as of", h("input", { id: "asOfDate", type: "date", value: f.asOfDate, onchange: set("asOfDate") })),
+        field("seed", "Seed (repeatable CM ID and Plot)", h("input", { id: "seed", type: "number", value: state.seed, onchange: (e) => { state.seed = Number(e.target.value) || 0; settingsChanged(); render(); } }))),
+      h("div", { class: "field" }, h("label", { text: "Seed employees: their facts stay as given, and Personas proposes the others. They count in the number of employees." }),
+        h("div", { class: "choice" },
+          seedChoice("reference", "AMEXIO's reference employee", "100101 Jan de Vries, as AMEXIO's file has him."),
+          seedChoice("documents", "The employees of the example documents",
+            state.docSeeds ? `${state.docSeeds.length}: ${state.docSeeds.map((e) => `${e.firstName} ${e.lastName}`).join(", ")}.` : "Apply them on the Example documents step first.", !state.docSeeds),
+          seedChoice("none", "None", "Personas proposes every employee.")))),
+    h("div", { class: "card" },
+      h("h3", { text: "Company and departments" }),
+      h("div", { class: "form" },
+        field("employerName", "Employer", text("employerName", "employerName")),
+        field("trainingProvider", "Training provider", text("trainingProvider", "trainingProvider")),
+        field("examiner", "Examiner", text("examiner", "examiner")),
+        field("absenceService", "Absence service", text("absenceService", "absenceService")),
+        field("directorName", "Director", text("directorName", "directorName")),
+        field("notes", "Scenario notes (data for the prompt, at most 600 characters)", h("textarea", { id: "notes", maxlength: "600", onchange: set("notes") }, f.notes)),
+        field("departments", "Departments and positions (JSON, as in the run request; salaries are monthly, in euros)", h("textarea", { id: "departments", rows: "14", onchange: set("departments") }, f.departments)))),
+    h("div", { class: "card" },
+      h("div", { class: "budget" },
+        h("div", {}, h("span", { class: "big", text: String(b.n) }), h("span", { class: "what", text: "employees" })),
+        h("div", {}, h("span", { class: "big", text: `≤ ${b.calls}` }), h("span", { class: "what", text: "LLM calls (contract §9)" })),
+        h("div", {}, h("span", { class: "big", text: `≤ ${b.withRetries}` }), h("span", { class: "what", text: "with one retry each" }))),
+      h("div", { class: "card-head" },
+        h("button", { class: "btn primary", disabled: state.busy || !bridge, onclick: async () => { state.view = "personas"; render(); await runTo("personas"); }, text: "Next: run Personas" }),
+        h("button", { class: "btn", disabled: state.busy || !bridge, onclick: async () => { state.view = "result"; render(); await runTo("documents"); }, text: "Run all steps" }))),
+    h("details", { class: "call" }, h("summary", {}, h("b", { text: "The run request sent to run_chain" })),
+      h("div", { class: "call-body" }, h("pre", { class: "box", text: (() => { try { return JSON.stringify(buildRequest(), null, 2); } catch (e) { return e.message; } })() }))),
+  ];
+}
+
+// --- 2 · Personas -------------------------------------------------------------
+function viewPersonas() {
+  const o = state.last?.outputs || {};
+  const cm = o.cm_id;
+  return [
+    h("div", { class: "card" }, h("h2", { text: "Personas" }),
+      h("p", { class: "lede", text: "The LLM proposes names, a department and a position only. CM ID then decides contract type, hours, hire date and salary by the HR template's rules, and the case model assigns the personnel numbers and IDs." }),
+      chainChips(chainOf("personas")), ...stepBar("personas")),
+    h("div", { class: "card" }, h("h3", { text: "LLM calls" }),
+      o.cm_id && !o.personas ? h("p", { class: "muted", text: "No Personas call: every employee is a seed." }) : null,
+      callsFor(["personas"])),
+    h("div", { class: "card" }, h("h3", { text: "The employees, as CM ID decided them" }),
+      cm ? table([
+        { label: "Number", get: (r) => r.employeeNumber }, { label: "Name", get: (r) => r.name },
+        { label: "Department", get: (r) => r.department }, { label: "Position", get: (r) => r.position },
+        { label: "Hired", get: (r) => r.hireDate }, { label: "Contract", get: (r) => r.contract },
+        { label: "Hours", get: (r) => r.hours, num: true }, { label: "Salary (EUR)", get: (r) => fmt(r.salary), num: true },
+        { label: "Manager", get: (r) => r.manager },
+      ], cm.employees) : h("p", { class: "empty", text: "Run this step to see the employees." }),
+      cm ? correctionsList(cm.corrections) : null),
+  ];
+}
+function correctionsList(list) {
+  if (!list || !list.length) return h("p", { class: "muted", text: "The case model corrected nothing on the way in." });
+  return h("div", { class: "panel" }, h("b", { text: "Corrected by the case model" }), list.map((c) => h("div", { class: "fix", text: `${c.employee_id}: ${c.message}` })));
+}
+
+// --- 3 · Event content ---------------------------------------------------------
+function slotLabel(s) {
+  const extra = { training: () => `${s.durationDays} day${s.durationDays > 1 ? "s" : ""}`, appraisal: () => `${s.year} · ${s.rating}`,
+    contract_change: () => s.change.replace(/_/g, " ") + (s.newPosition ? ` → ${s.newPosition}` : ""), termination: () => s.reason }[s.type];
+  return `${s.slot} ${s.type.replace(/_/g, " ")}${extra ? " · " + extra() : ""}`;
+}
+function viewEvents() {
+  const o = state.last?.outputs || {};
+  const content = {};
+  for (const c of o.event_content?.content || []) for (const s of c.slots) content[c.employeeNumber + s.slot] = s;
+  const slots = [];
+  for (const out of o.plot?.outlines || []) for (const s of out.slots) slots.push({ n: out.employeeNumber, s, c: content[out.employeeNumber + s.slot] });
+  return [
+    h("div", { class: "card" }, h("h2", { text: "Event content" }),
+      h("p", { class: "lede", text: "Plot picks each employee's events and their closed-list values. The LLM writes only text for each slot, by echoing its key; Dates & participants then dates them and adds who took part." }),
+      chainChips(chainOf("events")), ...stepBar("events")),
+    h("div", { class: "card" }, h("h3", { text: "The plot, as code decided it" }),
+      o.plot ? table([{ label: "Employee", get: (r) => r.employeeNumber },
+        { label: "Slots", get: (r) => h("div", { class: "slots" }, r.slots.map((s) => h("span", { class: "slot", text: slotLabel(s) }))) }], o.plot.outlines)
+        : h("p", { class: "empty", text: "Run this step to see the plot." })),
+    h("div", { class: "card" }, h("h3", { text: "LLM calls" }), callsFor(["event_content"])),
+    h("div", { class: "card" }, h("h3", { text: "The text per slot" }),
+      o.event_content ? table([{ label: "Employee", get: (r) => r.n }, { label: "Slot", get: (r) => slotLabel(r.s) },
+        { label: "Summary", get: (r) => r.c?.summary }, { label: "Course, comment or reason", get: (r) => r.c ? withMarks(r.c.course || r.c.comment || r.c.reason || "—") : null }], slots)
+        : h("p", { class: "empty", text: "No event content yet." })),
+    h("div", { class: "card" }, h("div", { class: "card-head" }, h("h3", { text: "The dated events" }), h("span", { class: "chip warn", text: "Dates & participants is Valentin's stub" })),
+      o.dates_participants ? table([{ label: "Employee", get: (r) => r.employeeNumber }, { label: "Event", get: (r) => r.eventId },
+        { label: "Type", get: (r) => r.type.replace(/_/g, " ") }, { label: "Date", get: (r) => r.date },
+        { label: "Participants", get: (r) => r.participants.join(", ") },
+        { label: "Facts", get: (r) => Object.entries(r.details).map(([k, v]) => `${k}: ${typeof v === "object" ? (v.amount ?? JSON.stringify(v)) : v}`).join(" · ") || "—" }], o.dates_participants.events)
+        : h("p", { class: "empty", text: "No dated events yet." })),
+  ];
+}
+
+// --- 4 · Document text ----------------------------------------------------------
+function viewDocuments() {
+  const o = state.last?.outputs || {};
+  const plans = [];
+  for (const p of o.document_plan?.plans || []) for (const d of p.documents) plans.push({ n: p.employeeNumber, ...d });
+  const byDoc = {};
+  for (const t of o.document_text?.texts || []) (byDoc[t.employeeNumber + " " + t.doc] ||= []).push(t);
+  return [
+    h("div", { class: "card" }, h("h2", { text: "Document text" }),
+      h("p", { class: "lede", text: "Document plan picks the documents that get LLM text. One call per dossier writes all its sections, with every name, date and amount as a placeholder; the placeholder check sends anything typed out back for the one retry." }),
+      chainChips(chainOf("documents")), ...stepBar("documents")),
+    h("div", { class: "card" }, h("h3", { text: "The document plan" }),
+      o.document_plan ? table([{ label: "Employee", get: (r) => r.n }, { label: "Key", get: (r) => r.doc }, { label: "Type", get: (r) => r.type.replace(/_/g, " ") },
+        { label: "Event", get: (r) => r.eventId }, { label: "Sections", get: (r) => r.sections.join(", ") }], plans)
+        : h("p", { class: "empty", text: "Run this step to see the plan." })),
+    h("div", { class: "card" }, h("h3", { text: "LLM calls" }), callsFor(["document_text"])),
+    h("div", { class: "card" }, h("div", { class: "card-head" }, h("h3", { text: "The texts" }), h("span", { class: "chip warn", text: "Filled preview: demo stand-in for Valentin's Fill" })),
+      Object.keys(byDoc).length ? h("div", { class: "panel" }, Object.entries(byDoc).map(([k, sections]) => h("div", { class: "doc" },
+        h("div", { class: "doc-head" }, h("b", { text: `${sections[0].employeeNumber} · ${sections[0].doc}` }), h("span", { class: "muted", text: `${(sections[0].type || "").replace(/_/g, " ")} · ${sections[0].eventId}` })),
+        sections.map((t) => h("div", { class: "grid2" },
+          h("div", {}, h("div", { class: "label", text: `${t.section} · as written` }), withMarks(t.text)),
+          h("div", {}, h("div", { class: "label", text: `${t.section} · filled preview` }), h("p", { class: "prose", text: t.filled }),
+            t.problems.length ? h("div", { class: "fix", text: t.problems.join("; ") }) : null)))))) 
+        : h("p", { class: "empty", text: "No texts yet." })),
+  ];
+}
+
+// --- 5 · Result ----------------------------------------------------------------
+function viewResult() {
+  const last = state.last, result = last?.result;
+  const calls = last?.calls || [];
+  const tok = calls.reduce((a, c) => { const t = callTokens(c); return { input: a.input + t.input, output: a.output + t.output, usd: a.usd + t.usd }; }, { input: 0, output: 0, usd: 0 });
+  const copy = async (data) => { try { await navigator.clipboard.writeText(JSON.stringify(data, null, 2)); } catch (e) { /* not allowed here */ } };
+  return [
+    h("div", { class: "card" }, h("h2", { text: "Result" }),
+      h("p", { class: "lede", text: "The cases after all eight steps, in the case model's own shape (case.schema.json), the corrections and the trace: one line per code step and per LLM call (contract §8)." }),
+      ...resultBar(),
+      h("p", { class: "muted", text: "The ZIP holds one folder per case in the case model's own files (case.json, cast.json, storyline.json, documents.json), the run request, the corrections, the trace, every LLM call with its prompts and answers, each step's output and the document texts. After all steps it also holds AMEXIO's import package, hr-dossier-import/ with import.xml and one PDF per document, made from the case folders by v1's export, unchanged: a demo stand-in for Export (step 9, Stylianos)." })),
+    packageCard(),
+    result ? h("div", { class: "tiles" },
+      [["cases", result.cases.length], ["events", result.cases.reduce((a, c) => a + Object.keys(c.events).length, 0)],
+       ["LLM calls", calls.length], ["retries", calls.reduce((a, c) => a + c.retries, 0)],
+       ["≈ tokens in", fmt(tok.input)], ["≈ tokens out", fmt(tok.output)], ["≈ API cost", usd(tok.usd)]]
+        .map(([what, v]) => h("div", { class: "tile" }, h("div", { class: "big", text: String(v) }), h("div", { class: "what", text: what }))))
+      : h("div", { class: "card" }, h("p", { class: "empty", text: "Run all steps to see the result." })),
+    result ? h("div", { class: "card" }, h("div", { class: "card-head" }, h("h3", { text: "The cases" }), h("span", { class: "spacer" }),
+        h("button", { class: "btn small", onclick: () => copy(result.cases), text: "Copy cases" })),
+      h("pre", { class: "box", text: JSON.stringify(result.cases[0], null, 2) }),
+      h("p", { class: "muted", text: `The first of ${result.cases.length} cases, as the chain made them; Export files has them all.` }),
+      correctionsList(result.corrections)) : null,
+    last && last.trace?.length ? h("div", { class: "card" }, h("div", { class: "card-head" }, h("h3", { text: "The trace" }), h("span", { class: "spacer" }),
+        h("button", { class: "btn small", onclick: () => copy(last.trace), text: "Copy trace" })),
+      table([{ label: "Stage", get: (t) => t.stage }, { label: "Kind", get: (t) => t.kind },
+        { label: "OK", get: (t) => h("span", { class: "chip " + (t.ok ? "ok" : "err"), text: t.ok ? "ok" : "failed" }) },
+        { label: "ms", get: (t) => t.ms, num: true }, { label: "Model", get: (t) => t.model },
+        { label: "Input tokens", get: (t) => t.input_tokens, num: true }, { label: "Output tokens", get: (t) => t.output_tokens, num: true },
+        { label: "Retries", get: (t) => t.retries, num: true }, { label: "cost_eur", get: (t) => t.cost_eur }, { label: "Error", get: (t) => t.error }], last.trace),
+      h("p", { class: "muted", text: "In Claude mode, ms is the Python side's time and the tokens are estimates; the call cards show Claude's time. cost_eur stays empty: the trace has no price table yet." })) : null,
+  ];
+}
+
+// v1's checks of the import package in the last export.
+function packageCard() {
+  const pc = state.packageCheck;
+  if (!pc) return null;
+  const head = h("h3", { text: "The import package in the last export" });
+  if (pc.error) return h("div", { class: "card" }, head, h("div", { class: "notice err" }, h("span", { text: pc.error })));
+  return h("div", { class: "card" }, head,
+    h("p", { class: pc.made ? "lede" : "", text: pc.made
+      ? `${pc.packageName}/: import.xml and ${fmt(pc.pdfs)} PDFs for ${pc.cases} cases, made by v1's export. v1's checks: ${pc.errors} errors, ${pc.warnings} warning${pc.warnings === 1 ? "" : "s"}.`
+      : `Not made: v1's checks found ${pc.errors} error${pc.errors === 1 ? "" : "s"}, so, as in v1, no package was exported.` }),
+    table([{ label: "Document type", get: (c) => c.label }, { label: "Documents", num: true, get: (c) => fmt(c.count) }], pc.counts),
+    pc.issues.length ? h("div", { class: "panel" }, pc.issues.map((i) => h("div", { class: i.severity === "error" ? "notice err" : "fix", text: `${i.severity === "error" ? "Error" : "Warning"}${i.employeeId ? ` (${i.employeeId})` : ""}: ${i.message}` }))) : null,
+    pc.problems.length ? h("div", { class: "panel" }, pc.problems.map((p) => h("div", { class: "fix", text: `${p.employeeId}: ${p.message}` }))) : null,
+    h("p", { class: "muted", text: "v1 plans the documents from the cases' events (the chain's cases hold no documents yet: Fill is a stub) and prints the cases' facts and Part 2's texts. Part 3's sections are not printed yet; they are in document_texts.json." }));
+}
+
+// ---------------------------------------------------------------------------
+window.addEventListener("unhandledrejection", (e) => { if (!bridge) { state.loadError = "Unhandled: " + (e.reason && e.reason.message ? e.reason.message : e.reason); render(); } });
+window.addEventListener("error", (e) => { if (!bridge) { state.loadError = "Error: " + e.message; render(); } });
+render();
+loadPython();
+loadClaude();
+</script>
+</body>
+</html>

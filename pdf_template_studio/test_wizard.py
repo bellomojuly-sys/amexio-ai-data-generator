@@ -24,6 +24,12 @@ def click(app, label):
 def run():
     app = AppTest.from_file(str(Path(__file__).with_name("app.py"))).run()
     assert not app.exception, app.exception
+    app.radio[0].set_value("Portkey").run()
+    assert not app.exception, app.exception
+    assert app.selectbox[0].options == ["fontys-haiku-5-5", "claude-opus-5-5", "fontys-claude-sonnet-5-5", "Custom slug"]
+    app.selectbox[0].set_value("Custom slug").run()
+    assert any(field.label == "Custom model slug" for field in app.text_input)
+    app.radio[0].set_value("Offline example rules").run()
     source = example()
     app.session_state["batch"]["pending"] = {
         "first": {"name": "001_contract.pdf", "bytes": source},
@@ -141,6 +147,7 @@ def run():
     click(app, "Apply setup to other documents of this type")
     assert document["preview_values"]["PERSON_NAME"] == ""
     assert not document["reviewed"] and not peer["reviewed"]
+    app.session_state[peer_preview_key] = {"PERSON_NAME": "Zoë 李明"}
     click(app, "Save & Continue")
     assert batch["stage"] == 4
     assert not batch.get("scroll_to_top", False)
@@ -155,6 +162,15 @@ def run():
         manifest = json.loads(archive.read("manifest.json"))
         assert len(manifest) == 2
         assert len(set(archive.namelist())) == 5
+        for entry in manifest:
+            with fitz.open(stream=archive.read(entry["template"]), filetype="pdf") as pdf:
+                if entry["source"] == "002_contract.pdf":
+                    assert pdf[0].search_for("Zoë 李明")
+                    assert "{{PERSON_NAME}}" not in pdf[0].get_text()
+                    assert "Bob Example" not in pdf[0].get_text()
+                else:
+                    assert "{{PERSON_NAME}}" in pdf[0].get_text()
+                    assert "Alice Example" not in pdf[0].get_text()
     click(app, "Back")
     assert not batch["finished"] and batch["stage"] == 3
     assert document["fields"][0]["placeholder"] == "PERSON_NAME"

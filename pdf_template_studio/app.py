@@ -12,6 +12,7 @@ import pymupdf as fitz
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
+from ai_gateway import PORTKEY_MODELS, chat_json
 
 pdf_preview = components.declare_component(
     "pdf_template_preview",
@@ -155,17 +156,12 @@ def detect_rules(pdf_bytes):
     return result
 
 
-def detect_ai(pdf_bytes, api_key, model):
-    from openai import OpenAI
+def detect_ai(pdf_bytes, api_key, model, provider="OpenAI", config_id=""):
     lines = pdf_lines(pdf_bytes)
     if not lines:
         return []
     prompt = "\n".join(lines[:500])
-    client = OpenAI(api_key=api_key)
-    response = client.chat.completions.create(
-        model=model,
-        temperature=0,
-        response_format={"type": "json_object"},
+    data = chat_json(
         messages=[
             {"role": "system", "content": (
                 "Identify replaceable example values in the provided PDF text. Return JSON only: "
@@ -176,9 +172,8 @@ def detect_ai(pdf_bytes, api_key, model):
                 "departments and status/results. Do not return duplicate originals."
             )},
             {"role": "user", "content": prompt},
-        ],
+        ], api_key=api_key, model=model, provider=provider, config_id=config_id,
     )
-    data = json.loads(response.choices[0].message.content)
     out = []
     full_text = "\n".join(lines)
     for item in data.get("fields", []):
@@ -217,19 +212,14 @@ def text_style_at(page, rect):
     fontname = "helv"
     span_font = re.sub(r"^[A-Z]{6}\+", "", closest_span["font"])
     normalized_span_font = re.sub(r"[^a-z0-9]", "", span_font.lower())
-    for font in page.get_fonts(full=True):
-        base_font = re.sub(r"^[A-Z]{6}\+", "", font[3])
-        normalized_base_font = re.sub(r"[^a-z0-9]", "", base_font.lower())
-        if normalized_base_font == normalized_span_font:
-            fontname = font[4]
-            break
-    else:
-        if "bold" in normalized_span_font and "italic" in normalized_span_font:
-            fontname = "hebi"
-        elif "bold" in normalized_span_font:
-            fontname = "hebo"
-        elif "italic" in normalized_span_font or "oblique" in normalized_span_font:
-            fontname = "heit"
+    # Embedded subset fonts may lack braces, underscores, or new letters and
+    # can render readable-looking glyphs with broken text extraction.
+    if "bold" in normalized_span_font and ("italic" in normalized_span_font or "oblique" in normalized_span_font):
+        fontname = "hebi"
+    elif "bold" in normalized_span_font:
+        fontname = "hebo"
+    elif "italic" in normalized_span_font or "oblique" in normalized_span_font:
+        fontname = "heit"
 
     color_value = closest_span["color"]
     color = (
@@ -296,21 +286,18 @@ def render_template(pdf_bytes, fields):
                 matched.add(original)
                 style = text_style_at(page, rect)
                 # Redaction removes old characters, avoiding accidental exposure.
-                page.add_redact_annot(rect, fill=(1, 1, 1))
+                page.add_redact_annot(rect, fill=False, cross_out=False)
                 replacements.append((rect, placeholder, original, style))
         if replacements:
             page.apply_redactions(images=0, graphics=0, text=0)
             for rect, placeholder, original, style in replacements:
                 size = style["fontsize"]
-                available = max(1, page.rect.width - rect.x0 - 20)
+                available = max(1, page.cropbox.width - rect.x0 - 20)
                 while text_width(placeholder, style["fontname"], size) > available and size > 4.5:
                     size -= 0.25
                 if text_width(placeholder, style["fontname"], size) > available:
                     warnings.append(f"Page {page_no+1}: placeholder may overflow: {placeholder}")
-                # White rectangle beyond original text gives room for a longer placeholder.
-                width = min(available, text_width(placeholder, style["fontname"], size) + 3)
-                extra = fitz.Rect(rect.x0, rect.y0, rect.x0 + width, rect.y1)
-                page.draw_rect(extra, color=None, fill=(1, 1, 1), overlay=True)
+                # Remove only the old text; preserve the existing background.
                 page.insert_text((rect.x0, style["baseline"]), placeholder,
                                  fontname=style["fontname"], fontsize=size, color=style["color"], overlay=True)
     for field in active:
@@ -348,26 +335,29 @@ def render_filled_template(template_bytes, values):
             placeholder = "{{" + placeholder_name + "}}"
             for rect in page.search_for(placeholder):
                 style = text_style_at(page, rect)
-                page.add_redact_annot(rect, fill=(1, 1, 1))
+                page.add_redact_annot(rect, fill=False, cross_out=False)
                 replacements.append((rect, value, style))
         if replacements:
             page.apply_redactions(images=0, graphics=0, text=0)
             for rect, value, style in replacements:
+                font = fitz.Font(style["fontname"])
+                fontname = style["fontname"]
+                if any(not font.has_glyph(ord(character)) for character in value):
+                    font = fitz.Font("cjk")
+                    fontname = "template_unicode"
+                    page.insert_font(fontname=fontname, fontbuffer=font.buffer)
                 size = style["fontsize"]
-                available = max(1, page.rect.width - rect.x0 - 20)
-                while text_width(value, style["fontname"], size) > available and size > 4.5:
+                available = max(1, page.cropbox.width - rect.x0 - 20)
+                while font.text_length(value, fontsize=size) > available and size > 4.5:
                     size -= 0.25
-                width = min(available, text_width(value, style["fontname"], size) + 3)
-                page.draw_rect(fitz.Rect(rect.x0, rect.y0, rect.x0 + width, rect.y1),
-                               color=None, fill=(1, 1, 1), overlay=True)
                 page.insert_text((rect.x0, style["baseline"]), value,
-                                 fontname=style["fontname"], fontsize=size, color=style["color"], overlay=True)
+                                 fontname=fontname, fontsize=size, color=style["color"], overlay=True)
     result = doc.tobytes(garbage=4, deflate=True)
     doc.close()
     return result
 
 
-def build_preview(preview_bytes, fields, target_bytes=None, page_number=0):
+def build_preview(preview_bytes, fields, target_bytes=None, page_number=0, preview_values=None):
     doc = fitz.open(stream=preview_bytes, filetype="pdf")
     target_doc = fitz.open(stream=target_bytes, filetype="pdf") if target_bytes else doc
     pages = []
@@ -386,6 +376,15 @@ def build_preview(preview_bytes, fields, target_bytes=None, page_number=0):
         page = target_doc[page_no]
         for placeholder in placeholder_names:
             for rect in page.search_for(placeholder):
+                value = (preview_values or {}).get(placeholder[2:-2], "")
+                if value:
+                    for value_rect in doc[page_no].search_for(str(value)):
+                        if abs(value_rect.x0 - rect.x0) < 3 and abs(value_rect.y0 - rect.y0) < max(rect.height, value_rect.height):
+                            rect = rect | value_rect
+                            break
+                # Search results use unrotated coordinates; pixmaps use the
+                # displayed page rotation. Hitboxes must use the latter too.
+                rect = rect * doc[page_no].rotation_matrix
                 targets.append({
                     "page": 0,
                     "name": placeholder[2:-2],
@@ -505,10 +504,23 @@ def invalidate(document):
 
 def output_for(document):
     cached = document.get("rendered")
-    if cached is None:
+    if cached is None or document.get("render_version") != "transparent-text-replacement-2":
+        batch["finished"] = False
         cached = render_template(document["bytes"], document["fields"])
         document["rendered"] = cached
+        document["render_version"] = "transparent-text-replacement-2"
     return cached
+
+
+def completed_output_for(document):
+    """Use the same final bytes for the edited preview, validation, and export."""
+    output, warnings = output_for(document)
+    names = {normalize_name(field["placeholder"]) for field in document["fields"] if field.get("replace")}
+    values = {name: value for name, value in document["preview_values"].items()
+              if name in names and str(value).strip()}
+    if values:
+        output = render_filled_template(output, values)
+    return output, warnings
 
 
 def group_status(group):
@@ -589,13 +601,20 @@ def field_errors(document):
 
 with st.sidebar:
     st.header("Detection settings")
-    mode = st.radio("Detect fields using", ["Offline example rules", "OpenAI"])
+    mode = st.radio("Detect fields using", ["Offline example rules", "Portkey", "OpenAI"])
     api_key = ""
     model = "gpt-4o-mini"
+    config_id = ""
+    if mode == "Portkey":
+        api_key = st.text_input("Portkey API key", value=os.getenv("PORTKEY_API_KEY", ""), type="password", key="portkey_api_key")
+        selection = st.selectbox("Model slug", [*PORTKEY_MODELS, "Custom slug"], key="portkey_model")
+        model = st.text_input("Custom model slug", key="portkey_custom_model") if selection == "Custom slug" else selection
+        with st.expander("Portkey routing (optional)"):
+            config_id = st.text_input("Config ID", value=os.getenv("PORTKEY_CONFIG_ID", ""), key="portkey_config_id")
     if mode == "OpenAI":
         api_key = st.text_input("OpenAI API key", value=os.getenv("OPENAI_API_KEY", ""), type="password")
         model = st.text_input("Model", value=model)
-    st.caption("OpenAI mode sends extracted PDF text to the API. Upload only authorized documents.")
+    st.caption("AI modes send extracted PDF text to the selected service. Upload only authorized documents.")
 
 stages = {1: "Select & Organize", 3: "Edit Templates", 4: "Review & Export"}
 if batch["stage"] == 2:
@@ -660,8 +679,8 @@ if batch["stage"] == 1:
                     batch["groups"].append(group)
     documents = batch["documents"]
     if process:
-        if mode == "OpenAI" and not api_key:
-            st.error("Enter an OpenAI API key first.")
+        if mode != "Offline example rules" and (not api_key.strip() or not model.strip()):
+            st.error("Enter an API key and model slug first.")
         else:
             targets = [d for d in documents.values() if not d["processed"] or d["error"]]
             progress = st.progress(0, text="Processing documents")
@@ -672,8 +691,8 @@ if batch["stage"] == 1:
                         raise ValueError("No selectable text found. Scanned PDFs require OCR, which is not supported.")
                     with fitz.open(stream=document["bytes"], filetype="pdf") as pdf:
                         document["page_count"] = len(pdf)
-                    document["fields"] = detect_ai(document["bytes"], api_key, model) if mode == "OpenAI" else detect_rules(document["bytes"])
-                    document["last_detection"] = mode
+                    document["fields"] = detect_ai(document["bytes"], api_key, model, provider=mode, config_id=config_id) if mode != "Offline example rules" else detect_rules(document["bytes"])
+                    document["last_detection"] = f"{mode}: {model}" if mode != "Offline example rules" else mode
                     # Only refine a newly suggested group; preserve manual assignments on retries.
                     if not document["processed"]:
                         text = " ".join(lines).lower()
@@ -780,14 +799,14 @@ elif batch["stage"] == 3:
     with left:
         st.caption(f"Detected with: {document['last_detection']} · Toggle Use to include or exclude detected fields.")
         if st.button("Detect fields again"):
-            if mode == "OpenAI" and not api_key:
-                st.error("Enter an OpenAI API key first.")
+            if mode != "Offline example rules" and (not api_key.strip() or not model.strip()):
+                st.error("Enter an API key and model slug first.")
             else:
                 try:
                     positions = [f for f in document["fields"] if f.get("kind") == "position"]
-                    detected = detect_ai(document["bytes"], api_key, model) if mode == "OpenAI" else detect_rules(document["bytes"])
+                    detected = detect_ai(document["bytes"], api_key, model, provider=mode, config_id=config_id) if mode != "Offline example rules" else detect_rules(document["bytes"])
                     document["fields"] = detected + positions
-                    document["last_detection"] = mode
+                    document["last_detection"] = f"{mode}: {model}" if mode != "Offline example rules" else mode
                     document["preview_values"] = {}
                     document["preview_reset_nonce"] += 1
                     invalidate(document)
@@ -866,10 +885,11 @@ elif batch["stage"] == 3:
             invalidate(document)
             st.rerun()
         if output is not None:
-            preview_pdf = render_filled_template(output, values) if view == "Template" and values else output
+            preview_pdf = completed_output_for(document)[0] if view == "Template" else output
             pages, targets = build_preview(preview_pdf if view == "Template" else document["bytes"],
                                            fields if view == "Template" else [],
-                                           target_bytes=output if view == "Template" else None, page_number=page_number)
+                                           target_bytes=output if view == "Template" else None, page_number=page_number,
+                                           preview_values=values if view == "Template" else None)
             # Use the corrected groups, rather than filename guesses, for sample recommendations.
             peers = {key: d for key, d in documents.items() if d["group"] == document["group"]}
             recommendations = {}
@@ -938,7 +958,7 @@ elif batch["stage"] == 4:
                     batch["active"] = identity
                     move_stage(3)
                 try:
-                    output, warnings = output_for(document)
+                    output, warnings = completed_output_for(document)
                     for warning in errors + warnings:
                         st.warning(warning)
                 except Exception as exc:
@@ -968,7 +988,7 @@ elif batch["stage"] == 4:
                 stem = re.sub(r"[^\w.-]", "_", Path(document["name"]).stem) or "document"
                 group = re.sub(r"[^\w.-]", "_", document["group"]) or "type"
                 prefix = f"{group}/{index:04d}_{stem}"
-                output, warnings = output_for(document)
+                output, warnings = completed_output_for(document)
                 package.writestr(prefix + "_template.pdf", output)
                 package.writestr(prefix + "_fields.json", json.dumps(document["fields"], indent=2))
                 manifest.append({"source": document["name"], "type": document["group"],
