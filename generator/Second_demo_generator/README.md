@@ -21,6 +21,7 @@ are below, so they can be checked and defended.
 | 4 | The demo app: an artifact page on the viewer's Claude account, like v1 | this folder: `site/index.html`, `demo_bridge.py`, `build_bundle.py`, tests in `test_demo_bridge.py` | done |
 | 5 | Daniel's PDF Template Studio, offline, as the first step of the page | this folder: `studio_bridge.py`, tests in `test_studio_bridge.py`; the step in `site/index.html` | done |
 | 6 | AMEXIO's import package (PDFs and `import.xml`) in the export, made by v1's export | this folder: `v1_export/entry.ts`, `build_v1_export.mjs`; `demo_bridge.export_files` | done |
+| 7 | Following `main` after the backend handover (backend-v0.1, case model v2.1) | `pipeline/llm.py`, `pipeline/placeholders.py`, `pipeline/generation.py`, `demo_bridge.py`; section 7 | done |
 
 ## 1 · The LLM provider
 
@@ -177,9 +178,14 @@ Step 3 adds the placeholder check to Parts 2 and 3.
   sections are, what happened (rating, kind of change, reason, the saved
   comment) and a placeholder for each of its facts; the whole career is there
   for consistency, but a document may only know what happened up to its own
-  event. Until `signed_by` exists (case model v1.2), the case's manager persona
-  writes and signs. A dossier with nothing planned makes no call; a plan that
-  names an event the case does not hold is refused before a call.
+  event. **Who writes and signs** is the event's `signed_by` (case model v1.2,
+  contract §6, BR-16), passed as `signedBy`, the signer's name placeholder.
+  While Dates & participants is a stub that sets no signer, the case's one
+  manager signs; with two managers (a director who signs is a second manager
+  persona) and no signer, code cannot tell and names no one. A contract
+  change's new salary is offered whole, `{{events.X.new_salary}}`, which Fill
+  prints as "EUR 4.350". A dossier with nothing planned makes no call; a plan
+  that names an event the case does not hold is refused before a call.
 - **Reply shapes show `...`, not example names.** v1's shape example had a real
   looking person in it, which a model can copy.
 - **The fake answers still work unchanged**: every key that
@@ -193,7 +199,7 @@ to 8,000 per dossier.
 
 Rule 3 of the contract: generation never types out a name, a date or an
 amount; every fact in a text is a placeholder `{{collection.key.field}}` that
-Fill reads with `get_fact`. The check runs inside `complete_as`, in the
+Fill prints with the case model's `fill_text` (case model v1.2, M04). The check runs inside `complete_as`, in the
 `check=` of Part 2 and Part 3, after the contract's own shape check. So a bad
 text gets the one retry with every problem named, and a second bad answer
 stops the run with an `LLMError` that names the field
@@ -208,7 +214,9 @@ fact itself.
 |---|---|---|
 | unknown collection, key or field | `{{projects.X1.name}}`, `{{personas.P999.name}}`, `{{personas.P001.nickname}}` | `{{personas.P999.name}} does not resolve: … no persona 'P999'` |
 | a whole object, not one fact | `{{personas.P001}}` | `… is a whole Persona, not one fact: add the field` |
-| a fact the case does not hold | `{{personas.P001.date_of_birth}}` | `… is empty in this case` |
+| an internal ID | `{{personas.P001.id}}` | `…: an internal ID, not a printable fact` (Fill's words) |
+| part of one fact | `{{employments.P001.salary.amount}}` | `… is part of one fact: write {{employments.P001.salary}} instead` |
+| a fact the case does not hold | `{{personas.P001.date_of_birth}}` | `…: the case holds no value for it` (Fill's words) |
 | a brace missing or left over | `{personas.P001.name}` | `… is not written as {{collection.key.field}}` |
 | a name of the case typed out | `Jan de Vries`, `Jan`, `Vries`, `Acme Logistics` | `'Jan' is a name typed out; write {{personas.P001.name}} instead` |
 | a date | `2024-03-12`, `12/03/2024`, `12 March 2024`, `March`, `maart` | `… is a date typed out` |
@@ -217,10 +225,13 @@ fact itself.
 
 ### Choices
 
-- **The placeholder is resolved with `get_fact` itself**, the function Fill
-  uses, so the check and Fill cannot disagree about what resolves. On top of
-  that the value must be one fact: `get_fact` also returns whole objects,
-  lists and empty fields (open point 8 in the team list).
+- **Fill's own rules decide what a placeholder may be**, so the check and Fill
+  cannot disagree. A placeholder passes when the case model's `fill_text`
+  fills it (AX-024: it resolves, holds a value, is not an internal ID) and it
+  is one of `fact_paths(case)` (AX-023), the facts a text may print. The second
+  rule refuses a part of one fact (`salary.amount` would print "4350"; the
+  whole amount prints "EUR 4.350") and a whole object, which `fill_text`
+  prints as its Python form (a point for the team list).
 - **Names come from the case**, not from a list of first names: every person
   and organisation the case holds. A person is caught by the whole name and
   by each word of it of three letters or more, except particles such as *de*
@@ -235,9 +246,8 @@ fact itself.
   write an amount or a date. The model rewrites it on the retry.
 - **The retry gets every problem at once** (up to five in the message), and for
   a typed-out name the placeholder to use instead.
-- **Shared with Fill**: `text_problems(text, case)` and the `PLACEHOLDER`
-  pattern (the same as `fill_stub`'s) are public, so Fill and the demo can
-  apply the same rule.
+- **Shared with Fill**: `text_problems(text, case)` is public, so Fill and the
+  demo can apply the same rule, names and typed-out facts included.
 - `pipeline/llm.py`: a check's error may now name its field
   (`PlaceholderError.field`), and `complete_as` passes it on to the
   `LLMError`.
@@ -485,8 +495,34 @@ names, dates and rating, and Part 2's comment.
 - **Size.** `v1_export.js` is about 500 KB, most of it pdf-lib, loaded only
   when exporting.
 
+## 7 · Following `main` after the backend handover (25 Nov)
+
+`main` (tag `backend-v0.1`, then case model v1.2 to v2.1) was merged into this
+branch; the one conflict was a comment in `.gitignore`. What changed here to
+follow it:
+
+- **The key comes from `LLM_API_KEY`**, the team's variable (`.env.example`),
+  instead of `ANTHROPIC_API_KEY`.
+- **The placeholder check follows the case model's Fill** (`fill_text`,
+  `fact_paths`), section 3; Part 3 offers amounts whole.
+- **Part 3 names each document's signer** from its event's `signed_by`
+  (section 2).
+- **The demo's filled texts come from `fill_text`**, in AMEXIO's formats
+  (section 4).
+
+The domain contract (v1.1, 25 Nov) changes nothing yet: HR is one domain
+configuration, and HR cases are saved as before. For pipeline contract v1.2
+and template contract v0.3 (after GD-05), see "For later".
+
 ### For later
 
+- **Domain contract v1.1:** the three prompts take event types, fields and
+  closed lists from the domain configuration instead of HR's lists
+  (`generation.py`: the event kinds, `SECTION_GUIDE`, v1's course ideas;
+  `placeholders.py`: `EVENT_TEXT_FIELDS`); the studio takes `documentType`
+  from the configuration's types instead of the nine in `format_rules`
+  (template contract v0.3); the run request names its domain
+  (`RunConfig.domain`). v1's export knows only HR.
 - The rest of Daniel's studio (section 5 lists what is left out), and filling
   his templates with the generated cases once Fill is built.
 - Part 3's sections in the PDFs, once Fill writes `Document.text` and Export
