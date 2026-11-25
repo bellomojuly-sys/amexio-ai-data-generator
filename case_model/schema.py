@@ -28,6 +28,7 @@ from .case_model import Case, Document, DocumentMetadata, Persona, metadata_clas
 from .domain import DomainConfig
 from .domains import HR
 from .ingest import EmployeesIn, StorylinesIn
+from .ingest_any import CasesIn
 
 
 def typed_case(domain: DomainConfig):
@@ -61,6 +62,8 @@ SCHEMAS = {
     "case.schema.json": lambda: typed_case(HR).model_json_schema(mode="serialization"),
     # The domain configuration Daniel's data configuration becomes (v2.0).
     "domain.schema.json": lambda: DomainConfig.model_json_schema(),
+    # The input of the ingest for any domain (v2.1, GD-05): JSON without IDs.
+    "input.cases.schema.json": lambda: CasesIn.model_json_schema(),
 }
 
 
