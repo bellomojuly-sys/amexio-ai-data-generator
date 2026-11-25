@@ -38,6 +38,7 @@ from .format_rules import (
 )
 from .fill import UnresolvedPlaceholders, fact_paths, fill_text, format_fact
 from .lookup import UnknownPath, get_fact
+from .ingest_any import CaseCorrection, ingest_cases
 
 __all__ = [
     "AbsenceEvent",
@@ -69,6 +70,8 @@ __all__ = [
     "get_domain",
     "register_domain",
     "HR",
+    "ingest_cases",
+    "CaseCorrection",
     "fact_paths",
     "fill_text",
     "format_fact",

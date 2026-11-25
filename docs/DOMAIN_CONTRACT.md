@@ -138,7 +138,8 @@ the configuration; Event content writes text only in `text` fields.
 | GD-03 | Rules between events from the configuration | Giulia | built, PR #11 |
 | GD-04 | Save, load, fill and schemas per domain | Giulia | built, PR #11 (merged) |
 | GD-04b | Case facts, domain metadata, employment and organisation kinds; fact generator (v2.1) | Giulia | built |
-| GD-05 | Daniel's configuration → `DomainConfig`; ingest without IDs for any domain | Giulia, Daniel | next |
+| GD-05 | Ingest without IDs for any domain (`ingest_cases`, `schema/input.cases.schema.json`) | Giulia | built |
+| GD-05b | Daniel's configuration → `DomainConfig`; template fields bound to the case | Giulia, Daniel | after the team's answer (§7) |
 | GD-06 | Pipeline contract v1.2 | Giulia, Robin, Valentin, Mike | after GD-05 |
 | GD-07 | Template contract v0.3 | Giulia, Daniel | after GD-05 |
 
