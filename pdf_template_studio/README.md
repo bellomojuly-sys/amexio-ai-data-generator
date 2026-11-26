@@ -75,7 +75,7 @@ Run `python -m unittest test_ai_gateway` for mocked gateway tests and `python te
 
 Generated placeholders use standard fonts with reliable braces and text extraction rather than reusing embedded PDF subsets. Preview values use an embedded fallback font when the standard font lacks a character. Hitboxes follow page rotation and grow to include longer filled values. Clickable regions highlight on hover or keyboard focus without persistent outlines; preview updates preserve the viewer scroll position. Unsupported glyphs in the original source PDF or characters outside the fallback font still require inspection. Run python -m unittest test_pdf_rendering to check embedded-font sources, Unicode replacements, rotation, and target bounds.
 
-Completed PDFs use the same rendering function as the Template preview, including chosen values, custom text, Unicode fallback fonts, and Use choices. The review step validates this final output before export.
+Exported template PDFs retain placeholders for fields marked Use, matching the exported field definitions. Selected preview values and custom preview text appear only on screen. The review step validates the reusable template before export. Unicode preview fonts are reused per page and subset before saving.
 
 
 Text replacement removes the old characters without painting white background rectangles or leaving redaction annotations. This preserves existing colored backgrounds and avoids box artifacts in the exported PDF.

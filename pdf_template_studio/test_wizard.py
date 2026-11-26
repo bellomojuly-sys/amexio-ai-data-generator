@@ -22,7 +22,7 @@ def click(app, label):
 
 
 def run():
-    app = AppTest.from_file(str(Path(__file__).with_name("app.py"))).run()
+    app = AppTest.from_file(str(Path(__file__).with_name("app.py")), default_timeout=30).run()
     assert not app.exception, app.exception
     app.radio[0].set_value("Portkey").run()
     assert not app.exception, app.exception
@@ -163,10 +163,12 @@ def run():
         assert len(manifest) == 2
         assert len(set(archive.namelist())) == 5
         for entry in manifest:
+            definitions = json.loads(archive.read(entry["template"].replace("_template.pdf", "_fields.json")))
+            assert any(field["replace"] and field["placeholder"] == "PERSON_NAME" for field in definitions)
             with fitz.open(stream=archive.read(entry["template"]), filetype="pdf") as pdf:
                 if entry["source"] == "002_contract.pdf":
-                    assert pdf[0].search_for("Zoë 李明")
-                    assert "{{PERSON_NAME}}" not in pdf[0].get_text()
+                    assert not pdf[0].search_for("Zoë 李明")
+                    assert "{{PERSON_NAME}}" in pdf[0].get_text()
                     assert "Bob Example" not in pdf[0].get_text()
                 else:
                     assert "{{PERSON_NAME}}" in pdf[0].get_text()

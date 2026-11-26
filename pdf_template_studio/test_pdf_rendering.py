@@ -9,11 +9,12 @@ import pymupdf as fitz
 
 
 names = {"has_word_boundaries", "is_known_label_text", "text_style_at", "text_width",
-         "render_template", "render_filled_template", "build_preview", "normalize_name"}
+         "render_template", "render_filled_template", "build_preview", "normalize_name",
+         "output_for", "completed_output_for"}
 tree = ast.parse(Path(__file__).with_name("app.py").read_text(encoding="utf-8-sig"))
 nodes = [node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name in names
          or isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and target.id == "LABEL_KEYS" for target in node.targets)]
-pdf_functions = {"fitz": fitz, "re": re, "base64": base64}
+pdf_functions = {"fitz": fitz, "re": re, "base64": base64, "batch": {"finished": False}}
 exec(compile(ast.Module(body=nodes, type_ignores=[]), "app_pdf_functions", "exec"), pdf_functions)
 
 
@@ -42,6 +43,23 @@ class PdfRenderingTests(unittest.TestCase):
         _, targets = pdf_functions["build_preview"](output, fields)
         self.assertEqual(len(targets), 1)
 
+    def test_preview_values_leave_template_reusable(self):
+        document = {"bytes": self.source(), "fields": [
+            {"replace": True, "original": "Alice Example", "placeholder": "EMPLOYEE_NAME"}],
+            "preview_values": {"EMPLOYEE_NAME": "Jan de Vries"}}
+        preview, _ = pdf_functions["completed_output_for"](document)
+        output, _ = pdf_functions["output_for"](document)
+        with fitz.open(stream=preview, filetype="pdf") as doc:
+            self.assertTrue(doc[0].search_for("Jan de Vries"))
+        with fitz.open(stream=output, filetype="pdf") as doc:
+            self.assertTrue(doc[0].search_for("{{EMPLOYEE_NAME}}"))
+            self.assertFalse(doc[0].search_for("Jan de Vries"))
+        for name in ("Bob Example", "Carol Example"):
+            filled = pdf_functions["render_filled_template"](output, {"EMPLOYEE_NAME": name})
+            with fitz.open(stream=filled, filetype="pdf") as doc:
+                self.assertTrue(doc[0].search_for(name))
+                self.assertFalse(doc[0].search_for("Jan de Vries"))
+
     def test_unicode_replacement_remains_readable(self):
         output, _ = self.template()
         value = "Zoë 李明"
@@ -49,6 +67,24 @@ class PdfRenderingTests(unittest.TestCase):
         with fitz.open(stream=filled, filetype="pdf") as doc:
             self.assertTrue(doc[0].search_for(value))
             self.assertNotIn("\ufffd", doc[0].get_text())
+
+    def test_repeated_unicode_values_are_subset_and_searchable(self):
+        with fitz.open() as source:
+            for _ in range(2):
+                page = source.new_page()
+                page.insert_text((40, 80), "{{FIRST_NAME}}")
+                page.insert_text((40, 120), "{{SECOND_NAME}}")
+            template = source.tobytes()
+        filled = pdf_functions["render_filled_template"](
+            template, {"FIRST_NAME": "\u015eahin", "SECOND_NAME": "\u674e\u660e"})
+        self.assertLess(len(filled), 500_000, "Fallback font should be subset, not fully embedded")
+        with fitz.open(stream=filled, filetype="pdf") as doc:
+            for page in doc:
+                self.assertTrue(page.search_for("\u015eahin"))
+                self.assertTrue(page.search_for("\u674e\u660e"))
+                self.assertNotIn("{{", page.get_text())
+                fallback_fonts = [font for font in page.get_fonts() if font[4] == "template_unicode"]
+                self.assertEqual(len(fallback_fonts), 1)
 
     def test_rotated_targets_match_display_coordinates(self):
         for angle in (0, 90, 180, 270):

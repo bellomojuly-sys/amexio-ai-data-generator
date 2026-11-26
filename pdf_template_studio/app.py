@@ -326,7 +326,9 @@ def render_template(pdf_bytes, fields):
 
 def render_filled_template(template_bytes, values):
     doc = fitz.open(stream=template_bytes, filetype="pdf")
+    fallback_font = None
     for page in doc:
+        fallback_inserted = False
         replacements = []
         for placeholder_name, value in values.items():
             value = str(value).strip()
@@ -342,16 +344,21 @@ def render_filled_template(template_bytes, values):
             for rect, value, style in replacements:
                 font = fitz.Font(style["fontname"])
                 fontname = style["fontname"]
-                if any(not font.has_glyph(ord(character)) for character in value):
-                    font = fitz.Font("cjk")
+                if any(ord(character) > 255 or not font.has_glyph(ord(character)) for character in value):
+                    if fallback_font is None:
+                        fallback_font = fitz.Font("cjk")
+                    font = fallback_font
                     fontname = "template_unicode"
-                    page.insert_font(fontname=fontname, fontbuffer=font.buffer)
+                    if not fallback_inserted:
+                        page.insert_font(fontname=fontname, fontbuffer=font.buffer)
+                        fallback_inserted = True
                 size = style["fontsize"]
                 available = max(1, page.cropbox.width - rect.x0 - 20)
                 while font.text_length(value, fontsize=size) > available and size > 4.5:
                     size -= 0.25
                 page.insert_text((rect.x0, style["baseline"]), value,
                                  fontname=fontname, fontsize=size, color=style["color"], overlay=True)
+    doc.subset_fonts()
     result = doc.tobytes(garbage=4, deflate=True)
     doc.close()
     return result
@@ -513,7 +520,7 @@ def output_for(document):
 
 
 def completed_output_for(document):
-    """Use the same final bytes for the edited preview, validation, and export."""
+    """Fill selected values for the on-screen preview only."""
     output, warnings = output_for(document)
     names = {normalize_name(field["placeholder"]) for field in document["fields"] if field.get("replace")}
     values = {name: value for name, value in document["preview_values"].items()
@@ -958,7 +965,7 @@ elif batch["stage"] == 4:
                     batch["active"] = identity
                     move_stage(3)
                 try:
-                    output, warnings = completed_output_for(document)
+                    output, warnings = output_for(document)
                     for warning in errors + warnings:
                         st.warning(warning)
                 except Exception as exc:
@@ -988,7 +995,7 @@ elif batch["stage"] == 4:
                 stem = re.sub(r"[^\w.-]", "_", Path(document["name"]).stem) or "document"
                 group = re.sub(r"[^\w.-]", "_", document["group"]) or "type"
                 prefix = f"{group}/{index:04d}_{stem}"
-                output, warnings = completed_output_for(document)
+                output, warnings = output_for(document)
                 package.writestr(prefix + "_template.pdf", output)
                 package.writestr(prefix + "_fields.json", json.dumps(document["fields"], indent=2))
                 manifest.append({"source": document["name"], "type": document["group"],

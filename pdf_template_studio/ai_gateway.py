@@ -1,4 +1,5 @@
 """Small chat adapter for direct OpenAI and the Portkey gateway."""
+import http.client
 import json
 import re
 import urllib.error
@@ -12,7 +13,7 @@ def portkey_error_detail(error, api_key):
     """Expose the gateway's structured reason, never a raw response or key."""
     try:
         raw = error.read(16384).decode("utf-8", errors="replace")
-    except (OSError, AttributeError, TypeError):
+    except (OSError, http.client.HTTPException, AttributeError, TypeError):
         raw = ""
     try:
         body = json.loads(raw)
@@ -61,7 +62,7 @@ def chat_json(messages, api_key, model, provider="OpenAI", config_id=""):
             if detail:
                 summary += f" Gateway message: {detail}"
             raise ValueError(summary) from None
-        except (urllib.error.URLError, TimeoutError):
+        except (urllib.error.URLError, TimeoutError, OSError, http.client.HTTPException, ValueError):
             raise ValueError("Unable to reach Portkey. Check your connection and try again.") from None
         try:
             content = result["choices"][0]["message"]["content"]

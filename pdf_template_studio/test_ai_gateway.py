@@ -1,3 +1,4 @@
+import http.client
 import io
 import json
 import unittest
@@ -44,6 +45,28 @@ class GatewayTests(unittest.TestCase):
         send.side_effect = urllib.error.HTTPError("url", 401, "secret-body", {}, None)
         with self.assertRaisesRegex(ValueError, "API key was rejected"):
             chat_json([], "test", PORTKEY_MODELS[0], "Portkey")
+
+    @patch("ai_gateway.urllib.request.urlopen")
+    def test_transport_failures_have_friendly_message(self, send):
+        for error in (ConnectionResetError("private details"), OSError("private details"),
+                      http.client.IncompleteRead(b"private details", 100),
+                      http.client.HTTPException("private details")):
+            with self.subTest(error=type(error).__name__):
+                send.side_effect = error
+                with self.assertRaisesRegex(ValueError, "^Unable to reach Portkey. Check your connection and try again.$"):
+                    chat_json([], "test-key", PORTKEY_MODELS[0], "Portkey")
+
+    @patch("ai_gateway.urllib.request.urlopen")
+    def test_non_json_success_body_has_friendly_message(self, send):
+        send.return_value.__enter__.return_value = io.BytesIO(b"<html>private details</html>")
+        with self.assertRaisesRegex(ValueError, "^Unable to reach Portkey. Check your connection and try again.$"):
+            chat_json([], "test-key", PORTKEY_MODELS[0], "Portkey")
+
+    @patch("ai_gateway.urllib.request.urlopen")
+    def test_incomplete_response_read_has_friendly_message(self, send):
+        send.return_value.__enter__.return_value.read.side_effect = http.client.IncompleteRead(b"private", 100)
+        with self.assertRaisesRegex(ValueError, "^Unable to reach Portkey. Check your connection and try again.$"):
+            chat_json([], "test-key", PORTKEY_MODELS[0], "Portkey")
 
     @patch("ai_gateway.urllib.request.urlopen")
     def test_missing_credentials_do_not_send(self, send):
